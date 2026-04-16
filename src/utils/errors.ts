@@ -1,0 +1,39 @@
+export type ErrorCode =
+  | "CONFIG_INVALID"
+  | "CONFIG_NOT_FOUND"
+  | "LLM_REQUEST_FAILED"
+  | "LLM_TIMEOUT"
+  | "LLM_STREAM_ERROR"
+  | "TOOL_EXECUTION_FAILED"
+  | "TOOL_NOT_FOUND"
+  | "TOOL_DISABLED"
+  | "DB_ERROR"
+  | "DB_MIGRATION_FAILED"
+  | "TELEGRAM_API_ERROR"
+  | "TELEGRAM_AUTH_FAILED"
+  | "SESSION_NOT_FOUND"
+  | "PERMISSION_DENIED";
+
+export class OpenFlowError extends Error {
+  readonly code: ErrorCode;
+  readonly cause?: unknown;
+
+  constructor(message: string, code: ErrorCode, cause?: unknown) {
+    super(message);
+    this.name = "OpenFlowError";
+    this.code = code;
+    this.cause = cause;
+  }
+}
+
+export type Result<T, E = OpenFlowError> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
+
+export function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value };
+}
+
+export function err<E extends OpenFlowError>(error: E): Result<never, E> {
+  return { ok: false, error };
+}
