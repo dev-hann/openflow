@@ -5,13 +5,10 @@ export type ErrorCode =
   | "LLM_TIMEOUT"
   | "LLM_STREAM_ERROR"
   | "TOOL_EXECUTION_FAILED"
-  | "TOOL_NOT_FOUND"
-  | "TOOL_DISABLED"
   | "DB_ERROR"
   | "DB_MIGRATION_FAILED"
   | "TELEGRAM_API_ERROR"
   | "TELEGRAM_AUTH_FAILED"
-  | "SESSION_NOT_FOUND"
   | "PERMISSION_DENIED";
 
 export class OpenFlowError extends Error {

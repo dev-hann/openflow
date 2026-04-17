@@ -4,6 +4,8 @@ import { createLogger } from "../../utils/logger.js";
 
 const log = createLogger("telegram/offset");
 
+const WRITE_RETRY_DELAYS = [100, 200];
+
 export interface OffsetStore {
   get(): number;
   set(offset: number): void;
@@ -34,11 +36,20 @@ export function createOffsetStore(filePath: string): OffsetStore {
   function set(offset: number): void {
     if (offset <= lastWritten) return;
     lastWritten = offset;
-    try {
-      ensureDir();
-      writeFileSync(filePath, JSON.stringify({ offset, updatedAt: Date.now() }), "utf-8");
-    } catch (err) {
-      log.warn({ err }, "failed to persist update offset");
+    ensureDir();
+    const data = JSON.stringify({ offset, updatedAt: Date.now() });
+    for (let attempt = 0; attempt <= WRITE_RETRY_DELAYS.length; attempt++) {
+      try {
+        writeFileSync(filePath, data, "utf-8");
+        return;
+      } catch (err) {
+        if (attempt < WRITE_RETRY_DELAYS.length) {
+          const end = Date.now() + WRITE_RETRY_DELAYS[attempt]!;
+          while (Date.now() < end) { /* busy wait */ }
+          continue;
+        }
+        log.warn({ err }, "failed to persist update offset");
+      }
     }
   }
 

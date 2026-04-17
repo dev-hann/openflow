@@ -1,4 +1,6 @@
 import type { WorkspaceFiles } from "./workspace.js";
+import type { SkillMeta } from "./skill-loader.js";
+import { buildSkillPrompt } from "./skill-loader.js";
 
 const IDENTITY_SECTION = `You are OpenFlow, a personal AI assistant.
 You have access to tools that let you execute shell commands, read/write files, fetch web pages, search the web, and more.
@@ -27,6 +29,7 @@ function section(header: string, content: string): string {
 export function buildSystemPrompt(
   workspaceFiles: WorkspaceFiles,
   runtimeContext: { workspace: string; timezone?: string },
+  skills?: SkillMeta[],
 ): string {
   const parts: string[] = [];
 
@@ -39,6 +42,11 @@ export function buildSystemPrompt(
 
   if (workspaceFiles.user) {
     parts.push(section("User Profile (USER.md)", workspaceFiles.user));
+  }
+
+  const skillPrompt = skills?.length ? buildSkillPrompt(skills) : "";
+  if (skillPrompt) {
+    parts.push(skillPrompt);
   }
 
   if (workspaceFiles.memory || workspaceFiles.dailyMemory) {

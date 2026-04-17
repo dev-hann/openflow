@@ -32,7 +32,9 @@
     },
     "httpRequest": {
       "enabled": false
-    }
+    },
+    "requireConfirmation": ["shell"],
+    "confirmationTimeout": 60000
   },
   "logging": {
     "level": "info"

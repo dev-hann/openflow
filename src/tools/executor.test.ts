@@ -9,6 +9,7 @@ const defaultConfig: ToolsConfig = {
   webFetch: { enabled: true },
   webSearch: { enabled: true },
   httpRequest: { enabled: false },
+  browser: { enabled: false, timeout: 30_000, headless: true },
 };
 
 describe("createToolExecutor", () => {
@@ -47,14 +48,19 @@ describe("createToolExecutor", () => {
       expect(names).not.toContain("shell");
     });
 
-    it("should include send_message when sendFn provided", () => {
+    it("should include send_message and send_image when sender provided", () => {
+      const sender = {
+        sendMessage: async () => {},
+        sendPhoto: async () => {},
+      };
       const executor = createToolExecutor(
         defaultConfig,
         testDir,
-        async () => {},
+        sender,
       );
       const names = executor.getDefinitions().map((d) => d.function.name);
       expect(names).toContain("send_message");
+      expect(names).toContain("send_image");
     });
   });
 
@@ -174,6 +180,42 @@ describe("createToolExecutor", () => {
         });
         expect(result.isError).toBe(true);
       }, 10_000);
+    });
+  });
+
+  describe("needsConfirmation()", () => {
+    it("should return true for tools in requireConfirmation list", () => {
+      const config: ToolsConfig = {
+        ...defaultConfig,
+        requireConfirmation: ["shell", "write_file"],
+      };
+      const executor = createToolExecutor(config, testDir);
+      expect(executor.needsConfirmation("shell")).toBe(true);
+      expect(executor.needsConfirmation("write_file")).toBe(true);
+    });
+
+    it("should return false for tools not in requireConfirmation list", () => {
+      const config: ToolsConfig = {
+        ...defaultConfig,
+        requireConfirmation: ["shell"],
+      };
+      const executor = createToolExecutor(config, testDir);
+      expect(executor.needsConfirmation("read_file")).toBe(false);
+      expect(executor.needsConfirmation("web_fetch")).toBe(false);
+    });
+
+    it("should return false for all tools when requireConfirmation is empty", () => {
+      const executor = createToolExecutor(defaultConfig, testDir);
+      expect(executor.needsConfirmation("shell")).toBe(false);
+      expect(executor.needsConfirmation("write_file")).toBe(false);
+    });
+
+    it("should return false for all tools when requireConfirmation is undefined", () => {
+      const config: ToolsConfig = {
+        ...defaultConfig,
+      };
+      const executor = createToolExecutor(config, testDir);
+      expect(executor.needsConfirmation("shell")).toBe(false);
     });
   });
 });

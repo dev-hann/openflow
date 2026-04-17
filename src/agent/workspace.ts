@@ -56,6 +56,23 @@ function listRecentDailyFiles(dailyDir: string, days: number): string[] {
   return files.slice(0, days);
 }
 
+function safeWrite(filePath: string, content: string): void {
+  const delays = [100, 200, 400];
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      writeFileSync(filePath, content, "utf-8");
+      return;
+    } catch (err) {
+      if (attempt < delays.length) {
+        const end = Date.now() + delays[attempt]!;
+        while (Date.now() < end) { /* busy wait */ }
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export function createWorkspaceLoader(config: WorkspaceConfig) {
   const dir = resolvePath(config.workspaceDir);
   const dailyDays = Math.min(
@@ -102,11 +119,15 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
   }
 
   function writeDailyMemory(content: string): void {
-    const filePath = join(dailyDir, `${todayDateString()}.md`);
-    const existing = safeRead(filePath) ?? "";
-    const combined = existing ? `${existing}\n\n${content}` : content;
-    writeFileSync(filePath, combined, "utf-8");
-    log.info({ file: filePath }, "daily memory written");
+    try {
+      const filePath = join(dailyDir, `${todayDateString()}.md`);
+      const existing = safeRead(filePath) ?? "";
+      const combined = existing ? `${existing}\n\n${content}` : content;
+      safeWrite(filePath, combined);
+      log.info({ file: filePath }, "daily memory written");
+    } catch (err) {
+      log.error({ err }, "failed to write daily memory");
+    }
   }
 
   function getPersonaPath(): string {
@@ -118,13 +139,21 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
   }
 
   function writePersona(content: string): void {
-    writeFileSync(join(dir, "PERSONA.md"), content, "utf-8");
-    log.info("PERSONA.md written");
+    try {
+      safeWrite(join(dir, "PERSONA.md"), content);
+      log.info("PERSONA.md written");
+    } catch (err) {
+      log.error({ err }, "failed to write PERSONA.md");
+    }
   }
 
   function writeUser(content: string): void {
-    writeFileSync(join(dir, "USER.md"), content, "utf-8");
-    log.info("USER.md written");
+    try {
+      safeWrite(join(dir, "USER.md"), content);
+      log.info("USER.md written");
+    } catch (err) {
+      log.error({ err }, "failed to write USER.md");
+    }
   }
 
   function hasPersona(): boolean {

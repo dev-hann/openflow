@@ -3,8 +3,15 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { dirname, join, resolve } from "node:path";
 import { createLogger } from "../utils/logger.js";
 import type { JsonSchemaProperty } from "../llm/types.js";
+import { withRetry, isRetryableHttpError } from "../utils/retry.js";
+import { createBrowserScreenshotTool, createBrowserExecuteTool } from "../agent/browser.js";
 
 const log = createLogger("tools");
+
+export interface ChannelSender {
+  sendMessage(chatId: number | string, text: string): Promise<void>;
+  sendPhoto(chatId: number | string, photo: string | Buffer, caption?: string): Promise<void>;
+}
 
 export interface ToolCall {
   id: string;
@@ -42,11 +49,15 @@ export interface ToolsConfig {
   webFetch: { enabled: boolean };
   webSearch: { enabled: boolean };
   httpRequest: { enabled: boolean };
+  browser: { enabled: boolean; timeout: number; headless: boolean };
+  requireConfirmation?: string[];
+  confirmationTimeout?: number;
 }
 
 export interface ToolExecutor {
   execute(call: ToolCall): Promise<ToolResult>;
   getDefinitions(): ToolDefinition[];
+  needsConfirmation(toolName: string): boolean;
 }
 
 function truncate(str: string, maxLen: number): string {
@@ -211,9 +222,14 @@ const webFetchTool: InternalTool = {
     const url = args.url as string;
     const maxLen = (args.maxLength as number) || 10_000;
     try {
-      const resp = await fetch(url, { redirect: "follow" } as never);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const html = await resp.text();
+      const html = await withRetry(
+        async () => {
+          const resp = await fetch(url, { redirect: "follow" } as never);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          return await resp.text();
+        },
+        { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
+      );
       const text = html
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -254,8 +270,14 @@ const webSearchTool: InternalTool = {
     const maxResults = (args.maxResults as number) || 5;
     try {
       const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-      const resp = await fetch(url);
-      const html = await resp.text();
+      const html = await withRetry(
+        async () => {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          return await resp.text();
+        },
+        { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
+      );
       const results: Array<{ title: string; snippet: string; href: string }> = [];
       const resultRegex = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
       let match: RegExpExecArray | null;
@@ -309,9 +331,15 @@ const httpClientTool: InternalTool = {
     }
 
     try {
-      const resp = await fetch(url, { method, headers, body, redirect: "follow" } as never);
-      const text = await resp.text();
-      return `Status: ${resp.status}\n${truncate(text, 10_000)}`;
+      const text = await withRetry(
+        async () => {
+          const resp = await fetch(url, { method, headers, body, redirect: "follow" } as never);
+          const respText = await resp.text();
+          return `Status: ${resp.status}\n${truncate(respText, 10_000)}`;
+        },
+        { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
+      );
+      return text;
     } catch (err) {
       throw new Error(`HTTP request failed: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -321,7 +349,7 @@ const httpClientTool: InternalTool = {
 export function createToolExecutor(
   config: ToolsConfig,
   workspace: string,
-  sendFn?: (chatId: number | string, text: string) => Promise<void>,
+  sender?: ChannelSender,
 ): ToolExecutor {
   const allTools: Map<string, InternalTool> = new Map();
 
@@ -344,8 +372,12 @@ export function createToolExecutor(
   if (config.webFetch.enabled) register(webFetchTool);
   if (config.webSearch.enabled) register(webSearchTool);
   if (config.httpRequest.enabled) register(httpClientTool);
+  if (config.browser.enabled) {
+    register(createBrowserScreenshotTool(workspace, config.browser));
+    register(createBrowserExecuteTool(workspace, config.browser));
+  }
 
-  if (sendFn) {
+  if (sender) {
     register({
       name: "send_message",
       definition: {
@@ -369,20 +401,72 @@ export function createToolExecutor(
       async execute(args: Record<string, unknown>): Promise<string> {
         const chatId = args.chatId as number;
         const text = args.text as string;
-        await sendFn(chatId, text);
+        await sender.sendMessage(chatId, text);
+        return "OK";
+      },
+    });
+
+    register({
+      name: "send_image",
+      definition: {
+        type: "function",
+        function: {
+          name: "send_image",
+          description: "Send an image via Telegram. Supports public URLs and local file paths within the workspace.",
+          parameters: {
+            type: "object",
+            properties: {
+              chatId: {
+                type: "number",
+                description: "Telegram chat ID to send to",
+              },
+              source: {
+                type: "string",
+                description: "Image source: a public URL (http/https) or a local file path relative to the workspace",
+              },
+              caption: {
+                type: "string",
+                description: "Optional caption for the image",
+              },
+            },
+            required: ["chatId", "source"],
+          },
+        },
+      },
+      async execute(args: Record<string, unknown>): Promise<string> {
+        const chatId = args.chatId as number;
+        const source = args.source as string;
+        const caption = args.caption as string | undefined;
+
+        if (source.startsWith("http://") || source.startsWith("https://")) {
+          await sender.sendPhoto(chatId, source, caption);
+          return "OK";
+        }
+
+        const path = validateWorkspacePath(source, workspace);
+        if (!existsSync(path)) throw new Error(`Image file not found: ${source}`);
+        const buffer = readFileSync(path);
+        await sender.sendPhoto(chatId, buffer, caption);
         return "OK";
       },
     });
   }
+
+  const requireConfirmation = config.requireConfirmation ?? [];
 
   return {
     getDefinitions(): ToolDefinition[] {
       return Array.from(allTools.values()).map((t) => t.definition);
     },
 
+    needsConfirmation(toolName: string): boolean {
+      return requireConfirmation.includes(toolName);
+    },
+
     async execute(call: ToolCall): Promise<ToolResult> {
       const tool = allTools.get(call.name);
       if (!tool) {
+        log.warn({ toolName: call.name }, "unknown tool requested");
         return {
           toolCallId: call.id,
           content: `Unknown tool: ${call.name}`,
@@ -390,12 +474,16 @@ export function createToolExecutor(
         };
       }
 
+      const startedAt = Date.now();
       try {
         const content = await tool.execute(call.arguments);
+        const duration = Date.now() - startedAt;
+        log.info({ toolName: call.name, duration, responseLength: content.length }, "tool execution completed");
         return { toolCallId: call.id, content, isError: false };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        log.error({ toolName: call.name, err: msg }, "tool execution failed");
+        const duration = Date.now() - startedAt;
+        log.error({ toolName: call.name, duration, err: msg }, "tool execution failed");
         return {
           toolCallId: call.id,
           content: `Tool error: ${msg}`,

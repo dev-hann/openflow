@@ -27,14 +27,12 @@
     "@clack/prompts": "^1.2.0",
     "@grammyjs/runner": "^2.0.3",
     "@grammyjs/transformer-throttler": "^1.2.1",
-    "better-sqlite3": "^11.9.1",
     "grammy": "^1.36.3",
     "pino": "^9.6.0",
     "undici": "^8.1.0",
     "zod": "^3.24.4"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.15.2",
     "oxlint": "^0.16.10",
     "tsdown": "^0.12.3",
@@ -47,7 +45,6 @@
   },
   "license": "MIT",
   "onlyBuiltDependencies": [
-    "better-sqlite3",
     "esbuild"
   ]
 }

@@ -1,8 +1,14 @@
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
+import { isSqliteBusy } from "../utils/retry.js";
 import type { ChatMessage, ToolCall } from "../llm/types.js";
+
+const log = createLogger("memory");
+
+const DB_RETRY_DELAYS = [100, 200, 400];
 
 export interface Session {
   id: string;
@@ -37,6 +43,8 @@ export interface MemoryStore {
   getMessages(sessionId: string, limit?: number): ChatMessage[];
   searchMessages(query: string, limit?: number): SearchResult[];
   buildContext(sessionId: string, maxSize: number): ChatMessage[];
+  trackChatId(chatId: number): void;
+  getChatIds(): number[];
   close(): void;
 }
 
@@ -59,6 +67,10 @@ const MIGRATIONS = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_messages_content ON messages(content)`,
+  `CREATE TABLE IF NOT EXISTS chat_ids (
+    chat_id INTEGER PRIMARY KEY,
+    updated_at INTEGER NOT NULL
+  )`,
 ];
 
 function generateId(): string {
@@ -75,12 +87,15 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     mkdirSync(dir, { recursive: true });
   }
 
-  let db: Database.Database;
+  let db: DatabaseSync;
   try {
-    db = new Database(dbPath);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
+    db = new DatabaseSync(dbPath);
+    db.exec("PRAGMA journal_mode = WAL");
+    db.exec("PRAGMA foreign_keys = ON");
+    db.exec("PRAGMA busy_timeout = 5000");
+    log.info({ dbPath }, "database opened");
   } catch (err) {
+    log.error({ dbPath, err }, "failed to open database");
     throw new OpenFlowError(`Failed to open database: ${dbPath}`, "DB_ERROR", err);
   }
 
@@ -90,8 +105,10 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       db.exec(sql);
     }
     db.exec("COMMIT");
+    log.info("database migration completed");
   } catch (err) {
     db.exec("ROLLBACK");
+    log.error({ err }, "database migration failed");
     throw new OpenFlowError("Database migration failed", "DB_MIGRATION_FAILED", err);
   }
 
@@ -127,6 +144,12 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     touchSession: db.prepare(
       "UPDATE sessions SET updated_at = ? WHERE id = ?",
     ),
+    upsertChatId: db.prepare(
+      "INSERT INTO chat_ids (chat_id, updated_at) VALUES (?, ?) ON CONFLICT(chat_id) DO UPDATE SET updated_at = excluded.updated_at",
+    ),
+    getChatIds: db.prepare(
+      "SELECT chat_id FROM chat_ids ORDER BY updated_at DESC",
+    ),
   };
 
   function rowToMessage(row: Record<string, unknown>): ChatMessage {
@@ -145,85 +168,133 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     return { role: role as ChatMessage["role"], content } as ChatMessage;
   }
 
+  function wrapDb<T>(label: string, fn: () => T): T {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= DB_RETRY_DELAYS.length; attempt++) {
+      try {
+        return fn();
+      } catch (err) {
+        lastErr = err;
+        if (attempt < DB_RETRY_DELAYS.length && isSqliteBusy(err)) {
+          const delay = DB_RETRY_DELAYS[attempt]!;
+          log.warn({ label, attempt, delay }, "database busy, retrying");
+          const end = Date.now() + delay;
+          while (Date.now() < end) {
+            // busy wait for sync SQLite
+          }
+          continue;
+        }
+        log.error({ label, err }, "database operation failed");
+        throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
+      }
+    }
+    throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", lastErr);
+  }
+
   return {
     createSession(title?: string): Session {
       const id = generateId();
       const now = nowMs();
-      stmts.insertSession.run(id, title ?? "New Session", now, now);
+      wrapDb("createSession", () => stmts.insertSession.run(id, title ?? "New Session", now, now));
+      log.info({ sessionId: id }, "session created");
       return { id, title: title ?? "New Session", createdAt: now, updatedAt: now };
     },
 
     listSessions(): Session[] {
-      return stmts.listSessions.all().map((row) => ({
-        id: (row as Record<string, unknown>).id as string,
-        title: (row as Record<string, unknown>).title as string,
-        createdAt: (row as Record<string, unknown>).created_at as number,
-        updatedAt: (row as Record<string, unknown>).updated_at as number,
-      }));
+      return wrapDb("listSessions", () =>
+        stmts.listSessions.all().map((row) => ({
+          id: (row as Record<string, unknown>).id as string,
+          title: (row as Record<string, unknown>).title as string,
+          createdAt: (row as Record<string, unknown>).created_at as number,
+          updatedAt: (row as Record<string, unknown>).updated_at as number,
+        })),
+      );
     },
 
     getSession(id: string): Session | null {
-      const row = stmts.getSession.get(id) as Record<string, unknown> | undefined;
-      if (!row) return null;
-      return {
-        id: row.id as string,
-        title: row.title as string,
-        createdAt: row.created_at as number,
-        updatedAt: row.updated_at as number,
-      };
+      return wrapDb("getSession", () => {
+        const row = stmts.getSession.get(id) as Record<string, unknown> | undefined;
+        if (!row) return null;
+        return {
+          id: row.id as string,
+          title: row.title as string,
+          createdAt: row.created_at as number,
+          updatedAt: row.updated_at as number,
+        };
+      });
     },
 
     deleteSession(id: string): void {
-      stmts.deleteSession.run(id);
+      wrapDb("deleteSession", () => stmts.deleteSession.run(id));
+      log.info({ sessionId: id }, "session deleted");
     },
 
     addMessage(params: AddMessageParams): void {
       const now = nowMs();
       const toolCallsJson = params.toolCalls ? JSON.stringify(params.toolCalls) : null;
-      stmts.insertMessage.run(
-        params.sessionId,
-        params.role,
-        params.content,
-        params.toolCallId ?? null,
-        toolCallsJson,
-        now,
-      );
-      stmts.touchSession.run(now, params.sessionId);
+      wrapDb("addMessage", () => {
+        stmts.insertMessage.run(
+          params.sessionId,
+          params.role,
+          params.content,
+          params.toolCallId ?? null,
+          toolCallsJson,
+          now,
+        );
+        stmts.touchSession.run(now, params.sessionId);
+      });
     },
 
     getMessages(sessionId: string, limit = 50): ChatMessage[] {
-      const rows = stmts.getMessages.all(sessionId, limit) as Array<Record<string, unknown>>;
-      return rows.reverse().map(rowToMessage);
+      return wrapDb("getMessages", () => {
+        const rows = stmts.getMessages.all(sessionId, limit) as Array<Record<string, unknown>>;
+        return rows.reverse().map(rowToMessage);
+      });
     },
 
     searchMessages(query: string, limit = 20): SearchResult[] {
-      const rows = stmts.searchMessages.all(`%${query}%`, limit) as Array<Record<string, unknown>>;
-      return rows.map((row) => {
-        const content = row.content as string;
-        const idx = content.toLowerCase().indexOf(query.toLowerCase());
-        const start = Math.max(0, idx - 40);
-        const end = Math.min(content.length, idx + query.length + 40);
-        return {
-          sessionId: row.session_id as string,
-          sessionTitle: row.session_title as string,
-          role: row.role as string,
-          content,
-          timestamp: row.created_at as number,
-          snippet: (start > 0 ? "..." : "") + content.slice(start, end) + (end < content.length ? "..." : ""),
-        };
+      return wrapDb("searchMessages", () => {
+        const rows = stmts.searchMessages.all(`%${query}%`, limit) as Array<Record<string, unknown>>;
+        return rows.map((row) => {
+          const content = row.content as string;
+          const idx = content.toLowerCase().indexOf(query.toLowerCase());
+          const start = Math.max(0, idx - 40);
+          const end = Math.min(content.length, idx + query.length + 40);
+          return {
+            sessionId: row.session_id as string,
+            sessionTitle: row.session_title as string,
+            role: row.role as string,
+            content,
+            timestamp: row.created_at as number,
+            snippet: (start > 0 ? "..." : "") + content.slice(start, end) + (end < content.length ? "..." : ""),
+          };
+        });
       });
     },
 
     buildContext(sessionId: string, maxSize: number): ChatMessage[] {
-      const countRow = stmts.countMessages.get(sessionId) as Record<string, unknown>;
-      const total = (countRow?.count ?? 0) as number;
-      const offset = Math.max(0, total - maxSize);
-      const rows = stmts.getMessagesOffset.all(sessionId, maxSize, offset) as Array<Record<string, unknown>>;
-      return rows.map(rowToMessage);
+      return wrapDb("buildContext", () => {
+        const countRow = stmts.countMessages.get(sessionId) as Record<string, unknown>;
+        const total = (countRow?.count ?? 0) as number;
+        const offset = Math.max(0, total - maxSize);
+        const rows = stmts.getMessagesOffset.all(sessionId, maxSize, offset) as Array<Record<string, unknown>>;
+        return rows.map(rowToMessage);
+      });
+    },
+
+    trackChatId(chatId: number): void {
+      wrapDb("trackChatId", () => stmts.upsertChatId.run(chatId, nowMs()));
+    },
+
+    getChatIds(): number[] {
+      return wrapDb("getChatIds", () =>
+        (stmts.getChatIds.all() as Array<Record<string, unknown>>).map((row) => row.chat_id as number),
+      );
     },
 
     close(): void {
       db.close();
+      log.info("database closed");
     },
   };
 }

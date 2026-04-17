@@ -101,6 +101,7 @@ export function createLlmClient(config: LlmConfig): LlmClient {
   ): Promise<unknown> {
     const active = getActiveConfig();
     const url = buildUrl(active.baseUrl, "/chat/completions");
+    const startedAt = Date.now();
     const payload = {
       model: active.model,
       max_tokens: config.maxTokens,
@@ -154,10 +155,16 @@ export function createLlmClient(config: LlmConfig): LlmClient {
         }
 
         if (onToken && response.body) {
-          return await parseSseStream(response.body, onToken);
+          const result = await parseSseStream(response.body, onToken);
+          const duration = Date.now() - startedAt;
+          log.info({ model: active.model, duration, streamed: true }, "LLM request completed");
+          return result;
         }
 
-        return (await response.json()) as unknown;
+        const json = (await response.json()) as unknown;
+        const duration = Date.now() - startedAt;
+        log.info({ model: active.model, duration, streamed: false }, "LLM request completed");
+        return json;
       } catch (err) {
         if (err instanceof OpenFlowError) throw err;
         const msg = err instanceof Error ? err.message : String(err);
@@ -286,7 +293,7 @@ async function parseSseStream(
           }
         }
       } catch {
-        // skip malformed SSE lines
+        log.warn({ line: trimmed.slice(0, 120) }, "malformed SSE line skipped");
       }
     }
   }

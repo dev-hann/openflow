@@ -120,6 +120,30 @@ export function editConfig(configPath?: string): void {
   execSync(`${editor} "${target}"`, { stdio: "inherit" });
 }
 
+export function updateCommands(commands: Record<string, unknown>): void {
+  const configPath = getConfigPath();
+  if (!existsSync(configPath)) return;
+
+  const raw = readFileSync(configPath, "utf-8");
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+
+  parsed.commands = commands;
+  writeFileSync(configPath, JSON.stringify(parsed, null, 2) + "\n", "utf-8");
+  log.info({ count: Object.keys(commands).length }, "commands config updated");
+
+  cachedConfig = null;
+  try {
+    loadConfig();
+  } catch {
+    cachedConfig = null;
+  }
+}
+
 export type ConfigChangeCallback = (newConfig: OpenFlowConfig) => void;
 
 export function watchConfig(onChange: ConfigChangeCallback): () => void {

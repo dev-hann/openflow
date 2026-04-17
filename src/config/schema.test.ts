@@ -29,6 +29,8 @@ describe("openFlowConfigSchema", () => {
     expect(result.tools.webFetch.enabled).toBe(true);
     expect(result.tools.webSearch.enabled).toBe(true);
     expect(result.tools.httpRequest.enabled).toBe(false);
+    expect(result.tools.requireConfirmation).toEqual([]);
+    expect(result.tools.confirmationTimeout).toBe(60_000);
     expect(result.logging.level).toBe("info");
   });
 
@@ -59,6 +61,8 @@ describe("openFlowConfigSchema", () => {
         webFetch: { enabled: false },
         webSearch: { enabled: false },
         httpRequest: { enabled: true },
+        requireConfirmation: ["shell", "write_file"],
+        confirmationTimeout: 30_000,
       },
       logging: { level: "debug" as const },
     };
@@ -69,6 +73,8 @@ describe("openFlowConfigSchema", () => {
     expect(result.agent.systemPrompt).toBe("You are helpful");
     expect(result.tools.shell.enabled).toBe(false);
     expect(result.tools.httpRequest.enabled).toBe(true);
+    expect(result.tools.requireConfirmation).toEqual(["shell", "write_file"]);
+    expect(result.tools.confirmationTimeout).toBe(30_000);
     expect(result.logging.level).toBe("debug");
   });
 

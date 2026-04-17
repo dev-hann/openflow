@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OpenFlowError } from "../utils/errors.js";
 
 function resolveEnvVar(value: string): string {
   const envVarPattern = /^\$\{([^}]+)\}$/;
@@ -8,7 +9,7 @@ function resolveEnvVar(value: string): string {
   }
   const envValue = process.env[match[1]];
   if (!envValue) {
-    throw new Error(`Environment variable "${match[1]}" is not set`);
+    throw new OpenFlowError(`Environment variable "${match[1]}" is not set`, "CONFIG_INVALID");
   }
   return envValue;
 }
@@ -43,6 +44,11 @@ export const openFlowConfigSchema = z.object({
       port: z.coerce.number().int().default(8787),
       secret: envString.optional(),
     }).default({}),
+    notify: z.object({
+      enabled: z.boolean().default(true),
+      onStart: z.string().default("🟢 OpenFlow가 시작되었습니다."),
+      onStop: z.string().default("🔴 OpenFlow가 종료됩니다."),
+    }).default({}),
   }),
   agent: z.object({
     systemPrompt: z.string().default(""),
@@ -65,7 +71,40 @@ export const openFlowConfigSchema = z.object({
       webFetch: z.object({ enabled: z.boolean().default(true) }).default({}),
       webSearch: z.object({ enabled: z.boolean().default(true) }).default({}),
       httpRequest: z.object({ enabled: z.boolean().default(false) }).default({}),
+      browser: z
+        .object({
+          enabled: z.boolean().default(false),
+          timeout: z.coerce.number().int().positive().default(30_000),
+          headless: z.boolean().default(true),
+        })
+        .default({}),
+      requireConfirmation: z.array(z.string()).default([]),
+      confirmationTimeout: z.coerce.number().int().positive().default(60_000),
     })
+    .default({}),
+  skills: z
+    .object({
+      enabled: z.boolean().default(true),
+      extraDirs: z.array(z.string()).default([]),
+      entries: z
+        .record(
+          z.object({
+            enabled: z.boolean().default(true),
+          }),
+        )
+        .default({}),
+    })
+    .default({}),
+  commands: z
+    .record(
+      z.object({
+        action: z.union([z.literal("shell"), z.literal("reply")]),
+        command: z.string().optional(),
+        text: z.string().optional(),
+        description: z.string().optional(),
+        timeout: z.coerce.number().int().positive().default(10_000),
+      }),
+    )
     .default({}),
   logging: z
     .object({

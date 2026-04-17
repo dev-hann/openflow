@@ -20,9 +20,10 @@ import { loadConfig, getConfigPath, resetConfigCache, watchConfig } from "./conf
 import type { OpenFlowConfig } from "./config/schema.js";
 import { createLlmClient } from "./llm/client.js";
 import { createMemoryStore } from "./memory/store.js";
-import { createToolExecutor } from "./tools/executor.js";
+import { createToolExecutor, type ChannelSender } from "./tools/executor.js";
 import { createAgentEngine } from "./agent/engine.js";
 import { createTelegramChannel } from "./channel/telegram.js";
+import type { ConfirmationHandler } from "./tools/confirmation.js";
 
 const log = createLogger("cli");
 
@@ -567,10 +568,19 @@ async function runSetupWizard(): Promise<OpenFlowConfig> {
       : [];
   }
 
-  // --- Step 7: Write config ---
+  // --- Step 7: Browser control (optional) ---
+  clackLog.step("Browser control (optional)");
+  const enableBrowser = guardCancel(
+    await confirm({
+      message: "Enable browser automation (Playwright)? Will auto-install on first use.",
+      initialValue: false,
+    }),
+  ) as boolean;
+
+  // --- Step 8: Write config ---
   const config: OpenFlowConfig = {
     llm: { baseUrl, apiKey, model, maxTokens: 4096, temperature: 0.7 },
-    telegram: { botToken, allowedUsers, streamingMode: "partial", errorPolicy: "once", groupEnabled: false, webhook: { enabled: false, host: "127.0.0.1", port: 8787 } },
+    telegram: { botToken, allowedUsers, streamingMode: "partial", errorPolicy: "once", groupEnabled: false, webhook: { enabled: false, host: "127.0.0.1", port: 8787 }, notify: { enabled: true, onStart: "🟢 OpenFlow가 시작되었습니다.", onStop: "🔴 OpenFlow가 종료됩니다." } },
     agent: {
       systemPrompt: "",
       maxToolRounds: 10,
@@ -583,7 +593,12 @@ async function runSetupWizard(): Promise<OpenFlowConfig> {
       webFetch: { enabled: true },
       webSearch: { enabled: true },
       httpRequest: { enabled: false },
+      browser: { enabled: enableBrowser, timeout: 30_000, headless: true },
+      requireConfirmation: ["shell"],
+      confirmationTimeout: 60_000,
     },
+    skills: { enabled: true, extraDirs: [], entries: {} },
+    commands: {},
     logging: { level: "info" },
   };
 
@@ -604,6 +619,7 @@ async function runSetupWizard(): Promise<OpenFlowConfig> {
   clackLog.info(`  Model:    ${model}`);
   clackLog.info(`  API Key:  ${formatKeyPreview(apiKey)}`);
   clackLog.info(`  Telegram: ${setupTelegram ? "configured" : "skipped"}`);
+  clackLog.info(`  Browser:  ${enableBrowser ? "enabled" : "disabled"}`);
   clackLog.info(`  Config:   ${configPath}`);
 
   outro("Setup complete! Run `openflow chat` to start chatting.");
@@ -631,21 +647,44 @@ function getSubCommand(argv: string[]): string {
 }
 
 async function runTelegramBot(config: OpenFlowConfig): Promise<void> {
+  const sender: ChannelSender = {
+    sendMessage: async () => {},
+    sendPhoto: async () => {},
+  };
+
+  const confirmationHandler: ConfirmationHandler = {
+    requestConfirmation: async () => ({ approved: true }),
+  };
+
   const llm = createLlmClient(config.llm);
   const memory = createMemoryStore(config.memory.dbPath);
-  const tools = createToolExecutor(config.tools, config.agent.workspace);
-  const agent = createAgentEngine({ llm, memory, tools, config: config.agent });
+  const tools = createToolExecutor(config.tools, config.agent.workspace, sender);
+  const agent = createAgentEngine({
+    llm,
+    memory,
+    tools,
+    config: { ...config.agent, skills: config.skills },
+    confirmationHandler,
+    confirmationTimeout: config.tools.confirmationTimeout,
+  });
 
   const channel = createTelegramChannel(
-    config.telegram,
+    { ...config.telegram, customCommands: config.commands },
     agent,
     (title: string) => memory.createSession(title),
     memory,
+    confirmationHandler,
   );
+
+  sender.sendMessage = (chatId, text) => channel.sendMessage(chatId, text);
+  sender.sendPhoto = (chatId, photo, caption) => channel.sendPhoto(chatId, photo, caption);
 
   const cleanup = async () => {
     log.info("shutting down...");
     unwatch();
+    if (config.telegram.notify?.enabled) {
+      await channel.notifyAll(config.telegram.notify.onStop);
+    }
     await channel.stop();
     memory.close();
     process.exit(0);
@@ -660,13 +699,16 @@ async function runTelegramBot(config: OpenFlowConfig): Promise<void> {
 
   log.info("starting OpenFlow telegram bot...");
   await channel.start();
+  if (config.telegram.notify?.enabled) {
+    await channel.notifyAll(config.telegram.notify.onStart);
+  }
 }
 
 async function runCliChat(config: OpenFlowConfig): Promise<void> {
   const llm = createLlmClient(config.llm);
   const memory = createMemoryStore(config.memory.dbPath);
   const tools = createToolExecutor(config.tools, config.agent.workspace);
-  const agent = createAgentEngine({ llm, memory, tools, config: config.agent });
+  const agent = createAgentEngine({ llm, memory, tools, config: { ...config.agent, skills: config.skills } });
 
   const session = memory.createSession("CLI Chat");
   log.info({ sessionId: session.id }, "CLI session created. Type /exit to quit.");

@@ -1,4 +1,4 @@
-import { Bot, type Context, InlineKeyboard } from "grammy";
+import { Bot, type Context, InlineKeyboard, InputFile } from "grammy";
 import { run, type RunOptions } from "@grammyjs/runner";
 import { apiThrottler } from "@grammyjs/transformer-throttler";
 import { createServer, type Server } from "node:http";
@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { SETUP_SYSTEM_PROMPT } from "../agent/setup-prompt.js";
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
+import { withRetry, isRetryableNetworkError } from "../utils/retry.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { AgentEngine } from "../agent/index.js";
 import { createTelegramFetch } from "./telegram/transport.js";
@@ -21,6 +22,9 @@ import {
   formatMediaDescription,
   type MediaInfo,
 } from "./telegram/media.js";
+import { executeCustomCommand, generateDescription, type CommandsConfig, type CustomCommand } from "../commands/custom-command.js";
+import { updateCommands } from "../config/loader.js";
+import type { ConfirmationHandler, ConfirmationResult } from "../tools/confirmation.js";
 
 const log = createLogger("channel");
 
@@ -41,6 +45,12 @@ export interface TelegramConfig {
   availableModels?: string[];
   currentModel?: string;
   onModelChange?: (model: string) => void;
+  notify?: {
+    enabled: boolean;
+    onStart: string;
+    onStop: string;
+  };
+  customCommands?: CommandsConfig;
 }
 
 export interface TelegramChannel {
@@ -48,6 +58,8 @@ export interface TelegramChannel {
   stop(): Promise<void>;
   sendMessage(chatId: number | string, text: string): Promise<void>;
   editMessage(chatId: number | string, messageId: number, text: string): Promise<void>;
+  sendPhoto(chatId: number | string, photo: string | Buffer, caption?: string): Promise<void>;
+  notifyAll(message: string): Promise<void>;
 }
 
 const STREAM_EDIT_INTERVAL_MS = 500;
@@ -124,6 +136,7 @@ export function createTelegramChannel(
   agentEngine: AgentEngine,
   createSession: (title: string) => { id: string },
   memoryStore?: MemoryStore,
+  confirmationHandler?: ConfirmationHandler,
 ): TelegramChannel {
   const telegramFetch = createTelegramFetch(config.proxy);
   const bot = new Bot(config.botToken, {
@@ -180,17 +193,27 @@ export function createTelegramChannel(
     if (!ctx.msg) return;
     if (!isAllowed(ctx.msg.from?.id ?? 0)) return;
 
-    await ctx.reply(
+    let text =
       "OpenFlow — Personal AI Assistant\n\n" +
-        "/new — Start a new session\n" +
-        "/reset — Reset current session\n" +
-        "/status — Show session info\n" +
-        "/compact — Summarize and compact context\n" +
-        "/history — Show recent messages\n" +
-        "/model — Change LLM model\n" +
-        "/help — Show this help\n\n" +
-        "Send any message to chat with the assistant.",
-    );
+      "/new — Start a new session\n" +
+      "/reset — Reset current session\n" +
+      "/status — Show session info\n" +
+      "/compact — Summarize and compact context\n" +
+      "/history — Show recent messages\n" +
+      "/model — Change LLM model\n" +
+      "/cmd — Manage custom commands\n" +
+      "/help — Show this help";
+
+    if (activeCommands.size > 0) {
+      text += "\n\nCustom commands:";
+      for (const [name, cmd] of activeCommands) {
+        text += `\n/${name} — ${generateDescription(cmd)}`;
+      }
+    }
+
+    text += "\n\nSend any message to chat with the assistant.";
+
+    await ctx.reply(text);
   });
 
   bot.command("status", async (ctx: Context) => {
@@ -281,6 +304,127 @@ export function createTelegramChannel(
     log.info({ model }, "model changed via inline keyboard");
   });
 
+  const builtInCommands = new Set(["new", "reset", "help", "status", "compact", "history", "model", "cmd"]);
+  const activeCommands = new Map<string, CustomCommand>();
+
+  for (const [name, cmd] of Object.entries(config.customCommands ?? {})) {
+    if (!builtInCommands.has(name)) {
+      activeCommands.set(name, cmd);
+    }
+  }
+
+  function registerCustomCommand(name: string): void {
+    bot.command(name, async (ctx: Context) => {
+      if (!ctx.msg) return;
+      if (!isAllowed(ctx.msg.from?.id ?? 0)) return;
+
+      const cmd = activeCommands.get(name);
+      if (!cmd) {
+        await ctx.reply(`/${name} has been removed.`);
+        return;
+      }
+
+      const result = await executeCustomCommand(cmd);
+      await ctx.reply(truncateMessage(result || "(no output)"));
+    });
+  }
+
+  for (const name of activeCommands.keys()) {
+    registerCustomCommand(name);
+  }
+
+  function persistCommands(): void {
+    const obj: Record<string, CustomCommand> = {};
+    for (const [k, v] of activeCommands) {
+      obj[k] = v;
+    }
+    updateCommands(obj);
+  }
+
+  bot.command("cmd", async (ctx: Context) => {
+    if (!ctx.msg) return;
+    if (!isAllowed(ctx.msg.from?.id ?? 0)) return;
+
+    const raw = (ctx.msg.text ?? "").replace(/^\/cmd@\w+\s*/, "/cmd ").trim();
+    const parts = raw.split(/\s+/);
+    const sub = parts[1]?.toLowerCase();
+
+    if (sub === "list" || !sub) {
+      if (activeCommands.size === 0) {
+        await ctx.reply("No custom commands. Use:\n/cmd add <name> shell <command>\n/cmd add <name> reply <text>");
+        return;
+      }
+      const lines = Array.from(activeCommands.entries()).map(
+        ([name, cmd]) => `/${name} — ${generateDescription(cmd)}`,
+      );
+      await ctx.reply(`Custom commands:\n${lines.join("\n")}`);
+      return;
+    }
+
+    if (sub === "add") {
+      const name = parts[2]?.toLowerCase();
+      const action = parts[3]?.toLowerCase();
+      if (!name || !action) {
+        await ctx.reply("Usage: /cmd add <name> shell <command>\n       /cmd add <name> reply <text>");
+        return;
+      }
+      if (builtInCommands.has(name)) {
+        await ctx.reply(`Cannot override built-in command: /${name}`);
+        return;
+      }
+      if (!/^[a-z0-9_]{1,32}$/.test(name)) {
+        await ctx.reply("Name must be 1-32 lowercase alphanumeric characters or underscores.");
+        return;
+      }
+      if (action !== "shell" && action !== "reply") {
+        await ctx.reply("Action must be 'shell' or 'reply'.");
+        return;
+      }
+      const value = parts.slice(4).join(" ");
+      if (!value) {
+        await ctx.reply("Missing command/text value.");
+        return;
+      }
+      const cmd: CustomCommand = {
+        action: action as "shell" | "reply",
+        timeout: 10_000,
+      };
+      if (action === "shell") {
+        cmd.command = value;
+      } else {
+        cmd.text = value;
+      }
+      const isNew = !activeCommands.has(name);
+      activeCommands.set(name, cmd);
+      if (isNew) {
+        registerCustomCommand(name);
+      }
+      persistCommands();
+      await ctx.reply(`✅ /${name} ${isNew ? "added" : "updated"}: ${generateDescription(cmd)}`);
+      log.info({ name, action }, "custom command added via /cmd");
+      return;
+    }
+
+    if (sub === "remove" || sub === "delete") {
+      const name = parts[2]?.toLowerCase();
+      if (!name) {
+        await ctx.reply("Usage: /cmd remove <name>");
+        return;
+      }
+      if (!activeCommands.has(name)) {
+        await ctx.reply(`/${name} not found.`);
+        return;
+      }
+      activeCommands.delete(name);
+      persistCommands();
+      await ctx.reply(`✅ /${name} removed.`);
+      log.info({ name }, "custom command removed via /cmd");
+      return;
+    }
+
+    await ctx.reply("Unknown subcommand. Use:\n/cmd add <name> shell <command>\n/cmd add <name> reply <text>\n/cmd remove <name>\n/cmd list");
+  });
+
   bot.on("message:text", async (ctx: Context) => {
     if (!ctx.msg?.text) return;
     const userId = ctx.msg.from?.id ?? 0;
@@ -305,6 +449,7 @@ export function createTelegramChannel(
     }
 
     const sessionId = getSessionId(chatId);
+    memoryStore?.trackChatId(chatId);
 
     const workspace = agentEngine.getWorkspace();
     const setupMode = !workspace.hasPersona();
@@ -324,6 +469,7 @@ export function createTelegramChannel(
       userMessage: ctx.msg.text,
       onToken: onToken.onToken,
       systemPromptOverride,
+      chatId,
     });
 
     await onToken.flush();
@@ -332,9 +478,9 @@ export function createTelegramChannel(
       ? truncateMessage(result.content || "(no response)")
       : errorPolicy.shouldShow(result.error.code ?? "UNKNOWN")
         ? truncateMessage(`Error: ${result.error.message}`)
-        : null;
+        : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
-    if (!finalText?.trim()) return;
+    if (!finalText.trim()) return;
 
     try {
       await onToken.finalize(finalText);
@@ -365,6 +511,7 @@ export function createTelegramChannel(
       const description = formatMediaDescription(media);
 
       log.info({ chatId, mediaType: media.type, fileName: media.fileName }, "media received");
+      memoryStore?.trackChatId(chatId);
 
       const result = await agentEngine.handleMessage({
         sessionId,
@@ -373,7 +520,9 @@ export function createTelegramChannel(
 
       const replyText = result.type === "text"
         ? truncateMessage(result.content || "(no response)")
-        : truncateMessage(`Error: ${result.error.message}`);
+        : errorPolicy.shouldShow(result.error.code ?? "UNKNOWN")
+          ? truncateMessage(`Error: ${result.error.message}`)
+          : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 
       try {
         await ctx.reply(replyText);
@@ -386,6 +535,71 @@ export function createTelegramChannel(
   bot.catch((err: unknown) => {
     log.error({ err }, "bot middleware error");
   });
+
+  const pendingConfirmations = new Map<string, {
+    resolve: (result: ConfirmationResult) => void;
+    timer: ReturnType<typeof setTimeout>;
+  }>();
+
+  bot.callbackQuery(/^confirm:([0-9a-f-]+):(approve|deny)$/, async (ctx) => {
+    const match = /^confirm:([0-9a-f-]+):(approve|deny)$/.exec(ctx.callbackQuery.data ?? "");
+    if (!match) { await ctx.answerCallbackQuery(); return; }
+
+    const id = match[1];
+    const action = match[2];
+    if (!id || !action) { await ctx.answerCallbackQuery(); return; }
+    const entry = pendingConfirmations.get(id);
+    if (!entry) {
+      await ctx.answerCallbackQuery({ text: "만료된 요청입니다" });
+      return;
+    }
+    clearTimeout(entry.timer);
+    pendingConfirmations.delete(id);
+    entry.resolve({ approved: action === "approve" });
+    await ctx.answerCallbackQuery({ text: action === "approve" ? "승인됨" : "거부됨" });
+    try {
+      const originalText = ctx.callbackQuery.message?.text ?? "";
+      const suffix = action === "approve" ? "\n\n✅ 승인됨" : "\n\n❌ 거부됨";
+      await ctx.editMessageText(truncateMessage(originalText + suffix));
+    } catch {
+      // message edit may fail, ignore
+    }
+  });
+
+  if (confirmationHandler) {
+    confirmationHandler.requestConfirmation = async (request) => {
+      const id = crypto.randomUUID();
+      const timeout = request.timeoutMs || 60_000;
+      const argsPreview = formatToolArgsForConfirmation(request.toolName, request.toolArgs);
+      const message =
+        "⚠️ 확인이 필요한 작업입니다:\n\n" +
+        `도구: ${request.toolName}\n` +
+        `${argsPreview}\n\n` +
+        "이 작업을 승인하시겠습니까?\n" +
+        `(${Math.round(timeout / 1000)}초 내 응답이 없으면 자동 승인됩니다)`;
+
+      const keyboard = new InlineKeyboard()
+        .text("✅ 승인", `confirm:${id}:approve`)
+        .text("❌ 거부", `confirm:${id}:deny`);
+
+      try {
+        await bot.api.sendMessage(Number(request.chatId), message, { reply_markup: keyboard });
+      } catch (err) {
+        log.error({ err, chatId: request.chatId }, "failed to send confirmation message");
+        return { approved: true };
+      }
+
+      return new Promise<ConfirmationResult>((resolve) => {
+        const timer = setTimeout(() => {
+          pendingConfirmations.delete(id);
+          log.info({ id, toolName: request.toolName }, "confirmation timed out, auto-approving");
+          resolve({ approved: true });
+        }, timeout);
+        timer.unref();
+        pendingConfirmations.set(id, { resolve, timer });
+      });
+    };
+  }
 
   return {
     async start(): Promise<void> {
@@ -412,7 +626,7 @@ export function createTelegramChannel(
       }
 
       try {
-        await bot.api.setMyCommands([
+        const commands = [
           { command: "new", description: "Start a new session" },
           { command: "reset", description: "Reset current session" },
           { command: "status", description: "Show session info" },
@@ -420,7 +634,12 @@ export function createTelegramChannel(
           { command: "history", description: "Show recent messages" },
           { command: "model", description: "Change LLM model" },
           { command: "help", description: "Show help" },
-        ]);
+          { command: "cmd", description: "Manage custom commands" },
+        ];
+        for (const [name, cmd] of activeCommands) {
+          commands.push({ command: name, description: generateDescription(cmd) });
+        }
+        await bot.api.setMyCommands(commands);
       } catch {
         // non-critical
       }
@@ -449,11 +668,47 @@ export function createTelegramChannel(
     },
 
     async sendMessage(chatId: number | string, text: string): Promise<void> {
-      await bot.api.sendMessage(Number(chatId), truncateMessage(text));
+      await withRetry(() => bot.api.sendMessage(Number(chatId), truncateMessage(text)), {
+        delays: [500, 1000, 2000],
+        shouldRetry: (err) => {
+          if (isRetryableNetworkError(err)) return true;
+          if (err instanceof Error && /429|too many requests/i.test(err.message)) return true;
+          return false;
+        },
+      });
     },
 
     async editMessage(chatId: number | string, messageId: number, text: string): Promise<void> {
-      await bot.api.editMessageText(Number(chatId), messageId, truncateMessage(text));
+      await withRetry(() => bot.api.editMessageText(Number(chatId), messageId, truncateMessage(text)), {
+        delays: [500, 1000, 2000],
+        shouldRetry: (err) => {
+          if (isRetryableNetworkError(err)) return true;
+          if (err instanceof Error && /429|too many requests/i.test(err.message)) return true;
+          return false;
+        },
+      });
+    },
+
+    async sendPhoto(chatId: number | string, photo: string | Buffer, caption?: string): Promise<void> {
+      const input = typeof photo === "string" ? photo : new InputFile(photo, "image.png");
+      await bot.api.sendPhoto(Number(chatId), input, { caption: caption ? truncateMessage(caption) : undefined });
+    },
+
+    async notifyAll(message: string): Promise<void> {
+      if (!config.notify?.enabled) return;
+      const chatIds = memoryStore?.getChatIds() ?? [];
+      if (chatIds.length === 0) return;
+      log.info({ count: chatIds.length }, "notifyAll: sending notification");
+      for (const chatId of chatIds) {
+        try {
+          await withRetry(() => bot.api.sendMessage(chatId, truncateMessage(message)), {
+            delays: [500, 1000],
+            shouldRetry: (err) => isRetryableNetworkError(err),
+          });
+        } catch (err) {
+          log.warn({ err, chatId }, "notifyAll: failed to send to chat");
+        }
+      }
     },
   };
 
@@ -462,11 +717,13 @@ export function createTelegramChannel(
     const host = wh.host ?? "127.0.0.1";
     const port = wh.port ?? 8787;
 
-    await bot.api.setWebhook(wh.url!, {
-      secret_token: wh.secret,
-      allowed_updates: ["message"],
-      drop_pending_updates: true,
-    });
+    await withRetry(() =>
+      bot.api.setWebhook(wh.url!, {
+        secret_token: wh.secret,
+        allowed_updates: ["message"],
+        drop_pending_updates: true,
+      }),
+    );
 
     webhookServer = createServer(async (req, res) => {
       if (req.method !== "POST") {
@@ -617,6 +874,22 @@ function sleep(ms: number): Promise<void> {
     const timer = setTimeout(resolve, ms);
     timer.unref();
   });
+}
+
+function formatToolArgsForConfirmation(toolName: string, args: Record<string, unknown>): string {
+  const preview = (s: string, max: number) => s.length <= max ? s : s.slice(0, max) + "...";
+  switch (toolName) {
+    case "shell":
+      return `명령: ${preview(String(args.command ?? ""), 200)}`;
+    case "write_file":
+      return `경로: ${String(args.path ?? "")}\n내용: ${preview(String(args.content ?? ""), 100)}`;
+    case "http_request":
+      return `${String(args.method ?? "GET").toUpperCase()} ${String(args.url ?? "")}`;
+    case "browser_execute":
+      return `스크립트: ${preview(String(args.script ?? ""), 200)}`;
+    default:
+      return `인자: ${preview(JSON.stringify(args), 200)}`;
+  }
 }
 
 type StreamingHandler = {
