@@ -3,6 +3,7 @@ import { useWebSocket } from "./useWebSocket";
 import { useApiClient } from "./use-api-client";
 import { useChatStore } from "../store/chat";
 import { useSessionsStore } from "../store/sessions";
+import { buildSessionInfo } from "../utils/session";
 
 export function useChat() {
   const { send, reconnect: wsReconnect } = useWebSocket();
@@ -23,14 +24,7 @@ export function useChat() {
 
     try {
       const session = await client.api.createSession(client.token);
-      const now = Date.now();
-      addSession({
-        id: session.id,
-        title: session.title,
-        createdAt: now,
-        updatedAt: now,
-        messageCount: 0,
-      });
+      addSession(buildSessionInfo(session));
       setActiveSessionId(session.id);
       return session.id;
     } catch {

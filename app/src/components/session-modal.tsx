@@ -4,7 +4,9 @@ import { Text, List, Button, Appbar, useTheme, Divider, TouchableRipple, Icon } 
 import { useSessionsStore } from "../store/sessions";
 import { useApiClient } from "../hooks/use-api-client";
 import type { SessionInfo } from "../types/protocol";
-import { SPACING, BORDER_RADIUS } from "../constants/theme";
+import { SPACING } from "../constants/theme";
+import { formatRelativeTime } from "../utils/format-time";
+import { buildSessionInfo } from "../utils/session";
 
 interface SessionModalProps {
   visible: boolean;
@@ -25,8 +27,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
     if (!client) return;
     try {
       const session = await client.api.createSession(client.token);
-      const now = Date.now();
-      addSession({ id: session.id, title: session.title, createdAt: now, updatedAt: now, messageCount: 0 });
+      addSession(buildSessionInfo(session));
       onSwitchSession(session.id);
       onClose();
     } catch {
@@ -54,13 +55,6 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
     [getApi, removeSession, activeSessionId, onSwitchSession],
   );
 
-  const formatTime = (ts: number): string => {
-    const d = new Date(ts);
-    const now = new Date();
-    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-  };
-
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -84,7 +78,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
                 <List.Item
                   title={item.title}
                   titleStyle={{ fontWeight: isActive ? "600" : "400" }}
-                  description={`${formatTime(item.updatedAt)} · ${item.messageCount}개`}
+                  description={`${formatRelativeTime(item.updatedAt)} · ${item.messageCount}개`}
                   left={(props) => (
                     <List.Icon
                       {...props}

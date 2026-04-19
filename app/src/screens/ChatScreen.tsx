@@ -1,30 +1,80 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
-import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
+import React, { useState, useCallback, useLayoutEffect, useRef } from "react";
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform, FlatList } from "react-native";
+import { Text, Button, useTheme, Icon, Chip, IconButton } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
 import { MessageList } from "../components/MessageBubble";
 import { InputBar } from "../components/InputBar";
-import { SessionModal } from "../drawer/DrawerContent";
+import { KeyboardSafeView } from "../components/KeyboardSafeView";
+import { SessionModal } from "../components/session-modal";
 import { useChatStore } from "../store/chat";
 import { useAuthStore } from "../store/auth";
 import { useSessionsStore } from "../store/sessions";
 import { useChat } from "../hooks/useChat";
+import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
+
+const SUGGESTIONS = [
+  "오늘 할 일 정리해줘",
+  "코딩 문제 도와줘",
+  "번역해줘",
+  "요리 레시피 추천해줘",
+  "재미있는 이야기 해줘",
+  "최신 기술 트렌드 알려줘",
+];
 
 export function ChatScreen() {
-  const colors = useTheme();
+  const theme = useTheme();
+  const navigation = useNavigation();
   const [sessionModalVisible, setSessionModalVisible] = useState(false);
+  const [scrolledUp, setScrolledUp] = useState(false);
+  const listRef = useRef<FlatList>(null);
   const messages = useChatStore((s) => s.messages);
   const isSending = useChatStore((s) => s.isSending);
   const isConnected = useAuthStore((s) => s.isConnected);
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
-  const { sendMessage } = useChat();
+  const sessions = useSessionsStore((s) => s.sessions);
+  const { sendMessage, switchSession, reconnect } = useChat();
+
+  const activeSession = sessions.find((s) => s.id === activeSessionId);
+  const sessionTitle = activeSession?.title ?? "새 대화";
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <TouchableOpacity
+          style={styles.headerTitle}
+          onPress={() => setSessionModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Text
+            variant="titleMedium"
+            numberOfLines={1}
+            style={[styles.headerTitleText, { color: theme.colors.onSurface }]}
+          >
+            {sessionTitle}
+          </Text>
+          <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, sessionTitle, theme]);
+
+  const handleSuggestion = useCallback((text: string) => {
+    sendMessage(text);
+  }, [sendMessage]);
+
+  const handleScrollToEnd = useCallback(() => {
+    listRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   if (!storedAuth) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <Text style={{ fontSize: 40, marginBottom: SPACING.md }}>🔗</Text>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>서버에 연결되지 않았습니다</Text>
-        <Text style={[styles.emptyHint, { color: colors.textSecondary }]}>
+      <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+          <Icon source="link-variant-off" size={32} color={theme.colors.primary} />
+        </View>
+        <Text variant="titleMedium" style={styles.disconnectedTitle}>서버에 연결되지 않았습니다</Text>
+        <Text variant="bodyMedium" style={[styles.disconnectedSubtitle, { color: theme.colors.onSurfaceVariant }]}>
           설정 탭에서 서버에 연결하세요
         </Text>
       </View>
@@ -33,97 +83,90 @@ export function ChatScreen() {
 
   if (!isConnected) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.emptyHint, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+      <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text variant="bodyMedium" style={[styles.connectingText, { color: theme.colors.onSurfaceVariant }]}>
           서버에 연결 중...
         </Text>
+        <Button mode="outlined" onPress={reconnect} style={styles.reconnectButton} icon="refresh">
+          다시 연결
+        </Button>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {activeSessionId && (
-        <TouchableOpacity
-          style={[styles.sessionBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
-          onPress={() => setSessionModalVisible(true)}
-        >
-          <Text style={[styles.sessionBarText, { color: colors.textSecondary }]}>
-            세션: {activeSessionId.slice(0, 8)}...
-          </Text>
-          <Text style={[styles.sessionBarAction, { color: colors.primary }]}>전환</Text>
-        </TouchableOpacity>
-      )}
+    <KeyboardSafeView style={{ backgroundColor: theme.colors.background }} offset={Platform.OS === "ios" ? 56 : 0}>
       {messages.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={{ fontSize: 48, marginBottom: SPACING.lg }}>🤖</Text>
-          <Text style={[styles.welcomeText, { color: colors.text }]}>OpenFlow에 오신 것을 환영합니다!</Text>
-          <Text style={[styles.emptyHint, { color: colors.textSecondary }]}>
-            무엇이든 물어보세요.
+          <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Icon source="robot-happy-outline" size={40} color={theme.colors.primary} />
+          </View>
+          <Text variant="headlineSmall" style={styles.emptyHeadline}>
+            무엇이든 물어보세요
           </Text>
+          <Text variant="bodyMedium" style={[styles.emptySubtitle, { color: theme.colors.onSurfaceVariant }]}>
+            아래의 추천 질문을 선택하거나{"\n"}직접 메시지를 입력하세요
+          </Text>
+          <View style={styles.suggestionGrid}>
+            {SUGGESTIONS.map((s) => (
+              <Chip
+                key={s}
+                mode="outlined"
+                onPress={() => handleSuggestion(s)}
+                style={[styles.suggestionChip, { borderColor: theme.colors.outline }]}
+                textStyle={[styles.suggestionChipText, { color: theme.colors.onSurface }]}
+              >
+                {s}
+              </Chip>
+            ))}
+          </View>
         </View>
       ) : (
-        <MessageList messages={messages} />
+        <View style={styles.messageContainer}>
+          <MessageList ref={listRef} messages={messages} onScrollStateChange={setScrolledUp} />
+          {scrolledUp && (
+            <IconButton
+              icon="chevron-double-down"
+              size={20}
+              iconColor={theme.colors.onPrimary}
+              containerColor={theme.colors.primary}
+              style={[styles.scrollFab, { ...SHADOWS.md }]}
+              onPress={handleScrollToEnd}
+            />
+          )}
+        </View>
       )}
       {isSending && (
-        <View style={[styles.streamingBar, { backgroundColor: colors.surface }]}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[styles.streamingText, { color: colors.textSecondary }]}>생각 중...</Text>
+        <View style={[styles.streamingBar, { backgroundColor: theme.colors.surface }]}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <Text variant="labelMedium" style={[styles.streamingText, { color: theme.colors.onSurfaceVariant }]}>
+            생각 중...
+          </Text>
         </View>
       )}
       <InputBar onSend={sendMessage} disabled={isSending} />
-      <SessionModal visible={sessionModalVisible} onClose={() => setSessionModalVisible(false)} />
-    </View>
+      <SessionModal visible={sessionModalVisible} onClose={() => setSessionModalVisible(false)} onSwitchSession={switchSession} />
+    </KeyboardSafeView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: SPACING.xl,
-  },
-  welcomeText: {
-    ...TYPOGRAPHY.title,
-    marginBottom: SPACING.sm,
-    textAlign: "center",
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.subtitle,
-    marginBottom: SPACING.xs,
-  },
-  emptyHint: {
-    ...TYPOGRAPHY.body,
-  },
-  sessionBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderBottomWidth: 1,
-  },
-  sessionBarText: {
-    ...TYPOGRAPHY.caption,
-  },
-  sessionBarAction: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: "600",
-  },
-  streamingBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xs,
-  },
-  streamingText: {
-    ...TYPOGRAPHY.caption,
-    fontStyle: "italic",
-  },
+  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: SPACING.xl },
+  emptyIconWrap: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center" },
+  headerTitle: { flexDirection: "row", alignItems: "center", gap: 2 },
+  headerTitleText: { fontWeight: "600", maxWidth: 200 },
+  disconnectedTitle: { marginTop: SPACING.lg },
+  disconnectedSubtitle: { marginTop: SPACING.xs, textAlign: "center" },
+  connectingText: { marginTop: SPACING.md },
+  reconnectButton: { marginTop: SPACING.md },
+  emptyHeadline: { marginTop: SPACING.lg, fontWeight: "600" },
+  emptySubtitle: { marginTop: SPACING.xs, textAlign: "center" },
+  suggestionGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SPACING.sm, marginTop: SPACING.xl, paddingHorizontal: SPACING.md },
+  suggestionChip: { borderRadius: BORDER_RADIUS.xl },
+  suggestionChipText: { fontSize: 13 },
+  messageContainer: { flex: 1 },
+  streamingBar: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2 },
+  streamingText: {},
+  scrollFab: { position: "absolute", bottom: 16, right: 16, borderRadius: 20, margin: 0 },
 });

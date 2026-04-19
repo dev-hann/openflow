@@ -48,6 +48,7 @@ export function SettingsScreen({ navigation }: Props) {
       setCurrentModel(modelInfo.current);
       setProviders(providerInfo.providers, providerInfo.activeProviderId);
     } catch {
+      Alert.alert("오류", "데이터를 불러오지 못했습니다.");
       return;
     }
   }, [getApi, setSessions, setAvailableModels, setCurrentModel, setProviders]);
@@ -60,7 +61,7 @@ export function SettingsScreen({ navigation }: Props) {
       { text: "취소", style: "cancel" },
       { text: "변경", style: "destructive", onPress: async () => {
         const client = await getApi();
-        if (client) { try { await client.api.unpair(client.token); } catch { return; } }
+        if (client) { try { await client.api.unpair(client.token); } catch { /* unpair best-effort */ } }
         await clearAuth();
         clearAll();
         setSessions([]);
