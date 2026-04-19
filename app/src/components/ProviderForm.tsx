@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -18,7 +18,8 @@ import { VerifySection } from "./verify-section";
 import type { ProviderPreset } from "../constants/presets";
 import { useAuthStore } from "../store/auth";
 import { createApiClient, normalizeUrl } from "../services/api";
-import { SPACING, BORDER_RADIUS } from "../constants/theme";
+import { SPACING } from "../constants/theme";
+import { useProviderVerify } from "../hooks/use-provider-verify";
 
 interface ProviderFormProps {
   onComplete: () => void;
@@ -52,61 +53,23 @@ export function ProviderForm({
   const [showApiKey, setShowApiKey] = useState(false);
   const [model, setModel] = useState(editProvider?.model ?? "");
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<{
-    ok: boolean;
-    models?: string[];
-    error?: string;
-  } | null>(null);
 
-  useEffect(() => {
-    setVerifyResult(null);
-  }, [baseUrl]);
+  const { verifying, verifyResult, handleVerify } = useProviderVerify(
+    baseUrl,
+    apiKey,
+  );
 
   function handleSelectPreset(preset: ProviderPreset): void {
     setSelectedPreset(preset);
     if (preset.baseUrl) setBaseUrl(preset.baseUrl);
     if (!name) setName(preset.label.split(" (")[0]);
-    setVerifyResult(null);
     setPresetMenuVisible(false);
   }
 
-  async function handleVerify(): Promise<void> {
-    const trimmedUrl = normalizeUrl(baseUrl);
-    if (!trimmedUrl) {
-      Alert.alert("오류", "Base URL을 입력하세요.");
-      return;
-    }
-    setVerifying(true);
-    setVerifyResult(null);
-    try {
-      const headers: Record<string, string> = {};
-      if (apiKey.trim()) headers.Authorization = `Bearer ${apiKey.trim()}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10_000);
-      const resp = await fetch(`${trimmedUrl}/models`, {
-        headers,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (resp.ok) {
-        const data = (await resp.json()) as { data?: Array<{ id: string }> };
-        const models = data.data?.map((m) => m.id) ?? [];
-        setVerifyResult({ ok: true, models });
-        if (models.length > 0 && !model) setModel(models[0]);
-      } else {
-        setVerifyResult({ ok: false, error: `HTTP ${resp.status}` });
-      }
-    } catch (err) {
-      const msg =
-        err instanceof DOMException && err.name === "AbortError"
-          ? "시간 초과 (10초)"
-          : err instanceof Error
-            ? err.message
-            : "연결 실패";
-      setVerifyResult({ ok: false, error: msg });
-    } finally {
-      setVerifying(false);
+  async function handleVerifyAndSelect(): Promise<void> {
+    const result = await handleVerify();
+    if (result && result.models.length > 0 && !model) {
+      setModel(result.models[0]);
     }
   }
 
@@ -251,7 +214,7 @@ export function ProviderForm({
               verifyResult={verifyResult}
               selectedModel={model}
               baseUrl={baseUrl}
-              onVerify={handleVerify}
+              onVerify={handleVerifyAndSelect}
               onSelectModel={setModel}
             />
             <TextInput

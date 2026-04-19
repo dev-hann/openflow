@@ -24,6 +24,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
   const removeSession = useSessionsStore((s) => s.removeSession);
   const getApi = useApiClient();
   const [creating, setCreating] = useState(false);
+  const creatingRef = React.useRef(false);
 
   const themedStyles = useMemo(() => ({
     modalBg: { backgroundColor: theme.colors.background },
@@ -33,10 +34,11 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
   }), [theme.colors]);
 
   const handleNewSession = React.useCallback(async () => {
-    if (creating) return;
+    if (creatingRef.current) return;
+    creatingRef.current = true;
     setCreating(true);
     const client = await getApi();
-    if (!client) { setCreating(false); return; }
+    if (!client) { creatingRef.current = false; setCreating(false); return; }
     try {
       const session = await client.api.createSession(client.token);
       addSession(buildSessionInfo(session));
@@ -45,9 +47,10 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
     } catch {
       Alert.alert("오류", "세션 생성에 실패했습니다.");
     } finally {
+      creatingRef.current = false;
       setCreating(false);
     }
-  }, [creating, getApi, addSession, onSwitchSession, onClose]);
+  }, [getApi, addSession, onSwitchSession, onClose]);
 
   const handleDelete = React.useCallback(
     (session: SessionInfo) => {

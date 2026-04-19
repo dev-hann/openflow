@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import { Text, List, Button, Surface, useTheme, TouchableRipple, Icon, Menu, Divider } from "react-native-paper";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { useAuthStore } from "../store/auth";
 import { useSessionsStore } from "../store/sessions";
 import { useSettingsStore } from "../store/settings";
@@ -53,7 +54,7 @@ export function SettingsScreen({ navigation }: Props) {
     }
   }, [getApi, setSessions, setAvailableModels, setCurrentModel, setProviders]);
 
-  useEffect(() => { if (storedAuth) refreshData(); }, [storedAuth, refreshData]);
+  useFocusEffect(useCallback(() => { if (storedAuth) refreshData(); }, [storedAuth, refreshData]));
 
   const handleChangeServer = useCallback((): void => {
     if (!storedAuth) return;

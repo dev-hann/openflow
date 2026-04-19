@@ -1,13 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { Text, Button, Chip, useTheme } from "react-native-paper";
 import { SPACING } from "../constants/theme";
+import type { VerifyResult } from "../hooks/use-provider-verify";
 
-interface VerifyResult {
-  ok: boolean;
-  models?: string[];
-  error?: string;
-}
+export type { VerifyResult };
 
 interface VerifySectionProps {
   verifying: boolean;
@@ -28,6 +25,20 @@ export function VerifySection({
 }: VerifySectionProps) {
   const theme = useTheme();
 
+  const resultStyles = useMemo(() => ({
+    ok: {
+      bg: theme.colors.tertiaryContainer,
+      text: theme.colors.tertiary,
+    },
+    fail: {
+      bg: theme.colors.errorContainer,
+      text: theme.colors.error,
+    },
+  }), [theme.colors]);
+
+  const isOk = verifyResult?.ok ?? false;
+  const colors = isOk ? resultStyles.ok : resultStyles.fail;
+
   return (
     <>
       <Button
@@ -44,20 +55,12 @@ export function VerifySection({
         <View
           style={[
             styles.verifyResult,
-            {
-              backgroundColor: verifyResult.ok
-                ? theme.colors.tertiaryContainer
-                : theme.colors.errorContainer,
-            },
+            { backgroundColor: colors.bg },
           ]}
         >
           <Text
             variant="labelLarge"
-            style={{
-              color: verifyResult.ok
-                ? theme.colors.tertiary
-                : theme.colors.error,
-            }}
+            style={{ color: colors.text }}
           >
             {verifyResult.ok
               ? `연결 성공 (${verifyResult.models?.length ?? 0}개 모델)`
