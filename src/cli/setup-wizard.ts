@@ -47,6 +47,84 @@ export function guardCancel<T>(value: T | symbol): T {
   return value;
 }
 
+async function selectModel(baseUrl: string, apiKey: string, defaultModel: string): Promise<string> {
+  const s = spinner();
+  s.start("Fetching available models...");
+  const remoteModels = await fetchModels(baseUrl, apiKey);
+  s.stop(remoteModels.length > 0 ? `Found ${remoteModels.length} models.` : "Could not fetch model list.");
+
+  if (remoteModels.length > 0) {
+    const selected = guardCancel(
+      await select({
+        message: "Select model",
+        options: [
+          ...remoteModels.map((m) => ({
+            value: m,
+            label: m,
+            hint: m === defaultModel ? "recommended" : undefined,
+          })),
+          { value: "__custom__", label: "Enter model name manually", hint: "type a custom model ID" },
+        ],
+        initialValue: remoteModels.includes(defaultModel) ? defaultModel : remoteModels[0],
+      }),
+    ) as string;
+
+    if (selected === "__custom__") {
+      return guardCancel(
+        await text({
+          message: "Model name",
+          placeholder: defaultModel,
+          validate: (v) => (!v?.trim() ? "Model name is required" : undefined),
+        }),
+      ) as string;
+    }
+    return selected;
+  }
+
+  return guardCancel(
+    await text({
+      message: "Model name",
+      initialValue: defaultModel || undefined,
+      placeholder: "e.g. gpt-4o, glm-4-flash",
+      validate: (v) => (!v?.trim() ? "Model name is required" : undefined),
+    }),
+  ) as string;
+}
+
+async function verifyEndpoint(baseUrl: string, apiKey: string, model: string): Promise<void> {
+  const shouldVerify = guardCancel(
+    await confirm({
+      message: "Verify connection to LLM endpoint now?",
+      initialValue: true,
+    }),
+  ) as boolean;
+
+  if (!shouldVerify) return;
+
+  const s = spinner();
+  s.start("Verifying endpoint...");
+  const result = await verifyLlmEndpoint(baseUrl, apiKey, model);
+  if (result.ok) {
+    s.stop("Connection verified successfully.");
+    return;
+  }
+
+  s.stop(`Verification failed${result.status ? ` (HTTP ${result.status})` : ""}.`);
+  clackLog.warn(
+    `Could not verify endpoint. The setup will continue, but you may need to check your credentials.\n  Error: ${result.error ?? "unknown"}`,
+  );
+  const proceed = guardCancel(
+    await confirm({
+      message: "Continue anyway?",
+      initialValue: true,
+    }),
+  ) as boolean;
+  if (!proceed) {
+    cancel("Setup cancelled.");
+    process.exit(0);
+  }
+}
+
 export async function runSetupWizard(): Promise<OpenFlowConfig> {
   const configPath = getConfigPath();
   const configDir = dirname(configPath);
@@ -169,82 +247,9 @@ export async function runSetupWizard(): Promise<OpenFlowConfig> {
     ) as string;
   }
 
-  let model: string;
-  {
-    const s = spinner();
-    s.start("Fetching available models...");
-    const remoteModels = await fetchModels(baseUrl, apiKey);
-    s.stop(remoteModels.length > 0 ? `Found ${remoteModels.length} models.` : "Could not fetch model list.");
+  const model = await selectModel(baseUrl, apiKey, preset.model);
 
-    if (remoteModels.length > 0) {
-      const selected = guardCancel(
-        await select({
-          message: "Select model",
-          options: [
-            ...remoteModels.map((m) => ({
-              value: m,
-              label: m,
-              hint: m === preset.model ? "recommended" : undefined,
-            })),
-            { value: "__custom__", label: "Enter model name manually", hint: "type a custom model ID" },
-          ],
-          initialValue: remoteModels.includes(preset.model) ? preset.model : remoteModels[0],
-        }),
-      ) as string;
-
-      if (selected === "__custom__") {
-        model = guardCancel(
-          await text({
-            message: "Model name",
-            placeholder: preset.model,
-            validate: (v) => (!v?.trim() ? "Model name is required" : undefined),
-          }),
-        ) as string;
-      } else {
-        model = selected;
-      }
-    } else {
-      model = guardCancel(
-        await text({
-          message: "Model name",
-          initialValue: preset.model || undefined,
-          placeholder: "e.g. gpt-4o, glm-4-flash",
-          validate: (v) => (!v?.trim() ? "Model name is required" : undefined),
-        }),
-      ) as string;
-    }
-  }
-
-  const shouldVerify = guardCancel(
-    await confirm({
-      message: "Verify connection to LLM endpoint now?",
-      initialValue: true,
-    }),
-  ) as boolean;
-
-  if (shouldVerify) {
-    const s = spinner();
-    s.start("Verifying endpoint...");
-    const result = await verifyLlmEndpoint(baseUrl, apiKey, model);
-    if (result.ok) {
-      s.stop("Connection verified successfully.");
-    } else {
-      s.stop(`Verification failed${result.status ? ` (HTTP ${result.status})` : ""}.`);
-      clackLog.warn(
-        `Could not verify endpoint. The setup will continue, but you may need to check your credentials.\n  Error: ${result.error ?? "unknown"}`,
-      );
-      const proceed = guardCancel(
-        await confirm({
-          message: "Continue anyway?",
-          initialValue: true,
-        }),
-      ) as boolean;
-      if (!proceed) {
-        cancel("Setup cancelled.");
-        process.exit(0);
-      }
-    }
-  }
+  await verifyEndpoint(baseUrl, apiKey, model);
 
   clackLog.step("Browser control (optional)");
   const enableBrowser = guardCancel(
@@ -254,7 +259,20 @@ export async function runSetupWizard(): Promise<OpenFlowConfig> {
     }),
   ) as boolean;
 
-  const config: OpenFlowConfig = {
+  const config = buildDefaultConfig(baseUrl, apiKey, model, enableBrowser);
+  await saveAndShowConfig(config, configPath, configDir, preset.label, baseUrl, model, apiKey, enableBrowser);
+
+  outro("Setup complete! Run `openflow chat` to start chatting.");
+  return config;
+}
+
+function buildDefaultConfig(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  enableBrowser: boolean,
+): OpenFlowConfig {
+  return {
     llm: { baseUrl, apiKey, model, maxTokens: 4096, temperature: 0.7 },
     agent: {
       systemPrompt: "",
@@ -278,7 +296,18 @@ export async function runSetupWizard(): Promise<OpenFlowConfig> {
     notification: { enabled: true, onStart: "🟢 OpenFlow가 시작되었습니다.", onStop: "🔴 OpenFlow가 종료됩니다." },
     logging: { level: "info" },
   };
+}
 
+async function saveAndShowConfig(
+  config: OpenFlowConfig,
+  configPath: string,
+  configDir: string,
+  providerLabel: string,
+  baseUrl: string,
+  model: string,
+  apiKey: string,
+  enableBrowser: boolean,
+): Promise<void> {
   if (!existsSync(configDir)) {
     mkdirSync(configDir, { recursive: true });
   }
@@ -291,14 +320,11 @@ export async function runSetupWizard(): Promise<OpenFlowConfig> {
   config.memory.dbPath = config.memory.dbPath.replace(/^~\//, `${home}/`);
 
   clackLog.step("Configuration summary:");
-  clackLog.info(`  Provider: ${preset.label}`);
+  clackLog.info(`  Provider: ${providerLabel}`);
   clackLog.info(`  Base URL: ${baseUrl}`);
   clackLog.info(`  Model:    ${model}`);
   clackLog.info(`  API Key:  ${formatKeyPreview(apiKey)}`);
   clackLog.info(`  Push:     enabled`);
   clackLog.info(`  Browser:  ${enableBrowser ? "enabled" : "disabled"}`);
   clackLog.info(`  Config:   ${configPath}`);
-
-  outro("Setup complete! Run `openflow chat` to start chatting.");
-  return config;
 }
