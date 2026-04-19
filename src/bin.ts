@@ -70,6 +70,59 @@ function writeStderr(text: string): void {
   process.stderr.write(text + "\n");
 }
 
+async function handleSessionCommand(subCommand: string, argv: string[]): Promise<void> {
+  try {
+    const config = loadConfig();
+    const { createMemoryStore } = await import("./memory/store.js");
+    const memory = createMemoryStore(config.memory.dbPath);
+
+    if (subCommand === "list") {
+      const sessions = memory.listSessions();
+      if (sessions.length === 0) {
+        writeStdout("No sessions found.");
+      } else {
+        for (const s of sessions) {
+          writeStdout(`  ${s.id}  ${s.title}  ${new Date(s.updatedAt).toISOString()}`);
+        }
+      }
+    } else if (subCommand === "reset" && argv[argv.indexOf("reset") + 1]) {
+      const sessionId = argv[argv.indexOf("reset") + 1]!;
+      memory.deleteSession(sessionId);
+      writeStdout(`Session ${sessionId} deleted.`);
+    } else {
+      writeStdout("Usage: openflow session list | openflow session reset <id>");
+    }
+
+    memory.close();
+  } catch (err) {
+    writeStderr(err instanceof OpenFlowError ? err.message : String(err));
+    process.exit(1);
+  }
+}
+
+async function handleConfigCommand(subCommand: string): Promise<void> {
+  if (subCommand === "show") {
+    try {
+      const config = loadConfig();
+      showConfig(config);
+    } catch (err) {
+      writeStderr(err instanceof OpenFlowError ? err.message : String(err));
+      process.exit(1);
+    }
+    return;
+  }
+
+  const path = getConfigPath();
+  if (!existsSync(path)) {
+    await runSetupWizard();
+    return;
+  }
+  writeStdout(`Configuration file: ${path}`);
+  const { execFileSync } = await import("node:child_process");
+  const editor = process.env.EDITOR ?? process.env.VISUAL ?? "vi";
+  execFileSync(editor, [path], { stdio: "inherit" });
+}
+
 async function main(): Promise<void> {
   const argv = process.argv;
 
@@ -96,57 +149,12 @@ async function main(): Promise<void> {
   const subCommand = getSubCommand(argv);
 
   if (command === "config") {
-    if (subCommand === "show") {
-      try {
-        const config = loadConfig();
-        showConfig(config);
-      } catch (err) {
-        writeStderr(err instanceof OpenFlowError ? err.message : String(err));
-        process.exit(1);
-      }
-      return;
-    }
-
-    const path = getConfigPath();
-    if (!existsSync(path)) {
-      await runSetupWizard();
-      return;
-    }
-    writeStdout(`Configuration file: ${path}`);
-    const { execFileSync } = await import("node:child_process");
-    const editor = process.env.EDITOR ?? process.env.VISUAL ?? "vi";
-    execFileSync(editor, [path], { stdio: "inherit" });
+    await handleConfigCommand(subCommand);
     return;
   }
 
   if (command === "session") {
-    try {
-      const config = loadConfig();
-      const { createMemoryStore } = await import("./memory/store.js");
-      const memory = createMemoryStore(config.memory.dbPath);
-
-      if (subCommand === "list") {
-        const sessions = memory.listSessions();
-        if (sessions.length === 0) {
-          writeStdout("No sessions found.");
-        } else {
-          for (const s of sessions) {
-            writeStdout(`  ${s.id}  ${s.title}  ${new Date(s.updatedAt).toISOString()}`);
-          }
-        }
-      } else if (subCommand === "reset" && process.argv[process.argv.indexOf("reset") + 1]) {
-        const sessionId = process.argv[process.argv.indexOf("reset") + 1]!;
-        memory.deleteSession(sessionId);
-        writeStdout(`Session ${sessionId} deleted.`);
-      } else {
-        writeStdout("Usage: openflow session list | openflow session reset <id>");
-      }
-
-      memory.close();
-    } catch (err) {
-      writeStderr(err instanceof OpenFlowError ? err.message : String(err));
-      process.exit(1);
-    }
+    await handleSessionCommand(subCommand, process.argv);
     return;
   }
 
