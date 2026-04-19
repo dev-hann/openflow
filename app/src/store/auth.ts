@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { StoredAuth, TokenPair } from "../types/protocol";
 import { isStoredAuth } from "../types/protocol";
 import { createApiClient } from "../services/api";
-import { saveAuth } from "../services/auth";
+import { saveAuth, clearAuth } from "../services/auth";
 
 interface AuthState {
   storedAuth: StoredAuth | null;
@@ -33,6 +33,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!auth || !isStoredAuth(auth)) return null;
     if (Date.now() < auth.accessExpiresAt - 60_000) return auth.accessToken;
 
+    if (Date.now() >= auth.refreshExpiresAt) {
+      await clearAuth();
+      set({ storedAuth: null, isConnected: false });
+      return null;
+    }
+
     if (refreshPromise) return refreshPromise;
 
     refreshPromise = (async () => {
@@ -48,6 +54,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ storedAuth: newAuth });
         return newAuth.accessToken;
       } catch {
+        const currentAuth = get().storedAuth;
+        if (currentAuth && Date.now() >= currentAuth.refreshExpiresAt) {
+          await clearAuth();
+          set({ storedAuth: null, isConnected: false });
+        }
         return null;
       } finally {
         refreshPromise = null;
