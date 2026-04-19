@@ -3,6 +3,15 @@ import { normalizeUrl } from "../utils/normalize-url";
 
 export { normalizeUrl } from "../utils/normalize-url";
 
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+interface RequestOptions {
+  method?: HttpMethod;
+  body?: unknown;
+  accessToken?: string;
+  timeoutMs?: number;
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -22,12 +31,7 @@ export class ApiClient {
 
   private async request(
     path: string,
-    options: {
-      method?: string;
-      body?: unknown;
-      accessToken?: string;
-      timeoutMs?: number;
-    } = {},
+    options: RequestOptions = {},
   ): Promise<unknown> {
     const { method = "GET", body, accessToken, timeoutMs = 15_000 } = options;
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -52,7 +56,7 @@ export class ApiClient {
       }
       return json;
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
+      if (err instanceof Error && err.name === "AbortError") {
         throw new ApiError(0, "TIMEOUT", "요청 시간이 초과되었습니다");
       }
       throw err;
@@ -61,7 +65,7 @@ export class ApiClient {
     }
   }
 
-  private async typedRequest<T>(path: string, options?: Parameters<ApiClient["request"]>[1]): Promise<T> {
+  private async typedRequest<T>(path: string, options?: RequestOptions): Promise<T> {
     return (await this.request(path, options)) as T;
   }
 

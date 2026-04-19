@@ -16,6 +16,7 @@ import { KeyboardSafeView } from "./KeyboardSafeView";
 import { PresetSelector } from "./preset-selector";
 import { VerifySection } from "./verify-section";
 import type { ProviderPreset } from "../constants/presets";
+import type { ProviderInfo } from "../types/protocol";
 import { useAuthStore } from "../store/auth";
 import { createApiClient, normalizeUrl } from "../services/api";
 import { SPACING } from "../constants/theme";
@@ -102,7 +103,7 @@ export function ProviderForm({
     try {
       const api = createApiClient(storedAuth.serverUrl);
       if (editProvider) {
-        const params: Record<string, string> = {
+        const params: Partial<Pick<ProviderInfo, "name" | "baseUrl" | "apiKey" | "model">> = {
           name: trimmedName,
           baseUrl: trimmedUrl,
           model: model || "default",

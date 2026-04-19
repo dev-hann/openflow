@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { normalizeUrl } from "../utils/normalize-url";
 
 export interface VerifyResult {
@@ -19,7 +19,7 @@ export function useProviderVerify(baseUrl: string, apiKey: string) {
     setVerifyResult(null);
   }, [baseUrl]);
 
-  async function handleVerify(): Promise<VerifyOutcome | null> {
+  const handleVerify = useCallback(async (): Promise<VerifyOutcome | null> => {
     const trimmedUrl = normalizeUrl(baseUrl);
     if (!trimmedUrl) return null;
     setVerifying(true);
@@ -45,7 +45,7 @@ export function useProviderVerify(baseUrl: string, apiKey: string) {
       }
     } catch (err) {
       const msg =
-        err instanceof DOMException && err.name === "AbortError"
+        err instanceof Error && err.name === "AbortError"
           ? "시간 초과 (10초)"
           : err instanceof Error
             ? err.message
@@ -55,7 +55,7 @@ export function useProviderVerify(baseUrl: string, apiKey: string) {
     } finally {
       setVerifying(false);
     }
-  }
+  }, [baseUrl, apiKey]);
 
   return { verifying, verifyResult, handleVerify };
 }
