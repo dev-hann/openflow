@@ -22,6 +22,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
   const theme = useTheme();
   const sessions = useSessionsStore((s) => s.sessions);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
+  const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const addSession = useSessionsStore((s) => s.addSession);
   const removeSession = useSessionsStore((s) => s.removeSession);
   const getApi = useApiClient();
@@ -56,14 +57,17 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
           try {
             await client.api.deleteSession(client.token, session.id);
             removeSession(session.id);
-            if (activeSessionId === session.id) onSwitchSession("");
+            if (activeSessionId === session.id) {
+              setActiveSessionId(null);
+              onSwitchSession("");
+            }
           } catch {
             Alert.alert("오류", "세션 삭제에 실패했습니다.");
           }
         }},
       ]);
     },
-    [getApi, removeSession, activeSessionId, onSwitchSession],
+    [getApi, removeSession, activeSessionId, setActiveSessionId, onSwitchSession],
   );
 
   return (
