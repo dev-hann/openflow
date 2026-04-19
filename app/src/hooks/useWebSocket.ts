@@ -41,31 +41,34 @@ export function useWebSocket(): UseWebSocketReturn {
   const setSending = useChatStore((s) => s.setSending);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
 
-  const handleMessage = useCallback(
-    (msg: WsServerMessage) => {
-      switch (msg.type) {
-        case "token":
-          appendToLastMessage(msg.content);
-          break;
-        case "response":
-          finalizeLastMessage(msg.content);
-          setSending(false);
-          break;
-        case "error":
-          finalizeLastMessage(`Error: ${msg.message}`);
-          setSending(false);
-          break;
-        case "session_switched":
-          setActiveSessionId(msg.sessionId);
-          break;
-        case "auth_required":
-        case "pong":
-        case "auth_ok":
-          break;
-      }
-    },
-    [appendToLastMessage, finalizeLastMessage, setSending, setActiveSessionId],
-  );
+  const handleMessageRef = useRef<(msg: WsServerMessage) => void>(() => {});
+  handleMessageRef.current = (msg: WsServerMessage) => {
+    switch (msg.type) {
+      case "token":
+        appendToLastMessage(msg.content);
+        break;
+      case "response":
+        finalizeLastMessage(msg.content);
+        setSending(false);
+        break;
+      case "error":
+        finalizeLastMessage(`Error: ${msg.message}`);
+        setSending(false);
+        break;
+      case "session_switched":
+        setActiveSessionId(msg.sessionId);
+        break;
+      case "auth_required":
+      case "pong":
+      case "auth_ok":
+        break;
+    }
+  };
+
+  const getValidTokenRef = useRef(getValidToken);
+  getValidTokenRef.current = getValidToken;
+  const setStoreConnectedRef = useRef(setStoreConnected);
+  setStoreConnectedRef.current = setStoreConnected;
 
   const clearPingTimer = useCallback(() => {
     if (pingTimer.current) {
@@ -96,13 +99,14 @@ export function useWebSocket(): UseWebSocketReturn {
     }
   }, [clearPingTimer]);
 
-  const connect = useCallback((wsUrl: string, scheduleReconnect: () => void) => {
+  const connectRef = useRef<(wsUrl: string, scheduleReconnect: () => void) => void>(() => {});
+  connectRef.current = (wsUrl: string, scheduleReconnect: () => void) => {
     intentionalClose.current = false;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = async () => {
-      const token = await getValidToken();
+      const token = await getValidTokenRef.current();
       if (!token) {
         ws.close(4001, "no valid token");
         return;
@@ -120,25 +124,25 @@ export function useWebSocket(): UseWebSocketReturn {
       if (msg.type === "auth_ok") {
         retryCount.current = 0;
         setConnected(true);
-        setStoreConnected(true);
+        setStoreConnectedRef.current(true);
         startPing(ws);
         return;
       }
       if (msg.type === "auth_required") {
-        getValidToken().then((token) => {
+        getValidTokenRef.current().then((token) => {
           if (token && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: "auth", accessToken: token }));
           }
         });
         return;
       }
-      handleMessage(msg);
+      handleMessageRef.current?.(msg);
     };
 
     ws.onclose = () => {
       clearPingTimer();
       setConnected(false);
-      setStoreConnected(false);
+      setStoreConnectedRef.current(false);
       if (!intentionalClose.current) {
         retryCount.current++;
         reconnectTimer.current = setTimeout(scheduleReconnect, getBackoffDelay(retryCount.current));
@@ -148,15 +152,19 @@ export function useWebSocket(): UseWebSocketReturn {
     ws.onerror = () => {
       ws.close();
     };
-  }, [getValidToken, setStoreConnected, startPing, handleMessage, clearPingTimer]);
+  };
+
+  const stableConnect = useCallback((wsUrl: string, scheduleReconnect: () => void) => {
+    connectRef.current?.(wsUrl, scheduleReconnect);
+  }, []);
 
   useEffect(() => {
     if (!storedAuth) return;
     const wsUrl = buildWsUrl(storedAuth.serverUrl);
-    const scheduleReconnect = () => connect(wsUrl, scheduleReconnect);
-    connect(wsUrl, scheduleReconnect);
+    const scheduleReconnect = () => stableConnect(wsUrl, scheduleReconnect);
+    stableConnect(wsUrl, scheduleReconnect);
     return () => { cleanup(); };
-  }, [storedAuth, connect, cleanup]);
+  }, [storedAuth, stableConnect, cleanup]);
 
   const reconnect = useCallback(() => {
     cleanup();
@@ -164,8 +172,8 @@ export function useWebSocket(): UseWebSocketReturn {
     if (!storedAuth) return;
     const wsUrl = buildWsUrl(storedAuth.serverUrl);
     const scheduleReconnect = () => reconnect();
-    connect(wsUrl, scheduleReconnect);
-  }, [storedAuth, cleanup, connect]);
+    stableConnect(wsUrl, scheduleReconnect);
+  }, [storedAuth, cleanup, stableConnect]);
 
   const send = useCallback((data: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

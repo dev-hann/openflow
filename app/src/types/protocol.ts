@@ -84,3 +84,36 @@ export interface StoredAuth {
   accessExpiresAt: number;
   refreshExpiresAt: number;
 }
+
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === "number";
+}
+
+export function isStoredAuth(value: unknown): value is StoredAuth {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isString(v.serverUrl) &&
+    isString(v.accessToken) &&
+    isString(v.refreshToken) &&
+    isString(v.sessionKey) &&
+    isNumber(v.accessExpiresAt) &&
+    isNumber(v.refreshExpiresAt)
+  );
+}

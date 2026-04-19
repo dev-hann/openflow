@@ -47,27 +47,26 @@ export class ApiClient {
     return json;
   }
 
+  private async typedRequest<T>(path: string, options?: Parameters<ApiClient["request"]>[1]): Promise<T> {
+    return (await this.request(path, options)) as T;
+  }
+
   async pairInit(): Promise<{ expiresInMs: number }> {
-    const resp = (await this.request("/api/auth/pair/init", { method: "POST" })) as {
-      expiresInMs: number;
-    };
-    return resp;
+    return this.typedRequest<{ expiresInMs: number }>("/api/auth/pair/init", { method: "POST" });
   }
 
   async pairVerify(pin: string, label: string): Promise<TokenPair> {
-    const resp = (await this.request("/api/auth/pair/verify", {
+    return this.typedRequest<TokenPair>("/api/auth/pair/verify", {
       method: "POST",
       body: { pin, label },
-    })) as TokenPair;
-    return resp;
+    });
   }
 
   async refreshToken(refreshToken: string): Promise<TokenPair> {
-    const resp = (await this.request("/api/auth/refresh", {
+    return this.typedRequest<TokenPair>("/api/auth/refresh", {
       method: "POST",
       body: { refreshToken },
-    })) as TokenPair;
-    return resp;
+    });
   }
 
   async unpair(accessToken: string): Promise<void> {
@@ -75,19 +74,16 @@ export class ApiClient {
   }
 
   async listSessions(accessToken: string): Promise<SessionInfo[]> {
-    const resp = (await this.request("/api/sessions", { accessToken })) as {
-      sessions: SessionInfo[];
-    };
+    const resp = await this.typedRequest<{ sessions: SessionInfo[] }>("/api/sessions", { accessToken });
     return resp.sessions;
   }
 
   async createSession(accessToken: string, title?: string): Promise<Pick<SessionInfo, "id" | "title">> {
-    const resp = (await this.request("/api/sessions", {
+    return this.typedRequest<Pick<SessionInfo, "id" | "title">>("/api/sessions", {
       method: "POST",
       body: { title: title ?? "New Chat" },
       accessToken,
-    })) as Pick<SessionInfo, "id" | "title">;
-    return resp;
+    });
   }
 
   async deleteSession(accessToken: string, sessionId: string): Promise<void> {
@@ -95,11 +91,7 @@ export class ApiClient {
   }
 
   async listModels(accessToken: string): Promise<{ models: string[]; current: string }> {
-    const resp = (await this.request("/api/models", { accessToken })) as {
-      models: string[];
-      current: string;
-    };
-    return resp;
+    return this.typedRequest<{ models: string[]; current: string }>("/api/models", { accessToken });
   }
 
   async switchModel(accessToken: string, model: string): Promise<void> {
@@ -107,28 +99,22 @@ export class ApiClient {
   }
 
   async getStatus(): Promise<{ status: string; version: string }> {
-    const resp = (await this.request("/api/status")) as { status: string; version: string };
-    return resp;
+    return this.typedRequest<{ status: string; version: string }>("/api/status");
   }
 
   async listProviders(accessToken: string): Promise<{ providers: ProviderInfo[]; activeProviderId: string }> {
-    const resp = (await this.request("/api/providers", { accessToken })) as {
-      providers: ProviderInfo[];
-      activeProviderId: string;
-    };
-    return resp;
+    return this.typedRequest<{ providers: ProviderInfo[]; activeProviderId: string }>("/api/providers", { accessToken });
   }
 
   async createProvider(
     accessToken: string,
     params: { name: string; baseUrl: string; apiKey: string; model: string; isDefault?: boolean },
   ): Promise<ProviderInfo> {
-    const resp = (await this.request("/api/providers", {
+    return this.typedRequest<ProviderInfo>("/api/providers", {
       method: "POST",
       body: params,
       accessToken,
-    })) as ProviderInfo;
-    return resp;
+    });
   }
 
   async updateProvider(
@@ -136,12 +122,11 @@ export class ApiClient {
     id: string,
     params: Partial<Pick<ProviderInfo, "name" | "baseUrl" | "apiKey" | "model">>,
   ): Promise<ProviderInfo> {
-    const resp = (await this.request(`/api/providers/${id}`, {
+    return this.typedRequest<ProviderInfo>(`/api/providers/${id}`, {
       method: "PUT",
       body: params,
       accessToken,
-    })) as ProviderInfo;
-    return resp;
+    });
   }
 
   async deleteProvider(accessToken: string, id: string): Promise<void> {
@@ -149,17 +134,14 @@ export class ApiClient {
   }
 
   async verifyProvider(accessToken: string, id: string): Promise<{ ok: boolean; error?: string }> {
-    const resp = (await this.request(`/api/providers/${id}/verify`, {
+    return this.typedRequest<{ ok: boolean; error?: string }>(`/api/providers/${id}/verify`, {
       method: "POST",
       accessToken,
-    })) as { ok: boolean; error?: string };
-    return resp;
+    });
   }
 
   async fetchProviderModels(accessToken: string, id: string): Promise<string[]> {
-    const resp = (await this.request(`/api/providers/${id}/models`, { accessToken })) as {
-      models: string[];
-    };
+    const resp = await this.typedRequest<{ models: string[] }>(`/api/providers/${id}/models`, { accessToken });
     return resp.models;
   }
 

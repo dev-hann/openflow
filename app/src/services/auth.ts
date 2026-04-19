@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import type { StoredAuth } from "../types/protocol";
+import { isStoredAuth } from "../types/protocol";
 
 const AUTH_KEY = "openflow_auth";
 
@@ -11,7 +12,9 @@ export async function loadAuth(): Promise<StoredAuth | null> {
   const raw = await SecureStore.getItemAsync(AUTH_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as StoredAuth;
+    const parsed: unknown = JSON.parse(raw);
+    if (isStoredAuth(parsed)) return parsed;
+    return null;
   } catch {
     return null;
   }
