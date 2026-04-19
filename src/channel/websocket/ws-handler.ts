@@ -60,7 +60,7 @@ export function createWsHandler(deps: WsHandlerDeps) {
             }
           }
         } catch {
-          // not JSON
+          log.debug({ text: text.slice(0, 100) }, "non-JSON message during auth");
         }
         ws.send(serializeWsServerMessage({ type: "auth_required" }));
         ws.close(4001, "authentication required");

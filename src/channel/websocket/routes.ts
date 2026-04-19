@@ -42,6 +42,135 @@ export function createRoutes(deps: RoutesDeps) {
     return true;
   }
 
+  async function handlePairInit(_req: IncomingMessage, res: ServerResponse, clientIp: string): Promise<void> {
+    if (!checkRateLimit(`pair_init:${clientIp}`)) {
+      sendJson(res, 429, { error: "rate_limited" });
+      return;
+    }
+    authService.createPairingPin();
+    sendJson(res, 200, { expiresInMs: 300_000 });
+  }
+
+  async function handlePairVerify(req: IncomingMessage, res: ServerResponse, clientIp: string): Promise<void> {
+    if (!checkRateLimit(`pair_verify:${clientIp}`)) {
+      sendJson(res, 429, { error: "rate_limited" });
+      return;
+    }
+    const body = await readJsonBody(req);
+    if (!body || typeof body !== "object") {
+      sendJson(res, 400, { error: "invalid_body" });
+      return;
+    }
+    const { pin, label } = body as { pin?: string; label?: string };
+    if (!pin) {
+      sendJson(res, 400, { error: "pin_required" });
+      return;
+    }
+    const tokens = authService.verifyPinAndIssueTokens(pin, label ?? "Unknown device");
+    if (!tokens) {
+      sendJson(res, 401, { error: "invalid_or_expired_pin" });
+      return;
+    }
+    sendJson(res, 200, tokens);
+  }
+
+  async function handleRefresh(req: IncomingMessage, res: ServerResponse, clientIp: string): Promise<void> {
+    if (!checkRateLimit(`refresh:${clientIp}`)) {
+      sendJson(res, 429, { error: "rate_limited" });
+      return;
+    }
+    const body = await readJsonBody(req);
+    if (!body || typeof body !== "object") {
+      sendJson(res, 400, { error: "invalid_body" });
+      return;
+    }
+    const { refreshToken } = body as { refreshToken?: string };
+    if (!refreshToken) {
+      sendJson(res, 400, { error: "refresh_token_required" });
+      return;
+    }
+    const tokens = authService.refreshTokens(refreshToken);
+    if (!tokens) {
+      sendJson(res, 401, { error: "invalid_refresh_token" });
+      return;
+    }
+    sendJson(res, 200, tokens);
+  }
+
+  function handleUnpair(req: IncomingMessage, res: ServerResponse): void {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    authService.unpair(auth.sessionKey);
+    sendJson(res, 200, { ok: true });
+  }
+
+  function handleSessionsList(req: IncomingMessage, res: ServerResponse): void {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    const sessions = memoryStore.listSessions();
+    const result: SessionInfo[] = sessions.map((s) => ({
+      id: s.id,
+      title: s.title,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      messageCount: memoryStore.getMessages(s.id).length,
+    }));
+    sendJson(res, 200, { sessions: result });
+  }
+
+  async function handleSessionCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    const body = await readJsonBody(req);
+    const { title } = (body ?? {}) as { title?: string };
+    const session = memoryStore.createSession(title ?? "New Chat");
+    sendJson(res, 201, { id: session.id, title: session.title });
+  }
+
+  function handleSessionDelete(req: IncomingMessage, res: ServerResponse, path: string): void {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    const sessionId = path.slice("/api/sessions/".length);
+    if (!sessionId) {
+      sendJson(res, 400, { error: "session_id_required" });
+      return;
+    }
+    memoryStore.deleteSession(sessionId);
+    sendJson(res, 200, { ok: true });
+  }
+
+  function handleModelsList(req: IncomingMessage, res: ServerResponse): void {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    sendJson(res, 200, {
+      models: availableModels ?? [],
+      current: currentModel ?? "",
+    });
+  }
+
+  async function handleModelUpdate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    const body = await readJsonBody(req);
+    if (!body || typeof body !== "object") {
+      sendJson(res, 400, { error: "invalid_body" });
+      return;
+    }
+    const { model } = body as { model?: string };
+    if (!model) {
+      sendJson(res, 400, { error: "model_required" });
+      return;
+    }
+    onModelChange?.(model);
+    sendJson(res, 200, { model });
+  }
+
+  function handleStatus(req: IncomingMessage, res: ServerResponse): void {
+    const auth = requireAuth(req, res, authService);
+    if (!auth) return;
+    sendJson(res, 200, { status: "ok" });
+  }
+
   return async function handleRequest(
     req: IncomingMessage,
     res: ServerResponse,
@@ -56,141 +185,52 @@ export function createRoutes(deps: RoutesDeps) {
 
     try {
       if (path === "/api/auth/pair/init" && method === "POST") {
-        if (!checkRateLimit(`pair_init:${clientIp}`)) {
-          sendJson(res, 429, { error: "rate_limited" });
-          return;
-        }
-        authService.createPairingPin();
-        sendJson(res, 200, { expiresInMs: 300_000 });
+        await handlePairInit(req, res, clientIp);
         return;
       }
 
       if (path === "/api/auth/pair/verify" && method === "POST") {
-        if (!checkRateLimit(`pair_verify:${clientIp}`)) {
-          sendJson(res, 429, { error: "rate_limited" });
-          return;
-        }
-        const body = await readJsonBody(req);
-        if (!body || typeof body !== "object") {
-          sendJson(res, 400, { error: "invalid_body" });
-          return;
-        }
-        const { pin, label } = body as { pin?: string; label?: string };
-        if (!pin) {
-          sendJson(res, 400, { error: "pin_required" });
-          return;
-        }
-        const tokens = authService.verifyPinAndIssueTokens(pin, label ?? "Unknown device");
-        if (!tokens) {
-          sendJson(res, 401, { error: "invalid_or_expired_pin" });
-          return;
-        }
-        sendJson(res, 200, tokens);
+        await handlePairVerify(req, res, clientIp);
         return;
       }
 
       if (path === "/api/auth/refresh" && method === "POST") {
-        if (!checkRateLimit(`refresh:${clientIp}`)) {
-          sendJson(res, 429, { error: "rate_limited" });
-          return;
-        }
-        const body = await readJsonBody(req);
-        if (!body || typeof body !== "object") {
-          sendJson(res, 400, { error: "invalid_body" });
-          return;
-        }
-        const { refreshToken } = body as { refreshToken?: string };
-        if (!refreshToken) {
-          sendJson(res, 400, { error: "refresh_token_required" });
-          return;
-        }
-        const tokens = authService.refreshTokens(refreshToken);
-        if (!tokens) {
-          sendJson(res, 401, { error: "invalid_refresh_token" });
-          return;
-        }
-        sendJson(res, 200, tokens);
+        await handleRefresh(req, res, clientIp);
         return;
       }
 
       if (path === "/api/auth/unpair" && method === "DELETE") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        authService.unpair(auth.sessionKey);
-        sendJson(res, 200, { ok: true });
+        handleUnpair(req, res);
         return;
       }
 
       if (path === "/api/sessions" && method === "GET") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        const sessions = memoryStore.listSessions();
-        const result: SessionInfo[] = sessions.map((s) => ({
-          id: s.id,
-          title: s.title,
-          createdAt: s.createdAt,
-          updatedAt: s.updatedAt,
-          messageCount: memoryStore.getMessages(s.id).length,
-        }));
-        sendJson(res, 200, { sessions: result });
+        handleSessionsList(req, res);
         return;
       }
 
       if (path === "/api/sessions" && method === "POST") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        const body = await readJsonBody(req);
-        const { title } = (body ?? {}) as { title?: string };
-        const session = memoryStore.createSession(title ?? "New Chat");
-        sendJson(res, 201, { id: session.id, title: session.title });
+        await handleSessionCreate(req, res);
         return;
       }
 
       if (path.startsWith("/api/sessions/") && method === "DELETE") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        const sessionId = path.slice("/api/sessions/".length);
-        if (!sessionId) {
-          sendJson(res, 400, { error: "session_id_required" });
-          return;
-        }
-        memoryStore.deleteSession(sessionId);
-        sendJson(res, 200, { ok: true });
+        handleSessionDelete(req, res, path);
         return;
       }
 
       if (path === "/api/models" && method === "GET") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        sendJson(res, 200, {
-          models: availableModels ?? [],
-          current: currentModel ?? "",
-        });
+        handleModelsList(req, res);
         return;
       }
 
       if (path === "/api/models/current" && method === "PUT") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        const body = await readJsonBody(req);
-        if (!body || typeof body !== "object") {
-          sendJson(res, 400, { error: "invalid_body" });
-          return;
-        }
-        const { model } = body as { model?: string };
-        if (!model) {
-          sendJson(res, 400, { error: "model_required" });
-          return;
-        }
-        onModelChange?.(model);
-        sendJson(res, 200, { model });
+        await handleModelUpdate(req, res);
         return;
       }
 
       if (path === "/api/status" && method === "GET") {
-        const auth = requireAuth(req, res, authService);
-        if (!auth) return;
-        sendJson(res, 200, { status: "ok" });
+        handleStatus(req, res);
         return;
       }
 

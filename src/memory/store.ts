@@ -76,6 +76,45 @@ function nowMs(): number {
   return Date.now();
 }
 
+function rowToMessage(row: Record<string, unknown>): ChatMessage {
+  const role = row.role as string;
+  const content = row.content as string;
+  const toolCallId = row.tool_call_id as string | null;
+  const toolCallsJson = row.tool_calls_json as string | null;
+
+  if (role === "tool" && toolCallId) {
+    return { role: "tool", content, tool_call_id: toolCallId };
+  }
+  if (role === "assistant" && toolCallsJson) {
+    const toolCalls = JSON.parse(toolCallsJson) as ToolCall[];
+    return { role: "assistant", content: content || null, tool_calls: toolCalls };
+  }
+  return { role: role as ChatMessage["role"], content } as ChatMessage;
+}
+
+function wrapDb<T>(label: string, fn: () => T): T {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= DB_RETRY_DELAYS.length; attempt++) {
+    try {
+      return fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < DB_RETRY_DELAYS.length && isSqliteBusy(err)) {
+        const delay = DB_RETRY_DELAYS[attempt]!;
+        log.warn({ label, attempt, delay }, "database busy, retrying");
+        const end = Date.now() + delay;
+        while (Date.now() < end) {
+          // busy wait for sync SQLite
+        }
+        continue;
+      }
+      log.error({ label, err }, "database operation failed");
+      throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
+    }
+  }
+  throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", lastErr);
+}
+
 export function createMemoryStore(dbPath: string): MemoryStore {
   const dir = dirname(dbPath);
   if (!existsSync(dir)) {
@@ -140,45 +179,6 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       "UPDATE sessions SET updated_at = ? WHERE id = ?",
     ),
   };
-
-  function rowToMessage(row: Record<string, unknown>): ChatMessage {
-    const role = row.role as string;
-    const content = row.content as string;
-    const toolCallId = row.tool_call_id as string | null;
-    const toolCallsJson = row.tool_calls_json as string | null;
-
-    if (role === "tool" && toolCallId) {
-      return { role: "tool", content, tool_call_id: toolCallId };
-    }
-    if (role === "assistant" && toolCallsJson) {
-      const toolCalls = JSON.parse(toolCallsJson) as ToolCall[];
-      return { role: "assistant", content: content || null, tool_calls: toolCalls };
-    }
-    return { role: role as ChatMessage["role"], content } as ChatMessage;
-  }
-
-  function wrapDb<T>(label: string, fn: () => T): T {
-    let lastErr: unknown;
-    for (let attempt = 0; attempt <= DB_RETRY_DELAYS.length; attempt++) {
-      try {
-        return fn();
-      } catch (err) {
-        lastErr = err;
-        if (attempt < DB_RETRY_DELAYS.length && isSqliteBusy(err)) {
-          const delay = DB_RETRY_DELAYS[attempt]!;
-          log.warn({ label, attempt, delay }, "database busy, retrying");
-          const end = Date.now() + delay;
-          while (Date.now() < end) {
-            // busy wait for sync SQLite
-          }
-          continue;
-        }
-        log.error({ label, err }, "database operation failed");
-        throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
-      }
-    }
-    throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", lastErr);
-  }
 
   return {
     createSession(title?: string): Session {

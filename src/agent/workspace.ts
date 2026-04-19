@@ -33,6 +33,7 @@ function safeRead(filePath: string): string | null {
     const content = readFileSync(filePath, "utf-8").trim();
     return content || null;
   } catch {
+    log.debug({ filePath }, "file not found or unreadable");
     return null;
   }
 }
