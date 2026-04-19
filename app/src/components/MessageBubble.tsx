@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StyleSheet, FlatList, Animated, Easing, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { Text, useTheme, Icon } from "react-native-paper";
 import Markdown from "react-native-markdown-display";
@@ -54,7 +54,7 @@ export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: Messag
   const theme = useTheme();
   const isUser = message.role === "user";
 
-  const mdStyles = {
+  const mdStyles = useMemo(() => ({
     body: { color: theme.colors.onSurface, fontSize: 15, lineHeight: 22 },
     paragraph: { margin: 0, marginBottom: 6 },
     heading1: { color: theme.colors.onSurface, fontSize: 20, fontWeight: "bold" as const, marginTop: 8, marginBottom: 4 },
@@ -68,7 +68,7 @@ export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: Messag
     blockquote: { backgroundColor: theme.colors.surfaceVariant, borderLeftColor: theme.colors.primary, borderLeftWidth: 3, paddingLeft: 10, borderRadius: 4 },
     strong: { fontWeight: "bold" as const },
     em: { fontStyle: "italic" as const },
-  };
+  }), [theme.colors]);
 
   const bubbleBg = isUser ? theme.colors.primary : theme.colors.surface;
   const textColor = isUser ? theme.colors.onPrimary : theme.colors.onSurface;
