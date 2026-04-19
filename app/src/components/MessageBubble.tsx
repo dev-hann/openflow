@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useMemo, useState, useCallback } from "react";
+import { View, StyleSheet, Clipboard } from "react-native";
 import { Text, useTheme, Icon, TouchableRipple } from "react-native-paper";
 import Markdown from "react-native-markdown-display";
 import { TypingIndicator } from "./typing-indicator";
@@ -114,6 +114,99 @@ export const MessageBubble = React.memo(function MessageBubble({
     [theme.colors],
   );
 
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const handleCopy = useCallback((content: string, key: string) => {
+    Clipboard.setString(content);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 1500);
+  }, []);
+
+  const mdRules = useMemo(
+    () => ({
+      fence: (node: any, _children: any, _parent: any, _styles: any) => {
+        const lang = node.attributes.language || "code";
+        const key = `fence-${node.key}`;
+        return (
+          <View
+            style={[
+              styles.codeBlockContainer,
+              { backgroundColor: theme.colors.surfaceVariant },
+            ]}
+          >
+            <View
+              style={[
+                styles.codeBlockHeader,
+                { backgroundColor: theme.colors.outlineVariant },
+              ]}
+            >
+              <Text
+                variant="labelSmall"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                {lang}
+              </Text>
+              <TouchableRipple
+                onPress={() => handleCopy(node.content, key)}
+                style={styles.copyButton}
+                accessibilityLabel="코드 복사"
+              >
+                <Icon
+                  source={copiedKey === key ? "check" : "content-copy"}
+                  size={14}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </TouchableRipple>
+            </View>
+            <Text style={styles.codeBlockText} selectable>
+              {node.content}
+            </Text>
+          </View>
+        );
+      },
+      code_block: (node: any, _children: any, _parent: any, _styles: any) => {
+        const key = `cb-${node.key}`;
+        return (
+          <View
+            style={[
+              styles.codeBlockContainer,
+              { backgroundColor: theme.colors.surfaceVariant },
+            ]}
+          >
+            <View
+              style={[
+                styles.codeBlockHeader,
+                { backgroundColor: theme.colors.outlineVariant },
+              ]}
+            >
+              <Text
+                variant="labelSmall"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
+                code
+              </Text>
+              <TouchableRipple
+                onPress={() => handleCopy(node.content, key)}
+                style={styles.copyButton}
+                accessibilityLabel="코드 복사"
+              >
+                <Icon
+                  source={copiedKey === key ? "check" : "content-copy"}
+                  size={14}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </TouchableRipple>
+            </View>
+            <Text style={styles.codeBlockText} selectable>
+              {node.content}
+            </Text>
+          </View>
+        );
+      },
+    }),
+    [theme.colors, copiedKey, handleCopy],
+  );
+
   const bubbleBg = isUser ? theme.colors.primary : theme.colors.surface;
 
   const showAvatar = !isUser && isFirstInGroup;
@@ -141,7 +234,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                 { backgroundColor: theme.colors.primaryContainer },
               ]}
             >
-              <Icon source="sparkles" size={14} color={theme.colors.primary} />
+              <Icon source="sparkles" size={16} color={theme.colors.primary} />
             </View>
           ) : (
             <View style={styles.avatarSpacer} />
@@ -152,15 +245,10 @@ export const MessageBubble = React.memo(function MessageBubble({
                 styles.bubble,
                 { backgroundColor: bubbleBg },
                 SHADOWS.sm,
-                isUser && { borderBottomRightRadius: 4 },
-                !isUser && isFirstInGroup && { borderTopLeftRadius: 4 },
-                !isUser &&
-                  !isFirstInGroup && { borderTopLeftRadius: BORDER_RADIUS.lg },
-                !isUser && isLastInGroup && { borderBottomLeftRadius: 4 },
-                !isUser &&
-                  !isLastInGroup && {
-                    borderBottomLeftRadius: BORDER_RADIUS.lg,
-                  },
+                isFirstInGroup && { borderTopLeftRadius: 4 },
+                !isFirstInGroup && { borderTopLeftRadius: BORDER_RADIUS.lg },
+                isLastInGroup && { borderBottomLeftRadius: 4 },
+                !isLastInGroup && { borderBottomLeftRadius: BORDER_RADIUS.lg },
                 message.isFailed && {
                   borderWidth: 1.5,
                   borderColor: theme.colors.error,
@@ -178,7 +266,9 @@ export const MessageBubble = React.memo(function MessageBubble({
                   {message.content}
                 </Text>
               ) : (
-                <Markdown style={mdStyles}>{message.content}</Markdown>
+                <Markdown style={mdStyles} rules={mdRules}>
+                  {message.content}
+                </Markdown>
               )}
               {message.isFailed && onRetry && (
                 <TouchableRipple
@@ -245,18 +335,18 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: SPACING.md },
   assistantRow: { flexDirection: "row", alignItems: "flex-start" },
   avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 2,
   },
-  avatarSpacer: { width: 26 },
+  avatarSpacer: { width: 32 },
   bubbleColumn: { flex: 1, marginLeft: SPACING.sm, alignItems: "flex-start" },
   userColumn: { alignItems: "flex-end" },
   bubble: {
-    maxWidth: "90%",
+    maxWidth: "80%",
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.lg,
@@ -268,5 +358,29 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  codeBlockContainer: {
+    borderRadius: BORDER_RADIUS.md,
+    marginVertical: SPACING.sm,
+    overflow: "hidden",
+  },
+  codeBlockHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SPACING.sm + 4,
+    paddingVertical: 6,
+  },
+  codeBlockText: {
+    fontFamily: "monospace",
+    fontSize: 13,
+    lineHeight: 20,
+    padding: SPACING.md,
+    color: undefined,
+  },
+  copyButton: {
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
 });

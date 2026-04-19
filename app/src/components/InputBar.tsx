@@ -4,6 +4,7 @@ import { TextInput, IconButton, useTheme } from "react-native-paper";
 import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 const MAX_MESSAGE_LENGTH = 4000;
+const SEND_BUTTON_SIZE = 44;
 
 interface InputBarProps {
   onSend: (text: string) => void;
@@ -63,7 +64,7 @@ export const InputBar = React.memo(function InputBar({
           mode="flat"
           value={text}
           onChangeText={handleChangeText}
-          placeholder="메시지를 입력하세요..."
+          placeholder="무엇이든 물어보세요..."
           placeholderTextColor={theme.colors.onSurfaceVariant}
           multiline
           maxLength={MAX_MESSAGE_LENGTH}
@@ -82,7 +83,7 @@ export const InputBar = React.memo(function InputBar({
       </View>
       <IconButton
         icon="send"
-        size={20}
+        size={24}
         onPress={handleSend}
         disabled={!canSend}
         accessibilityLabel="메시지 전송"
@@ -90,7 +91,10 @@ export const InputBar = React.memo(function InputBar({
           canSend ? theme.colors.onPrimary : theme.colors.onSurfaceVariant
         }
         containerColor={canSend ? theme.colors.primary : "transparent"}
-        style={[styles.sendButton, canSend && { ...SHADOWS.sm }]}
+        style={[
+          styles.sendButton,
+          canSend && { ...SHADOWS.sm },
+        ]}
       />
     </View>
   );
@@ -111,7 +115,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   input: {
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 120,
     borderRadius: BORDER_RADIUS.xl,
     fontSize: 15,
@@ -122,6 +126,8 @@ const styles = StyleSheet.create({
     margin: 0,
     marginLeft: SPACING.xs,
     marginBottom: 2,
-    borderRadius: 20,
+    width: SEND_BUTTON_SIZE,
+    height: SEND_BUTTON_SIZE,
+    borderRadius: SEND_BUTTON_SIZE / 2,
   },
 });
