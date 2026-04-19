@@ -22,6 +22,7 @@ import {
   detectZaiEndpoint,
   fetchModels,
   verifyLlmEndpoint,
+  type LlmPreset,
 } from "./presets.js";
 import { buildDefaultConfig, saveAndShowConfig } from "./setup-helpers.js";
 
@@ -45,6 +46,83 @@ export function guardCancel<T>(value: T | symbol): T {
     process.exit(0);
   }
   return value;
+}
+
+async function collectApiKey(preset: LlmPreset, isZai: boolean): Promise<string> {
+  if (!preset.needsApiKey) {
+    clackLog.info("Local mode — no API key needed.");
+    return "";
+  }
+
+  const envKey = resolveEnvKey(preset);
+  if (envKey) {
+    const useExisting = guardCancel(
+      await confirm({
+        message: `Found API key in environment (${formatKeyPreview(envKey)}). Use it?`,
+        initialValue: true,
+      }),
+    ) as boolean;
+    if (useExisting) return envKey;
+  }
+
+  const raw = guardCancel(
+    await text({
+      message: "API Key",
+      placeholder: isZai ? "sk-..." : "sk-...",
+      validate: (v) => {
+        const normalized = normalizeApiKeyInput(v ?? "");
+        if (!normalized) return "API Key is required";
+        return undefined;
+      },
+    }),
+  ) as string;
+  return normalizeApiKeyInput(raw);
+}
+
+async function collectBaseUrl(preset: LlmPreset, apiKey: string, isZai: boolean): Promise<string> {
+  if (isZai && apiKey) {
+    const shouldDetect = guardCancel(
+      await confirm({
+        message: "Auto-detect best ZAI endpoint for your API key?",
+        initialValue: true,
+      }),
+    ) as boolean;
+
+    if (shouldDetect) {
+      const s = spinner();
+      s.start("Probing ZAI endpoints...");
+      const detected = await detectZaiEndpoint(apiKey);
+      if (detected) {
+        s.stop(`${detected.note} (model: ${detected.model})`);
+        const useDetected = guardCancel(
+          await confirm({
+            message: `Use detected endpoint? (${detected.baseUrl})`,
+            initialValue: true,
+          }),
+        ) as boolean;
+        if (useDetected) return detected.baseUrl;
+      } else {
+        s.stop("Could not auto-detect. Using default endpoint.");
+      }
+    }
+  }
+
+  if (preset.id === "custom") {
+    return guardCancel(
+      await text({
+        message: "API Base URL",
+        placeholder: "https://api.example.com/v1",
+        validate: (v) => (!v?.trim() ? "Base URL is required" : undefined),
+      }),
+    ) as string;
+  }
+
+  return guardCancel(
+    await text({
+      message: "API Base URL",
+      initialValue: preset.baseUrl,
+    }),
+  ) as string;
 }
 
 async function selectModel(baseUrl: string, apiKey: string, defaultModel: string): Promise<string> {
@@ -144,109 +222,10 @@ export async function runSetupWizard(): Promise<OpenFlowConfig> {
   ) as string;
 
   const preset = LLM_PRESETS.find((p) => p.id === providerChoice)!;
-
-  let apiKey = "";
   const isZai = preset.id.startsWith("zai");
 
-  if (preset.needsApiKey) {
-    const envKey = resolveEnvKey(preset);
-    if (envKey) {
-      const useExisting = guardCancel(
-        await confirm({
-          message: `Found API key in environment (${formatKeyPreview(envKey)}). Use it?`,
-          initialValue: true,
-        }),
-      ) as boolean;
-      if (useExisting) {
-        apiKey = envKey;
-      }
-    }
-
-    if (!apiKey) {
-      apiKey = guardCancel(
-        await text({
-          message: "API Key",
-          placeholder: isZai ? "sk-..." : "sk-...",
-          validate: (v) => {
-            const normalized = normalizeApiKeyInput(v ?? "");
-            if (!normalized) return "API Key is required";
-            return undefined;
-          },
-        }),
-      ) as string;
-      apiKey = normalizeApiKeyInput(apiKey);
-    }
-  } else {
-    clackLog.info("Local mode — no API key needed.");
-  }
-
-  let baseUrl: string;
-
-  if (isZai && apiKey) {
-    const shouldDetect = guardCancel(
-      await confirm({
-        message: "Auto-detect best ZAI endpoint for your API key?",
-        initialValue: true,
-      }),
-    ) as boolean;
-
-    if (shouldDetect) {
-      const s = spinner();
-      s.start("Probing ZAI endpoints...");
-      const detected = await detectZaiEndpoint(apiKey);
-      if (detected) {
-        s.stop(`${detected.note} (model: ${detected.model})`);
-        baseUrl = detected.baseUrl;
-
-        const useDetected = guardCancel(
-          await confirm({
-            message: `Use detected endpoint? (${baseUrl})`,
-            initialValue: true,
-          }),
-        ) as boolean;
-
-        if (!useDetected) {
-          baseUrl = guardCancel(
-            await text({
-              message: "API Base URL",
-              initialValue: preset.baseUrl,
-            }),
-          ) as string;
-        }
-      } else {
-        s.stop("Could not auto-detect. Using default endpoint.");
-        baseUrl = guardCancel(
-          await text({
-            message: "API Base URL",
-            initialValue: preset.baseUrl,
-          }),
-        ) as string;
-      }
-    } else {
-      baseUrl = guardCancel(
-        await text({
-          message: "API Base URL",
-          initialValue: preset.baseUrl,
-        }),
-      ) as string;
-    }
-  } else if (preset.id === "custom") {
-    baseUrl = guardCancel(
-      await text({
-        message: "API Base URL",
-        placeholder: "https://api.example.com/v1",
-        validate: (v) => (!v?.trim() ? "Base URL is required" : undefined),
-      }),
-    ) as string;
-  } else {
-    baseUrl = guardCancel(
-      await text({
-        message: "API Base URL",
-        initialValue: preset.baseUrl,
-      }),
-    ) as string;
-  }
-
+  const apiKey = await collectApiKey(preset, isZai);
+  const baseUrl = await collectBaseUrl(preset, apiKey, isZai);
   const model = await selectModel(baseUrl, apiKey, preset.model);
 
   await verifyEndpoint(baseUrl, apiKey, model);
