@@ -7,6 +7,7 @@ import { useAppTheme } from "./constants/theme";
 import { useAuthStore } from "./store/auth";
 import { loadAuth } from "./services/auth";
 import { useSettingsStore } from "./store/settings";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export default function App() {
   const theme = useAppTheme();
@@ -48,12 +49,14 @@ export default function App() {
   }
 
   return (
-    <PaperProvider theme={theme}>
-      <View style={styles.container}>
-        <StatusBar barStyle={barStyle} />
-        {content}
-      </View>
-    </PaperProvider>
+    <ErrorBoundary>
+      <PaperProvider theme={theme}>
+        <View style={styles.container}>
+          <StatusBar barStyle={barStyle} />
+          {content}
+        </View>
+      </PaperProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -8,6 +8,10 @@ import { SPACING } from "../constants/theme";
 import { formatRelativeTime } from "../utils/format-time";
 import { buildSessionInfo } from "../utils/session";
 
+function ItemSeparator(): React.ReactElement {
+  return <Divider />;
+}
+
 interface SessionModalProps {
   visible: boolean;
   onClose: () => void;
@@ -104,7 +108,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
               </TouchableRipple>
             );
           }}
-          ItemSeparatorComponent={() => <Divider />}
+          ItemSeparatorComponent={ItemSeparator}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>

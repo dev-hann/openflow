@@ -1,109 +1,101 @@
-import React, { useState } from "react";
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  Platform,
-  type NativeSyntheticEvent,
-  type TextInputSubmitEditingEventData,
-} from "react-native";
-import { useTheme, SPACING } from "../constants/theme";
+import React, { useState, useCallback } from "react";
+import { View, StyleSheet, Platform } from "react-native";
+import { TextInput, IconButton, useTheme } from "react-native-paper";
+import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 interface InputBarProps {
   onSend: (text: string) => void;
   disabled?: boolean;
 }
 
-export function InputBar({ onSend, disabled }: InputBarProps) {
-  const colors = useTheme();
+export const InputBar = React.memo(function InputBar({ onSend, disabled }: InputBarProps) {
+  const theme = useTheme();
   const [text, setText] = useState("");
 
-  function handleSend(): void {
+  const handleSend = useCallback((): void => {
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setText("");
-  }
+  }, [text, disabled, onSend]);
 
-  function handleSubmit(_e: NativeSyntheticEvent<TextInputSubmitEditingEventData>): void {
-    handleSend();
-  }
+  const handleChangeText = useCallback((newText: string): void => {
+    if (Platform.OS === "android" && newText.includes("\n")) {
+      const withoutNewline = newText.replace(/\n/g, "");
+      const trimmed = withoutNewline.trim();
+      if (trimmed && !disabled) {
+        onSend(trimmed);
+        setText("");
+        return;
+      }
+    }
+    setText(newText);
+  }, [disabled, onSend]);
 
   const canSend = text.trim().length > 0 && !disabled;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-      <TextInput
-        style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
-        value={text}
-        onChangeText={setText}
-        placeholder="메시지를 입력하세요..."
-        placeholderTextColor={colors.textSecondary}
-        multiline
-        maxLength={4000}
-        editable={!disabled}
-        onSubmitEditing={handleSubmit}
-        returnKeyType="send"
-        blurOnSubmit={false}
-      />
-      <TouchableOpacity
-        style={[
-          styles.sendButton,
-          {
-            backgroundColor: canSend ? colors.primary : colors.surfaceAlt,
-          },
-        ]}
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }, SHADOWS.inputBar]}>
+      <View style={[styles.inputWrapper, { backgroundColor: theme.colors.surfaceVariant }]}>
+        <TextInput
+          mode="flat"
+          value={text}
+          onChangeText={handleChangeText}
+          placeholder="메시지를 입력하세요..."
+          placeholderTextColor={theme.colors.onSurfaceVariant}
+          multiline
+          maxLength={4000}
+          editable={!disabled}
+          onSubmitEditing={handleSend}
+          returnKeyType="send"
+          blurOnSubmit={Platform.OS === "ios"}
+          dense
+          style={[styles.input, { color: theme.colors.onSurface }]}
+          underlineColor="transparent"
+          activeUnderlineColor="transparent"
+          textColor={theme.colors.onSurface}
+        />
+      </View>
+      <IconButton
+        icon="send"
+        size={20}
         onPress={handleSend}
         disabled={!canSend}
-        activeOpacity={0.7}
-      >
-        {disabled ? (
-          <ActivityIndicator size="small" color={colors.textInverse} />
-        ) : (
-          <Text style={[styles.sendButtonText, { color: canSend ? colors.textInverse : colors.textSecondary }]}>
-            전송
-          </Text>
-        )}
-      </TouchableOpacity>
+        iconColor={canSend ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+        containerColor={canSend ? theme.colors.primary : "transparent"}
+        style={[styles.sendButton, canSend && { ...SHADOWS.sm }]}
+      />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderTopWidth: 1,
+    paddingHorizontal: SPACING.sm,
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.06)",
+  },
+  inputWrapper: {
+    flex: 1,
+    borderRadius: BORDER_RADIUS.xl,
+    overflow: "hidden",
   },
   input: {
-    flex: 1,
     minHeight: 40,
     maxHeight: 120,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xl,
     fontSize: 15,
-    ...Platform.select({
-      ios: { paddingTop: 10 },
-      android: { paddingTop: 6 },
-    }),
+    paddingHorizontal: SPACING.md,
+    backgroundColor: "transparent",
   },
   sendButton: {
-    marginLeft: SPACING.sm,
-    paddingHorizontal: SPACING.md + 4,
-    paddingVertical: SPACING.sm + 2,
+    margin: 0,
+    marginLeft: SPACING.xs,
+    marginBottom: 2,
     borderRadius: 20,
-    minHeight: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sendButtonText: {
-    fontWeight: "600",
-    fontSize: 14,
   },
 });

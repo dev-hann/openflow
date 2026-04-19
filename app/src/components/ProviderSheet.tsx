@@ -8,6 +8,10 @@ import type { ProviderInfo } from "../types/protocol";
 
 const SHEET_HEIGHT = Dimensions.get("window").height * 0.65;
 
+function ItemSeparator(): React.ReactElement {
+  return <Divider />;
+}
+
 interface ProviderSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -79,7 +83,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
                 </TouchableRipple>
               );
             }}
-            ItemSeparatorComponent={() => <Divider />}
+            ItemSeparatorComponent={ItemSeparator}
             contentContainerStyle={styles.listContent}
           />
         </View>

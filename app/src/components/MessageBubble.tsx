@@ -46,7 +46,7 @@ interface MessageBubbleProps {
   isLastInGroup: boolean;
 }
 
-export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: MessageBubbleProps) {
+export const MessageBubble = React.memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup }: MessageBubbleProps) {
   const theme = useTheme();
   const isUser = message.role === "user";
 
@@ -143,7 +143,7 @@ export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: Messag
       )}
     </View>
   );
-}
+});
 
 interface MessageListProps {
   messages: ChatMessage[];
