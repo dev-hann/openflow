@@ -41,6 +41,7 @@ export function createAuthStore(filePath?: string): AuthStore {
       if (!Array.isArray(parsed.devices)) return { ...DEFAULT_DATA };
       return parsed;
     } catch {
+      log.debug({ path }, "failed to load auth store, using defaults");
       return { ...DEFAULT_DATA };
     }
   }

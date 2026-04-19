@@ -1,3 +1,7 @@
+import { createLogger } from "../../utils/logger.js";
+
+const log = createLogger("ws/protocol");
+
 export interface WsChatMessage {
   type: "message";
   sessionId?: string;
@@ -89,6 +93,7 @@ export function parseWsClientMessage(raw: string): WsClientMessage | null {
         return null;
     }
   } catch {
+    log.debug("failed to parse WebSocket client message");
     return null;
   }
 }

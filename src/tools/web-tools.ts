@@ -55,7 +55,7 @@ export const webFetchTool: InternalTool = {
     try {
       const html = await withRetry(
         async () => {
-          const resp = await fetch(url, { redirect: "follow" } as never);
+          const resp = await fetch(url, { redirect: "follow" } as RequestInit);
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           return await resp.text();
         },
@@ -165,7 +165,7 @@ export const httpClientTool: InternalTool = {
     try {
       const text = await withRetry(
         async () => {
-          const resp = await fetch(url, { method, headers, body, redirect: "follow" } as never);
+          const resp = await fetch(url, { method, headers, body, redirect: "follow" } as RequestInit);
           const respText = await resp.text();
           return `Status: ${resp.status}\n${truncate(respText, 10_000)}`;
         },

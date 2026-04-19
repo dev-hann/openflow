@@ -68,6 +68,7 @@ function decodeAccessToken(token: string): AccessTokenPayload | null {
     if (typeof payload.sessionKey !== "string" || typeof payload.expiresAt !== "number") return null;
     return payload;
   } catch {
+    log.debug("failed to decode access token");
     return null;
   }
 }

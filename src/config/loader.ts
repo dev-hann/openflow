@@ -133,6 +133,7 @@ export function updateCommands(commands: Record<string, unknown>): void {
   try {
     parsed = JSON.parse(raw) as Record<string, unknown>;
   } catch {
+    log.debug({ configPath }, "failed to parse commands config JSON");
     return;
   }
 
@@ -144,6 +145,7 @@ export function updateCommands(commands: Record<string, unknown>): void {
   try {
     loadConfig();
   } catch {
+    log.debug("failed to reload config after commands update");
     cachedConfig = null;
   }
 }
