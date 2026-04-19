@@ -13,14 +13,9 @@ import {
   Card,
   Chip,
   useTheme,
-  Surface,
-  Menu,
-  TouchableRipple,
-  Icon,
-  IconButton,
 } from "react-native-paper";
 import { KeyboardSafeView } from "./KeyboardSafeView";
-import { PROVIDER_PRESETS } from "../constants/presets";
+import { PresetSelector } from "./preset-selector";
 import type { ProviderPreset } from "../constants/presets";
 import { useAuthStore } from "../store/auth";
 import { createApiClient, normalizeUrl } from "../services/api";
@@ -201,99 +196,13 @@ export function ProviderForm({
         >
           <Card.Content>
             {!isEditMode && (
-              <View style={styles.presetSection}>
-                <Text
-                  variant="labelMedium"
-                  style={[
-                    styles.presetLabel,
-                    { color: theme.colors.onSurfaceVariant },
-                  ]}
-                >
-                  Provider 유형
-                </Text>
-                <Menu
-                  visible={presetMenuVisible}
-                  onDismiss={() => setPresetMenuVisible(false)}
-                  anchor={
-                    <TouchableRipple
-                      onPress={() => setPresetMenuVisible(true)}
-                      style={[
-                        styles.dropdownAnchor,
-                        {
-                          borderColor: theme.colors.outline,
-                          backgroundColor: theme.colors.surfaceVariant,
-                        },
-                      ]}
-                    >
-                      <View style={styles.dropdownContent}>
-                        <View style={styles.dropdownTextWrap}>
-                          {selectedPreset ? (
-                            <>
-                              <Text
-                                variant="bodyMedium"
-                                style={[
-                                  styles.presetSelectedText,
-                                  { fontWeight: "500" },
-                                ]}
-                              >
-                                {selectedPreset.label}
-                              </Text>
-                              <Text
-                                variant="labelSmall"
-                                style={[
-                                  styles.presetHint,
-                                  { color: theme.colors.onSurfaceVariant },
-                                ]}
-                              >
-                                {selectedPreset.hint}
-                              </Text>
-                            </>
-                          ) : (
-                            <Text
-                              variant="bodyMedium"
-                              style={[
-                                styles.presetPlaceholder,
-                                { color: theme.colors.onSurfaceVariant },
-                              ]}
-                            >
-                              선택하세요
-                            </Text>
-                          )}
-                        </View>
-                        <Icon
-                          source="chevron-down"
-                          size={20}
-                          color={theme.colors.onSurfaceVariant}
-                        />
-                      </View>
-                    </TouchableRipple>
-                  }
-                  contentStyle={[
-                    styles.menuContent,
-                    { backgroundColor: theme.colors.surface },
-                  ]}
-                >
-                  {PROVIDER_PRESETS.map((preset) => (
-                    <Menu.Item
-                      key={preset.id}
-                      onPress={() => handleSelectPreset(preset)}
-                      title={`${preset.label}  ·  ${preset.hint}`}
-                      leadingIcon={
-                        preset.id === selectedPreset?.id
-                          ? "check-circle"
-                          : "circle-outline"
-                      }
-                      titleStyle={[
-                        styles.menuItemTitle,
-                        {
-                          fontWeight:
-                            preset.id === selectedPreset?.id ? "600" : "400",
-                        },
-                      ]}
-                    />
-                  ))}
-                </Menu>
-              </View>
+              <PresetSelector
+                selectedPreset={selectedPreset}
+                visible={presetMenuVisible}
+                onDismiss={() => setPresetMenuVisible(false)}
+                onShow={() => setPresetMenuVisible(true)}
+                onSelect={handleSelectPreset}
+              />
             )}
             <TextInput
               label="이름"
@@ -436,21 +345,6 @@ const styles = StyleSheet.create({
   headline: { marginBottom: SPACING.xs },
   subtitle: { marginBottom: SPACING.lg },
   card: { overflow: "hidden" },
-  presetSection: { marginBottom: SPACING.sm },
-  presetLabel: { marginBottom: SPACING.xs },
-  dropdownAnchor: {
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  dropdownContent: { flexDirection: "row", alignItems: "center" },
-  dropdownTextWrap: { flex: 1 },
-  presetSelectedText: {},
-  presetHint: {},
-  presetPlaceholder: {},
-  menuContent: { maxHeight: 400 },
-  menuItemTitle: {},
   field: { marginBottom: SPACING.sm },
   verifyButton: { marginTop: SPACING.sm },
   verifyResult: { borderRadius: 8, padding: SPACING.sm, marginTop: SPACING.sm },
