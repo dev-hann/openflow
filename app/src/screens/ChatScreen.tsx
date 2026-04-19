@@ -1,7 +1,6 @@
 import React, {
   useState,
   useCallback,
-  useLayoutEffect,
   useRef,
   useMemo,
   useEffect,
@@ -10,16 +9,13 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
-  TouchableOpacity,
   Platform,
   FlatList,
 } from "react-native";
-import { Text, useTheme, Icon, IconButton } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
+import { Text, useTheme, IconButton } from "react-native-paper";
 import { MessageList } from "../components/message-list";
 import { InputBar } from "../components/InputBar";
 import { KeyboardSafeView } from "../components/KeyboardSafeView";
-import { SessionModal } from "../components/session-modal";
 import { ChatEmptyState } from "../components/chat-empty-state";
 import { useChatStore } from "../store/chat";
 import { useAuthStore } from "../store/auth";
@@ -29,8 +25,6 @@ import { SPACING, SHADOWS } from "../constants/theme";
 
 export function ChatScreen() {
   const theme = useTheme();
-  const navigation = useNavigation();
-  const [sessionModalVisible, setSessionModalVisible] = useState(false);
   const [scrolledUp, setScrolledUp] = useState(false);
   const listRef = useRef<FlatList>(null);
   const messages = useChatStore((s) => s.messages);
@@ -38,14 +32,15 @@ export function ChatScreen() {
   const isConnected = useAuthStore((s) => s.isConnected);
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
-  const sessions = useSessionsStore((s) => s.sessions);
-  const { sendMessage, switchSession, reconnect, retryLastMessage } = useChat();
+  const { sendMessage, reconnect, retryLastMessage } = useChat();
 
-  const activeSession = useMemo(
-    () => sessions.find((s) => s.id === activeSessionId),
-    [sessions, activeSessionId],
-  );
-  const sessionTitle = activeSession?.title ?? "새 대화";
+  const prevSessionIdRef = useRef(activeSessionId);
+  useEffect(() => {
+    if (activeSessionId && activeSessionId !== prevSessionIdRef.current) {
+      setScrolledUp(false);
+    }
+    prevSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
 
   const themed = useMemo(
     () => ({
@@ -55,38 +50,6 @@ export function ChatScreen() {
     }),
     [theme.colors],
   );
-
-  useEffect(() => {
-    setScrolledUp(false);
-  }, [activeSessionId]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => (
-        <TouchableOpacity
-          style={styles.headerTitle}
-          onPress={() => setSessionModalVisible(true)}
-          activeOpacity={0.7}
-          accessibilityLabel="세션 선택"
-          accessibilityHint="세션 목록을 엽니다"
-          accessibilityRole="button"
-        >
-          <Text
-            variant="titleMedium"
-            numberOfLines={1}
-            style={[styles.headerTitleText, { color: theme.colors.onSurface }]}
-          >
-            {sessionTitle}
-          </Text>
-          <Icon
-            source="chevron-down"
-            size={20}
-            color={theme.colors.onSurfaceVariant}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, sessionTitle, theme]);
 
   const handleSuggestion = useCallback(
     (text: string) => {
@@ -155,34 +118,19 @@ export function ChatScreen() {
         </View>
       )}
       {isSending && (
-        <View
-          style={[
-            styles.streamingBar,
-            themed.surface,
-          ]}
-        >
+        <View style={[styles.streamingBar, themed.surface]}>
           <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text
-            variant="labelMedium"
-            style={themed.onSurfaceVariant}
-          >
+          <Text variant="labelMedium" style={themed.onSurfaceVariant}>
             생각 중...
           </Text>
         </View>
       )}
       <InputBar onSend={sendMessage} disabled={isSending} />
-      <SessionModal
-        visible={sessionModalVisible}
-        onClose={() => setSessionModalVisible(false)}
-        onSwitchSession={switchSession}
-      />
     </KeyboardSafeView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerTitle: { flexDirection: "row", alignItems: "center", gap: 2 },
-  headerTitleText: { fontWeight: "600", maxWidth: 200 },
   messageContainer: { flex: 1 },
   streamingBar: {
     flexDirection: "row",
