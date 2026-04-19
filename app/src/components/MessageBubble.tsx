@@ -161,7 +161,7 @@ export const MessageList = React.forwardRef<FlatList, MessageListProps>(function
     internalRef.current = instance;
     if (typeof forwardedRef === "function") {
       forwardedRef(instance);
-    } else if (forwardedRef) {
+    } else if (forwardedRef && "current" in forwardedRef) {
       (forwardedRef as React.MutableRefObject<FlatList | null>).current = instance;
     }
   }, [forwardedRef]);
