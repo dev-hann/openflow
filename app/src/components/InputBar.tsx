@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -6,8 +6,11 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  Platform,
+  type NativeSyntheticEvent,
+  type TextInputSubmitEditingEventData,
 } from "react-native";
-import { COLORS, SPACING } from "../constants/theme";
+import { useTheme, SPACING } from "../constants/theme";
 
 interface InputBarProps {
   onSend: (text: string) => void;
@@ -15,7 +18,9 @@ interface InputBarProps {
 }
 
 export function InputBar({ onSend, disabled }: InputBarProps) {
+  const colors = useTheme();
   const [text, setText] = useState("");
+  const inputRef = useRef<TextInput>(null);
 
   function handleSend(): void {
     const trimmed = text.trim();
@@ -24,29 +29,45 @@ export function InputBar({ onSend, disabled }: InputBarProps) {
     setText("");
   }
 
+  function handleSubmit(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>): void {
+    handleSend();
+  }
+
+  const canSend = text.trim().length > 0 && !disabled;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
       <TextInput
-        style={styles.input}
+        ref={inputRef}
+        style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
         value={text}
         onChangeText={setText}
         placeholder="메시지를 입력하세요..."
-        placeholderTextColor={COLORS.textSecondary}
+        placeholderTextColor={colors.textSecondary}
         multiline
         maxLength={4000}
         editable={!disabled}
-        onSubmitEditing={handleSend}
+        onSubmitEditing={handleSubmit}
         returnKeyType="send"
+        blurOnSubmit={false}
       />
       <TouchableOpacity
-        style={[styles.sendButton, (!text.trim() || disabled) && styles.sendButtonDisabled]}
+        style={[
+          styles.sendButton,
+          {
+            backgroundColor: canSend ? colors.primary : colors.surfaceAlt,
+          },
+        ]}
         onPress={handleSend}
-        disabled={!text.trim() || disabled}
+        disabled={!canSend}
+        activeOpacity={0.7}
       >
         {disabled ? (
-          <ActivityIndicator size="small" color={COLORS.textInverse} />
+          <ActivityIndicator size="small" color={colors.textInverse} />
         ) : (
-          <Text style={styles.sendButtonText}>전송</Text>
+          <Text style={[styles.sendButtonText, { color: canSend ? colors.textInverse : colors.textSecondary }]}>
+            전송
+          </Text>
         )}
       </TouchableOpacity>
     </View>
@@ -60,8 +81,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.background,
   },
   input: {
     flex: 1,
@@ -69,25 +88,23 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.surface,
     borderRadius: 20,
-    fontSize: 14,
-    color: COLORS.text,
+    fontSize: 15,
+    ...Platform.select({
+      ios: { paddingTop: 10 },
+      android: { paddingTop: 6 },
+    }),
   },
   sendButton: {
     marginLeft: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md + 4,
+    paddingVertical: SPACING.sm + 2,
     borderRadius: 20,
     minHeight: 40,
     justifyContent: "center",
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
+    alignItems: "center",
   },
   sendButtonText: {
-    color: COLORS.textInverse,
     fontWeight: "600",
     fontSize: 14,
   },

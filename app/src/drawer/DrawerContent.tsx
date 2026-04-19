@@ -1,12 +1,13 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
-import { COLORS, SPACING, TYPOGRAPHY } from "../constants/theme";
+import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
 import { useSessionsStore } from "../store/sessions";
 import { useAuthStore } from "../store/auth";
 import { createApiClient } from "../services/api";
 import type { SessionInfo } from "../types/protocol";
 
 export function DrawerContent() {
+  const colors = useTheme();
   const sessions = useSessionsStore((s) => s.sessions);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
@@ -14,20 +15,20 @@ export function DrawerContent() {
   const removeSession = useSessionsStore((s) => s.removeSession);
   const storedAuth = useAuthStore((s) => s.storedAuth);
 
-  const handleNewSession = useCallback(async () => {
+  const handleNewSession = React.useCallback(async () => {
     if (!storedAuth) return;
     try {
       const api = createApiClient(storedAuth.serverUrl);
       const session = await api.createSession(storedAuth.accessToken);
       addSession(session as unknown as SessionInfo);
       setActiveSessionId(session.id);
-    } catch (err) {
+    } catch {
       Alert.alert("오류", "세션 생성에 실패했습니다.");
     }
   }, [storedAuth, addSession, setActiveSessionId]);
 
-  const handleDeleteSession = useCallback(
-    async (session: SessionInfo) => {
+  const handleDeleteSession = React.useCallback(
+    (session: SessionInfo) => {
       if (!storedAuth) return;
       Alert.alert("세션 삭제", `"${session.title}" 세션을 삭제하시겠습니까?`, [
         { text: "취소", style: "cancel" },
@@ -50,10 +51,22 @@ export function DrawerContent() {
     [storedAuth, removeSession, activeSessionId, setActiveSessionId],
   );
 
+  const formatTime = (ts: number): string => {
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) {
+      return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    }
+    return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+  };
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.newButton} onPress={handleNewSession}>
-        <Text style={styles.newButtonText}>+ 새 세션</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <TouchableOpacity
+        style={[styles.newButton, { backgroundColor: colors.primary }]}
+        onPress={handleNewSession}
+      >
+        <Text style={[styles.newButtonText, { color: colors.textInverse }]}>+ 새 세션</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -61,19 +74,27 @@ export function DrawerContent() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.sessionItem, item.id === activeSessionId && styles.sessionItemActive]}
+            style={[
+              styles.sessionItem,
+              item.id === activeSessionId && { backgroundColor: colors.surfaceAlt },
+            ]}
             onPress={() => setActiveSessionId(item.id)}
             onLongPress={() => handleDeleteSession(item)}
           >
-            <Text style={styles.sessionTitle} numberOfLines={1}>
+            <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
               {item.title}
             </Text>
-            <Text style={styles.sessionMeta}>
-              {new Date(item.updatedAt).toLocaleDateString()} · {item.messageCount}개
+            <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
+              {formatTime(item.updatedAt)} · {item.messageCount}개
             </Text>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+            세션이 없습니다
+          </Text>
+        }
       />
     </View>
   );
@@ -82,21 +103,19 @@ export function DrawerContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
     paddingTop: SPACING.lg,
   },
   newButton: {
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm + 2,
+    borderRadius: 10,
     alignItems: "center",
   },
   newButtonText: {
     ...TYPOGRAPHY.subtitle,
-    color: COLORS.textInverse,
+    fontWeight: "600",
   },
   listContent: {
     paddingHorizontal: SPACING.sm,
@@ -104,19 +123,20 @@ const styles = StyleSheet.create({
   sessionItem: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: SPACING.xs,
-  },
-  sessionItemActive: {
-    backgroundColor: COLORS.surface,
   },
   sessionTitle: {
     ...TYPOGRAPHY.body,
-    color: COLORS.text,
+    fontWeight: "500",
   },
   sessionMeta: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.caption,
+    textAlign: "center",
+    marginTop: SPACING.xl,
   },
 });

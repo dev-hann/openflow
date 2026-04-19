@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
-import { COLORS, SPACING, TYPOGRAPHY } from "../constants/theme";
+import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
 
 interface Message {
   id: string;
@@ -14,6 +14,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
+  const colors = useTheme();
   const isUser = message.role === "user";
 
   return (
@@ -26,14 +27,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <View
         style={[
           styles.bubble,
-          isUser ? styles.userBubble : styles.assistantBubble,
+          isUser
+            ? { backgroundColor: colors.userBg, borderBottomRightRadius: 4 }
+            : { backgroundColor: colors.assistantBg, borderBottomLeftRadius: 4 },
         ]}
       >
-        <Text style={[styles.text, isUser && styles.userText]}>
-          {message.content || (message.isStreaming ? "..." : "")}
+        <Text style={[styles.text, { color: isUser ? colors.textInverse : colors.text }]}>
+          {message.content || (message.isStreaming ? "" : "")}
         </Text>
-        {message.isStreaming && (
-          <Text style={styles.streamingIndicator}> ●</Text>
+        {message.isStreaming && !message.content && (
+          <View style={styles.typingDots}>
+            <View style={[styles.dot, { backgroundColor: colors.textSecondary }]} />
+          </View>
         )}
       </View>
     </View>
@@ -45,13 +50,16 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages }: MessageListProps) {
+  const colors = useTheme();
+
   return (
     <FlatList
       data={messages}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <MessageBubble message={item} />}
-      contentContainerStyle={styles.listContent}
-      inverted={false}
+      contentContainerStyle={[styles.listContent, { backgroundColor: colors.background }]}
+      showsVerticalScrollIndicator={false}
+      keyboardDismissMode="interactive"
     />
   );
 }
@@ -70,29 +78,24 @@ const styles = StyleSheet.create({
   bubble: {
     maxWidth: "80%",
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
     borderRadius: 16,
-  },
-  userBubble: {
-    backgroundColor: COLORS.userBg,
-    borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    backgroundColor: COLORS.assistantBg,
-    borderBottomLeftRadius: 4,
   },
   text: {
     ...TYPOGRAPHY.body,
-    color: COLORS.text,
+    lineHeight: 20,
   },
-  userText: {
-    color: COLORS.textInverse,
+  typingDots: {
+    flexDirection: "row",
+    paddingVertical: 2,
   },
-  streamingIndicator: {
-    color: COLORS.primary,
-    fontSize: 10,
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   listContent: {
     paddingVertical: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
 });

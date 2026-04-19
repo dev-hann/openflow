@@ -1,0 +1,50 @@
+import type { ExpoConfig } from "expo/config";
+
+const config: ExpoConfig = {
+  name: "OpenFlow",
+  slug: "openflow",
+  version: "1.0.0",
+  orientation: "portrait",
+  icon: "./assets/icon.png",
+  scheme: "openflow",
+  userInterfaceStyle: "automatic",
+  newArchEnabled: true,
+  splash: {
+    image: "./assets/splash-icon.png",
+    resizeMode: "contain",
+    backgroundColor: "#4F46E5",
+  },
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: "com.openflow.app",
+    infoPlist: {
+      NSAppTransportSecurity: {
+        NSAllowsArbitraryConnections: true,
+      },
+    },
+  },
+  android: {
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#4F46E5",
+    },
+    package: "com.openflow.app",
+    allowBackup: true,
+  },
+  web: {
+    bundler: "metro",
+    output: "static",
+    favicon: "./assets/favicon.png",
+  },
+  plugins: ["expo-router"],
+  experiments: {
+    typedRoutes: true,
+  },
+  extra: {
+    eas: {
+      projectId: "your-project-id",
+    },
+  },
+};
+
+export default config;

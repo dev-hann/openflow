@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { COLORS, SPACING, TYPOGRAPHY } from "../constants/theme";
+import React from "react";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
 import { MessageList } from "../components/MessageBubble";
 import { InputBar } from "../components/InputBar";
 import { useChatStore } from "../store/chat";
@@ -8,34 +8,56 @@ import { useAuthStore } from "../store/auth";
 import { useChat } from "../hooks/useChat";
 
 export function ChatScreen() {
+  const colors = useTheme();
   const messages = useChatStore((s) => s.messages);
   const isSending = useChatStore((s) => s.isSending);
   const isConnected = useAuthStore((s) => s.isConnected);
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const { sendMessage } = useChat();
 
+  const headerRight = React.useCallback(() => {
+    if (!storedAuth) return null;
+    return (
+      <View style={[styles.statusDot, { backgroundColor: isConnected ? colors.success : colors.error }]} />
+    );
+  }, [storedAuth, isConnected, colors]);
+
+  React.useLayoutEffect(() => {
+    headerRight();
+  });
+
   if (!storedAuth) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>설정 탭에서 서버에 연결하세요</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
+        <Text style={{ fontSize: 40, marginBottom: SPACING.md }}>🔗</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>서버에 연결되지 않았습니다</Text>
+        <Text style={[styles.emptyHint, { color: colors.textSecondary }]}>
+          설정 탭에서 서버에 연결하세요
+        </Text>
       </View>
     );
   }
 
   if (!isConnected) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>서버에 연결 중...</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.emptyHint, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+          서버에 연결 중...
+        </Text>
       </View>
     );
   }
 
   if (messages.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.emptyContainer}>
-          <Text style={styles.welcomeText}>OpenFlow에 오신 것을 환영합니다!</Text>
-          <Text style={styles.emptyHint}>무엇이든 물어보세요.</Text>
+          <Text style={{ fontSize: 48, marginBottom: SPACING.lg }}>🤖</Text>
+          <Text style={[styles.welcomeText, { color: colors.text }]}>OpenFlow에 오신 것을 환영합니다!</Text>
+          <Text style={[styles.emptyHint, { color: colors.textSecondary }]}>
+            무엇이든 물어보세요.
+          </Text>
         </View>
         <InputBar onSend={sendMessage} disabled={isSending} />
       </View>
@@ -43,8 +65,14 @@ export function ChatScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MessageList messages={messages} />
+      {isSending && (
+        <View style={[styles.streamingBar, { backgroundColor: colors.surface }]}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={[styles.streamingText, { color: colors.textSecondary }]}>생각 중...</Text>
+        </View>
+      )}
       <InputBar onSend={sendMessage} disabled={isSending} />
     </View>
   );
@@ -53,7 +81,6 @@ export function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   emptyContainer: {
     flex: 1,
@@ -63,16 +90,30 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     ...TYPOGRAPHY.title,
-    color: COLORS.text,
     marginBottom: SPACING.sm,
+    textAlign: "center",
   },
-  emptyText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
+  emptyTitle: {
+    ...TYPOGRAPHY.subtitle,
+    marginBottom: SPACING.xs,
   },
   emptyHint: {
     ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  streamingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+  },
+  streamingText: {
+    ...TYPOGRAPHY.caption,
+    fontStyle: "italic",
   },
 });

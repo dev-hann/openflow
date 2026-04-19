@@ -4,30 +4,50 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Text } from "react-native";
 import { ChatScreen } from "../screens/ChatScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
-import { COLORS, TYPOGRAPHY } from "../constants/theme";
+import { useTheme, TYPOGRAPHY } from "../constants/theme";
 
 const Tab = createBottomTabNavigator();
 
 export function AppNavigator() {
+  const colors = useTheme();
+
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      theme={{
+        dark: colors.background !== "#FFFFFF",
+        colors: {
+          primary: colors.primary,
+          background: colors.background,
+          card: colors.background,
+          text: colors.text,
+          border: colors.border,
+          notification: colors.error,
+        },
+        fonts: {
+          regular: { fontFamily: "System", fontWeight: "400" as const },
+          medium: { fontFamily: "System", fontWeight: "500" as const },
+          bold: { fontFamily: "System", fontWeight: "700" as const },
+          heavy: { fontFamily: "System", fontWeight: "900" as const },
+        },
+      }}
+    >
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: COLORS.textSecondary,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarStyle: {
-            borderTopColor: COLORS.border,
+            borderTopColor: colors.border,
+            backgroundColor: colors.background,
           },
-          tabBarLabelStyle: {
-            ...TYPOGRAPHY.caption,
-          },
+          tabBarLabelStyle: TYPOGRAPHY.micro,
           headerStyle: {
-            backgroundColor: COLORS.background,
+            backgroundColor: colors.background,
           },
           headerTitleStyle: {
             ...TYPOGRAPHY.title,
-            color: COLORS.text,
+            color: colors.text,
           },
+          headerShadowVisible: false,
         }}
       >
         <Tab.Screen

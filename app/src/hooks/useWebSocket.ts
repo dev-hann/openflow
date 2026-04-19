@@ -8,10 +8,15 @@ interface UseWebSocketReturn {
   send: (data: Record<string, unknown>) => void;
 }
 
+const BASE_DELAY_MS = 1000;
+const MAX_DELAY_MS = 30_000;
+const MAX_RETRIES = 10;
+
 export function useWebSocket(): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [connected, setLocalConnected] = useState(false);
+  const retryCount = useRef(0);
+  const [connected, setConnected] = useState(false);
 
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const setStoreConnected = useAuthStore((s) => s.setConnected);
@@ -50,6 +55,12 @@ export function useWebSocket(): UseWebSocketReturn {
     const url = storedAuth.serverUrl.replace(/^http/, "ws");
     const wsUrl = `${url}/ws`;
 
+    function getDelay(): number {
+      const delay = BASE_DELAY_MS * Math.pow(2, retryCount.current);
+      const jitter = delay * 0.2 * Math.random();
+      return Math.min(delay + jitter, MAX_DELAY_MS);
+    }
+
     function connect(): void {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -65,7 +76,8 @@ export function useWebSocket(): UseWebSocketReturn {
         try {
           const msg = JSON.parse(event.data as string) as Record<string, unknown>;
           if (msg.type === "auth_ok") {
-            setLocalConnected(true);
+            retryCount.current = 0;
+            setConnected(true);
             setStoreConnected(true);
             return;
           }
@@ -76,9 +88,13 @@ export function useWebSocket(): UseWebSocketReturn {
       };
 
       ws.onclose = () => {
-        setLocalConnected(false);
+        setConnected(false);
         setStoreConnected(false);
-        reconnectTimer.current = setTimeout(connect, 3000);
+        if (retryCount.current < MAX_RETRIES) {
+          const delay = getDelay();
+          retryCount.current++;
+          reconnectTimer.current = setTimeout(connect, delay);
+        }
       };
 
       ws.onerror = () => {
@@ -89,7 +105,7 @@ export function useWebSocket(): UseWebSocketReturn {
     connect();
 
     return () => {
-      clearTimeout(reconnectTimer.current ?? undefined);
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
       wsRef.current = null;
     };
