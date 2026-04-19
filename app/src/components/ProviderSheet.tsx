@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -6,16 +6,12 @@ import {
   Modal,
   FlatList,
   useWindowDimensions,
-  ActivityIndicator,
   Pressable,
 } from "react-native";
 import {
   Text,
   Button,
   useTheme,
-  Chip,
-  IconButton,
-  TouchableRipple,
   Icon,
 } from "react-native-paper";
 import { useApiClient } from "../hooks/use-api-client";
@@ -23,101 +19,10 @@ import { useProvidersStore } from "../store/providers";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
 import { ItemSeparator } from "./item-separator";
+import { ProviderListItem } from "./provider-list-item";
 
 const SHEET_HEIGHT_RATIO = 0.65;
 const BACKDROP_COLOR = "rgba(0,0,0,0.4)";
-
-interface ProviderListItemProps {
-  item: ProviderInfo;
-  isActive: boolean;
-  isSwitching: boolean;
-  onSelect: (id: string) => Promise<boolean>;
-  onEdit: (p: ProviderInfo) => void;
-  onDelete: (p: ProviderInfo) => void;
-}
-
-const ProviderListItem = React.memo(function ProviderListItem({
-  item,
-  isActive,
-  isSwitching,
-  onSelect,
-  onEdit,
-  onDelete,
-}: ProviderListItemProps) {
-  const theme = useTheme();
-
-  return (
-    <TouchableRipple
-      onPress={() => onSelect(item.id)}
-      style={
-        isActive
-          ? { backgroundColor: theme.colors.primaryContainer }
-          : undefined
-      }
-    >
-      <View style={styles.sheetItem}>
-        <View
-          style={[
-            styles.sheetItemIcon,
-            {
-              backgroundColor: isActive
-                ? theme.colors.primary
-                : theme.colors.surfaceVariant,
-            },
-          ]}
-        >
-          <Icon
-            source="cloud-outline"
-            size={18}
-            color={
-              isActive ? theme.colors.onPrimary : theme.colors.onSurfaceVariant
-            }
-          />
-        </View>
-        <View style={styles.sheetItemInfo}>
-          <Text
-            variant="bodyLarge"
-            style={isActive ? styles.sheetItemNameActive : styles.sheetItemName}
-          >
-            {item.name}
-          </Text>
-          <Text
-            variant="bodySmall"
-            style={{ color: theme.colors.onSurfaceVariant }}
-            numberOfLines={1}
-          >
-            {item.model}
-          </Text>
-        </View>
-        {isSwitching && (
-          <ActivityIndicator
-            size="small"
-            color={theme.colors.primary}
-            style={styles.switchLoader}
-          />
-        )}
-        {isActive && !isSwitching && (
-          <Chip compact selected textStyle={styles.activeChipText}>
-            활성
-          </Chip>
-        )}
-        <IconButton
-          icon="pencil-outline"
-          size={16}
-          onPress={() => onEdit(item)}
-          accessibilityLabel={`${item.name} 편집`}
-        />
-        <IconButton
-          icon="delete-outline"
-          size={16}
-          iconColor={theme.colors.error}
-          onPress={() => onDelete(item)}
-          accessibilityLabel={`${item.name} 삭제`}
-        />
-      </View>
-    </TouchableRipple>
-  );
-});
 
 interface ProviderSheetProps {
   visible: boolean;
@@ -287,25 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
   },
-  sheetItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  sheetItemIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   sheetTitle: { fontWeight: "600" },
-  sheetItemInfo: { flex: 1, marginLeft: SPACING.sm },
-  sheetItemNameActive: { fontWeight: "600" },
-  sheetItemName: { fontWeight: "400" },
-  activeChipText: { fontSize: 10 },
-  switchLoader: { marginRight: SPACING.xs },
   listContent: { paddingBottom: SPACING.xl },
   emptyContainer: { paddingVertical: SPACING.xxl, alignItems: "center" },
   emptyText: { marginTop: SPACING.md },
