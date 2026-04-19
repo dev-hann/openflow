@@ -3,12 +3,10 @@ import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import {
   Text,
   List,
-  Button,
   Surface,
   useTheme,
   TouchableRipple,
   Icon,
-  Menu,
   Divider,
 } from "react-native-paper";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -23,6 +21,7 @@ import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
 import type { SettingsStackParamList } from "./ProviderEditScreen";
 import { ProviderSheet } from "../components/ProviderSheet";
+import { ModelSection } from "../components/model-section";
 
 type Props = NativeStackScreenProps<SettingsStackParamList, "SettingsMain">;
 
@@ -41,10 +40,8 @@ export function SettingsScreen({ navigation }: Props) {
   const providers = useProvidersStore((s) => s.providers);
   const activeProviderId = useProvidersStore((s) => s.activeProviderId);
   const setProviders = useProvidersStore((s) => s.setProviders);
-  const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
 
   const [providerSheetVisible, setProviderSheetVisible] = useState(false);
-  const [modelMenuVisible, setModelMenuVisible] = useState(false);
 
   const refreshData = useCallback(async () => {
     const client = await getApi();
@@ -116,7 +113,6 @@ export function SettingsScreen({ navigation }: Props) {
       try {
         await client.api.switchModel(client.token, model);
         setCurrentModel(model);
-        setModelMenuVisible(false);
       } catch {
         Alert.alert("오류", "모델 변경에 실패했습니다.");
       }
@@ -172,11 +168,6 @@ export function SettingsScreen({ navigation }: Props) {
         fontWeight: "600" as const,
       },
       providerModel: { color: theme.colors.onSurfaceVariant },
-      currentModelLabel: { color: theme.colors.onSurfaceVariant },
-      currentModelValue: {
-        color: theme.colors.onSurface,
-        fontWeight: "500" as const,
-      },
       addProviderTitle: {
         color: theme.colors.primary,
         fontWeight: "500" as const,
@@ -299,56 +290,11 @@ export function SettingsScreen({ navigation }: Props) {
             >
               모델
             </Text>
-            <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
-              <Menu
-                visible={modelMenuVisible}
-                onDismiss={() => setModelMenuVisible(false)}
-                anchor={
-                  <TouchableRipple onPress={() => setModelMenuVisible(true)}>
-                    <View style={styles.modelRow}>
-                      <List.Icon icon="cube-outline" />
-                      <View style={styles.modelInfo}>
-                        <Text
-                          variant="bodySmall"
-                          style={themed.currentModelLabel}
-                        >
-                          현재 모델
-                        </Text>
-                        <Text
-                          variant="bodyLarge"
-                          style={themed.currentModelValue}
-                        >
-                          {currentModel ?? "선택 안됨"}
-                        </Text>
-                      </View>
-                      <Icon
-                        source="chevron-down"
-                        size={20}
-                        color={theme.colors.onSurfaceVariant}
-                      />
-                    </View>
-                  </TouchableRipple>
-                }
-                contentStyle={{
-                  backgroundColor: theme.colors.surface,
-                  borderRadius: BORDER_RADIUS.md,
-                }}
-              >
-                {availableModels.map((m) => (
-                  <Menu.Item
-                    key={m}
-                    onPress={() => handleModelChange(m)}
-                    title={m}
-                    leadingIcon={
-                      m === currentModel ? "check-circle" : "circle-outline"
-                    }
-                    titleStyle={{
-                      fontWeight: m === currentModel ? "600" : "400",
-                    }}
-                  />
-                ))}
-              </Menu>
-            </Surface>
+            <ModelSection
+              currentModel={currentModel}
+              availableModels={availableModels}
+              onModelChange={handleModelChange}
+            />
           </>
         )}
 
@@ -411,12 +357,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   providerInfo: { flex: 1, marginLeft: SPACING.sm },
-  modelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: SPACING.md,
-  },
-  modelInfo: { flex: 1 },
   statusRow: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
 });
