@@ -1,7 +1,6 @@
 import { execSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
-
 import { createBrowserScreenshotTool, createBrowserExecuteTool } from "./browser.js";
 import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 export type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";

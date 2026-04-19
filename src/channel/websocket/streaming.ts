@@ -1,4 +1,5 @@
 import type { WebSocket } from "ws";
+
 import { serializeWsServerMessage, type WsServerMessage } from "./protocol.js";
 import { createLogger } from "../../utils/logger.js";
 
