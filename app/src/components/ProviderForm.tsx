@@ -57,6 +57,18 @@ export function ProviderForm({
     setPresetMenuVisible(false);
   }
 
+  function validateForm(): string | null {
+    if (!name.trim()) return "Provider 이름을 입력하세요.";
+    if (!normalizeUrl(baseUrl)) return "Base URL을 입력하세요.";
+    if (
+      !isEditMode &&
+      selectedPreset?.needsApiKey !== false &&
+      !apiKey.trim()
+    )
+      return "API Key를 입력하세요.";
+    return null;
+  }
+
   async function handleVerifyAndSelect(): Promise<void> {
     const result = await handleVerify();
     if (result && result.models.length > 0 && !model) {
@@ -65,24 +77,13 @@ export function ProviderForm({
   }
 
   async function handleSave(): Promise<void> {
+    const validationError = validateForm();
+    if (validationError) {
+      Alert.alert("오류", validationError);
+      return;
+    }
     const trimmedName = name.trim();
     const trimmedUrl = normalizeUrl(baseUrl);
-    if (!trimmedName) {
-      Alert.alert("오류", "Provider 이름을 입력하세요.");
-      return;
-    }
-    if (!trimmedUrl) {
-      Alert.alert("오류", "Base URL을 입력하세요.");
-      return;
-    }
-    if (
-      !isEditMode &&
-      selectedPreset?.needsApiKey !== false &&
-      !apiKey.trim()
-    ) {
-      Alert.alert("오류", "API Key를 입력하세요.");
-      return;
-    }
     setLoading(true);
     const token = await getValidToken();
     if (!token || !storedAuth) {

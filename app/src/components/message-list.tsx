@@ -6,6 +6,8 @@ import { MessageBubble } from "./MessageBubble";
 import { SPACING } from "../constants/theme";
 import type { ChatMessage } from "../store/chat";
 
+const SCROLL_NEAR_BOTTOM_PX = 150;
+
 interface MessageListProps {
   messages: ChatMessage[];
   onScrollStateChange?: (nearBottom: boolean) => void;
@@ -47,7 +49,7 @@ export const MessageList = React.forwardRef<FlatList, MessageListProps>(
         if (contentSize.height === 0) return;
         const distanceFromBottom =
           contentSize.height - contentOffset.y - layoutMeasurement.height;
-        const isNearBottom = distanceFromBottom <= 150;
+        const isNearBottom = distanceFromBottom <= SCROLL_NEAR_BOTTOM_PX;
         nearBottomRef.current = isNearBottom;
         onScrollStateChange?.(!isNearBottom);
       },

@@ -3,6 +3,8 @@ import { View, StyleSheet, Platform } from "react-native";
 import { TextInput, IconButton, useTheme } from "react-native-paper";
 import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
+const MAX_MESSAGE_LENGTH = 4000;
+
 interface InputBarProps {
   onSend: (text: string) => void;
   disabled?: boolean;
@@ -64,7 +66,7 @@ export const InputBar = React.memo(function InputBar({
           placeholder="메시지를 입력하세요..."
           placeholderTextColor={theme.colors.onSurfaceVariant}
           multiline
-          maxLength={4000}
+          maxLength={MAX_MESSAGE_LENGTH}
           editable={!disabled}
           onSubmitEditing={handleSend}
           returnKeyType="send"

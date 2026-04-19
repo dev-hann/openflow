@@ -16,23 +16,20 @@ import { useSessionsStore } from "../store/sessions";
 import { useSettingsStore } from "../store/settings";
 import { useProvidersStore } from "../store/providers";
 import { useApiClient } from "../hooks/use-api-client";
-import { clearAuth } from "../services/auth";
 import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
 import type { SettingsStackParamList } from "./ProviderEditScreen";
 import { ProviderSheet } from "../components/ProviderSheet";
 import { ModelSection } from "../components/model-section";
+import { ConnectionSection } from "../components/connection-section";
 
 type Props = NativeStackScreenProps<SettingsStackParamList, "SettingsMain">;
 
 export function SettingsScreen({ navigation }: Props) {
   const theme = useTheme();
   const storedAuth = useAuthStore((s) => s.storedAuth);
-  const clearAll = useAuthStore((s) => s.clearAll);
-  const isConnected = useAuthStore((s) => s.isConnected);
   const getApi = useApiClient();
   const setSessions = useSessionsStore((s) => s.setSessions);
-  const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const currentModel = useSettingsStore((s) => s.currentModel);
   const availableModels = useSettingsStore((s) => s.availableModels);
   const setCurrentModel = useSettingsStore((s) => s.setCurrentModel);
@@ -68,43 +65,6 @@ export function SettingsScreen({ navigation }: Props) {
       if (storedAuth) refreshData();
     }, [storedAuth, refreshData]),
   );
-
-  const handleChangeServer = useCallback((): void => {
-    if (!storedAuth) return;
-    Alert.alert("서버 변경", "연결된 서버를 변경하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "변경",
-        style: "destructive",
-        onPress: async () => {
-          const client = await getApi();
-          if (client) {
-            try {
-              await client.api.unpair(client.token);
-            } catch {
-              /* non-critical */
-            }
-          }
-          await clearAuth();
-          clearAll();
-          setSessions([]);
-          setActiveSessionId(null);
-          setAvailableModels([]);
-          setCurrentModel("");
-          setProviders([], "");
-        },
-      },
-    ]);
-  }, [
-    storedAuth,
-    getApi,
-    clearAll,
-    setSessions,
-    setActiveSessionId,
-    setAvailableModels,
-    setCurrentModel,
-    setProviders,
-  ]);
 
   const handleModelChange = useCallback(
     async (model: string): Promise<void> => {
@@ -154,15 +114,10 @@ export function SettingsScreen({ navigation }: Props) {
   }, [navigation]);
 
   const activeProvider = providers.find((p) => p.id === activeProviderId);
-  const statusColor = isConnected ? theme.colors.tertiary : theme.colors.error;
-  const statusText = isConnected ? "연결됨" : "연결 끊김";
 
   const themed = useMemo(
     () => ({
       sectionLabel: { color: theme.colors.onSurfaceVariant },
-      statusDot: { backgroundColor: statusColor },
-      statusText: { color: statusColor },
-      serverTitle: { color: theme.colors.error },
       providerName: {
         color: theme.colors.onSurface,
         fontWeight: "600" as const,
@@ -173,7 +128,7 @@ export function SettingsScreen({ navigation }: Props) {
         fontWeight: "500" as const,
       },
     }),
-    [theme.colors, statusColor],
+    [theme.colors],
   );
 
   return (
@@ -191,34 +146,7 @@ export function SettingsScreen({ navigation }: Props) {
         >
           연결
         </Text>
-        <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
-          <List.Item
-            title="서버"
-            description={storedAuth?.serverUrl ?? "-"}
-            left={(props) => <List.Icon {...props} icon="server" />}
-            right={() => (
-              <View style={styles.statusRow}>
-                <View style={[styles.statusDot, themed.statusDot]} />
-                <Text variant="labelSmall" style={themed.statusText}>
-                  {statusText}
-                </Text>
-              </View>
-            )}
-          />
-          <Divider />
-          <List.Item
-            title="서버 변경"
-            titleStyle={themed.serverTitle}
-            left={(props) => (
-              <List.Icon
-                {...props}
-                icon="link-off"
-                color={theme.colors.error}
-              />
-            )}
-            onPress={handleChangeServer}
-          />
-        </Surface>
+        <ConnectionSection onServerChanged={refreshData} />
 
         <Text
           variant="titleSmall"
@@ -357,6 +285,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   providerInfo: { flex: 1, marginLeft: SPACING.sm },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
 });
