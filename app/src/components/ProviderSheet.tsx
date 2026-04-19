@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -24,6 +24,109 @@ import { SPACING, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
 import { ItemSeparator } from "./item-separator";
 
+const SHEET_HEIGHT_RATIO = 0.65;
+const BACKDROP_COLOR = "rgba(0,0,0,0.4)";
+
+interface ProviderListItemProps {
+  item: ProviderInfo;
+  isActive: boolean;
+  isSwitching: boolean;
+  onSelect: (id: string) => Promise<boolean>;
+  onEdit: (p: ProviderInfo) => void;
+  onDelete: (p: ProviderInfo) => void;
+}
+
+const ProviderListItem = React.memo(function ProviderListItem({
+  item,
+  isActive,
+  isSwitching,
+  onSelect,
+  onEdit,
+  onDelete,
+}: ProviderListItemProps) {
+  const theme = useTheme();
+
+  return (
+    <TouchableRipple
+      onPress={async () => {
+        const ok = await onSelect(item.id);
+        if (ok) return;
+      }}
+      style={
+        isActive
+          ? { backgroundColor: theme.colors.primaryContainer }
+          : undefined
+      }
+    >
+      <View style={styles.sheetItem}>
+        <View
+          style={[
+            styles.sheetItemIcon,
+            {
+              backgroundColor: isActive
+                ? theme.colors.primary
+                : theme.colors.surfaceVariant,
+            },
+          ]}
+        >
+          <Icon
+            source="cloud-outline"
+            size={18}
+            color={
+              isActive
+                ? theme.colors.onPrimary
+                : theme.colors.onSurfaceVariant
+            }
+          />
+        </View>
+        <View style={styles.sheetItemInfo}>
+          <Text
+            variant="bodyLarge"
+            style={isActive ? styles.sheetItemNameActive : styles.sheetItemName}
+          >
+            {item.name}
+          </Text>
+          <Text
+            variant="bodySmall"
+            style={[
+              styles.sheetItemModel,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+            numberOfLines={1}
+          >
+            {item.model}
+          </Text>
+        </View>
+        {isSwitching && (
+          <ActivityIndicator
+            size="small"
+            color={theme.colors.primary}
+            style={styles.switchLoader}
+          />
+        )}
+        {isActive && !isSwitching && (
+          <Chip compact selected textStyle={styles.activeChipText}>
+            활성
+          </Chip>
+        )}
+        <IconButton
+          icon="pencil-outline"
+          size={16}
+          onPress={() => onEdit(item)}
+          accessibilityLabel={`${item.name} 편집`}
+        />
+        <IconButton
+          icon="delete-outline"
+          size={16}
+          iconColor={theme.colors.error}
+          onPress={() => onDelete(item)}
+          accessibilityLabel={`${item.name} 삭제`}
+        />
+      </View>
+    </TouchableRipple>
+  );
+});
+
 interface ProviderSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -40,7 +143,7 @@ export function ProviderSheet({
   onAdd,
 }: ProviderSheetProps) {
   const theme = useTheme();
-  const sheetHeight = useWindowDimensions().height * 0.65;
+  const sheetHeight = useWindowDimensions().height * SHEET_HEIGHT_RATIO;
   const providers = useProvidersStore((s) => s.providers);
   const activeProviderId = useProvidersStore((s) => s.activeProviderId);
   const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
@@ -115,95 +218,19 @@ export function ProviderSheet({
           <FlatList
             data={providers}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const isActive = item.id === activeProviderId;
-              return (
-                <TouchableRipple
-                  onPress={async () => {
-                    const ok = await handleSwitch(item.id);
-                    if (ok) onClose();
-                  }}
-                  style={
-                    isActive
-                      ? { backgroundColor: theme.colors.primaryContainer }
-                      : undefined
-                  }
-                >
-                  <View style={styles.sheetItem}>
-                    <View
-                      style={[
-                        styles.sheetItemIcon,
-                        {
-                          backgroundColor: isActive
-                            ? theme.colors.primary
-                            : theme.colors.surfaceVariant,
-                        },
-                      ]}
-                    >
-                      <Icon
-                        source="cloud-outline"
-                        size={18}
-                        color={
-                          isActive
-                            ? theme.colors.onPrimary
-                            : theme.colors.onSurfaceVariant
-                        }
-                      />
-                    </View>
-                    <View style={styles.sheetItemInfo}>
-                      <Text
-                        variant="bodyLarge"
-                        style={
-                          isActive
-                            ? styles.sheetItemNameActive
-                            : styles.sheetItemName
-                        }
-                      >
-                        {item.name}
-                      </Text>
-                      <Text
-                        variant="bodySmall"
-                        style={[
-                          styles.sheetItemModel,
-                          { color: theme.colors.onSurfaceVariant },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {item.model}
-                      </Text>
-                    </View>
-                    {switchingId === item.id && (
-                      <ActivityIndicator
-                        size="small"
-                        color={theme.colors.primary}
-                        style={styles.switchLoader}
-                      />
-                    )}
-                    {isActive && !switchingId && (
-                      <Chip compact selected textStyle={styles.activeChipText}>
-                        활성
-                      </Chip>
-                    )}
-                    <IconButton
-                      icon="pencil-outline"
-                      size={16}
-                      onPress={() => {
-                        onEdit(item);
-                        onClose();
-                      }}
-                      accessibilityLabel={`${item.name} 편집`}
-                    />
-                    <IconButton
-                      icon="delete-outline"
-                      size={16}
-                      iconColor={theme.colors.error}
-                      onPress={() => handleDelete(item)}
-                      accessibilityLabel={`${item.name} 삭제`}
-                    />
-                  </View>
-                </TouchableRipple>
-              );
-            }}
+            renderItem={({ item }) => (
+              <ProviderListItem
+                item={item}
+                isActive={item.id === activeProviderId}
+                isSwitching={switchingId === item.id}
+                onSelect={handleSwitch}
+                onEdit={(p) => {
+                  onEdit(p);
+                  onClose();
+                }}
+                onDelete={handleDelete}
+              />
+            )}
             ItemSeparatorComponent={ItemSeparator}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
@@ -246,12 +273,12 @@ const styles = StyleSheet.create({
   sheetBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: BACKDROP_COLOR,
   },
   sheetContainer: {
     borderTopLeftRadius: BORDER_RADIUS.xxl,
     borderTopRightRadius: BORDER_RADIUS.xxl,
-    paddingBottom: 20,
+    paddingBottom: SPACING.xl,
   },
   sheetHandle: {
     width: 36,
