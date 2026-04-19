@@ -7,16 +7,33 @@ import { useSessionsStore } from "../store/sessions";
 interface UseWebSocketReturn {
   isConnected: boolean;
   send: (data: Record<string, unknown>) => void;
+  reconnect: () => void;
 }
 
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 30_000;
-const MAX_RETRIES = 10;
+const PING_INTERVAL_MS = 30_000;
+
+function buildWsUrl(serverUrl: string): string {
+  let url = serverUrl.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    url = `http://${url}`;
+  }
+  return url.replace(/^http/, "ws") + "/ws";
+}
+
+function getBackoffDelay(count: number): number {
+  const delay = BASE_DELAY_MS * Math.pow(2, count);
+  const jitter = delay * 0.2 * Math.random();
+  return Math.min(delay + jitter, MAX_DELAY_MS);
+}
 
 export function useWebSocket(): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const retryCount = useRef(0);
+  const intentionalClose = useRef(false);
   const [connected, setConnected] = useState(false);
 
   const storedAuth = useAuthStore((s) => s.storedAuth);
@@ -24,6 +41,7 @@ export function useWebSocket(): UseWebSocketReturn {
   const setStoreConnected = useAuthStore((s) => s.setConnected);
   const appendToLastMessage = useChatStore((s) => s.appendToLastMessage);
   const finalizeLastMessage = useChatStore((s) => s.finalizeLastMessage);
+  const setSending = useChatStore((s) => s.setSending);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
 
   const handleMessage = useCallback(
@@ -36,13 +54,16 @@ export function useWebSocket(): UseWebSocketReturn {
             break;
           case "response":
             finalizeLastMessage(msg.content);
+            setSending(false);
             break;
           case "error":
             finalizeLastMessage(`Error: ${msg.message}`);
+            setSending(false);
             break;
           case "session_switched":
             setActiveSessionId(msg.sessionId);
             break;
+          case "auth_required":
           case "pong":
           case "auth_ok":
             break;
@@ -51,78 +72,107 @@ export function useWebSocket(): UseWebSocketReturn {
         // ignore malformed messages
       }
     },
-    [appendToLastMessage, finalizeLastMessage, setActiveSessionId],
+    [appendToLastMessage, finalizeLastMessage, setSending, setActiveSessionId],
   );
+
+  const clearPingTimer = useCallback(() => {
+    if (pingTimer.current) {
+      clearInterval(pingTimer.current);
+      pingTimer.current = null;
+    }
+  }, []);
+
+  const startPing = useCallback((ws: WebSocket) => {
+    clearPingTimer();
+    pingTimer.current = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, PING_INTERVAL_MS);
+  }, [clearPingTimer]);
+
+  const cleanup = useCallback(() => {
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+    clearPingTimer();
+    if (wsRef.current) {
+      intentionalClose.current = true;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  }, [clearPingTimer]);
+
+  const connect = useCallback((wsUrl: string, scheduleReconnect: () => void) => {
+    intentionalClose.current = false;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = async () => {
+      const token = await getValidToken();
+      if (!token) {
+        ws.close(4001, "no valid token");
+        return;
+      }
+      ws.send(JSON.stringify({ type: "auth", accessToken: token }));
+    };
+
+    ws.onmessage = (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data as string) as WsServerMessage;
+        if (msg.type === "auth_ok") {
+          retryCount.current = 0;
+          setConnected(true);
+          setStoreConnected(true);
+          startPing(ws);
+          return;
+        }
+        if (msg.type === "auth_required") {
+          getValidToken().then((token) => {
+            if (token && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "auth", accessToken: token }));
+            }
+          });
+          return;
+        }
+      } catch {
+        // ignore parse errors for auth check
+      }
+      handleMessage(event);
+    };
+
+    ws.onclose = () => {
+      clearPingTimer();
+      setConnected(false);
+      setStoreConnected(false);
+      if (!intentionalClose.current) {
+        retryCount.current++;
+        reconnectTimer.current = setTimeout(scheduleReconnect, getBackoffDelay(retryCount.current));
+      }
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }, [getValidToken, setStoreConnected, startPing, handleMessage, clearPingTimer]);
 
   useEffect(() => {
     if (!storedAuth) return;
+    const wsUrl = buildWsUrl(storedAuth.serverUrl);
+    const scheduleReconnect = () => connect(wsUrl, scheduleReconnect);
+    connect(wsUrl, scheduleReconnect);
+    return () => { cleanup(); };
+  }, [storedAuth, connect, cleanup]);
 
-    let url = storedAuth.serverUrl.trim();
-    if (!/^https?:\/\//i.test(url)) {
-      url = `http://${url}`;
-    }
-    const wsUrl = url.replace(/^http/, "ws") + "/ws";
-
-    function getDelay(): number {
-      const delay = BASE_DELAY_MS * Math.pow(2, retryCount.current);
-      const jitter = delay * 0.2 * Math.random();
-      return Math.min(delay + jitter, MAX_DELAY_MS);
-    }
-
-    function connect(): void {
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = async () => {
-        const token = await getValidToken();
-        if (!token) {
-          ws.close(4001, "no valid token");
-          return;
-        }
-        ws.send(JSON.stringify({
-          type: "auth",
-          accessToken: token,
-        }));
-      };
-
-      ws.onmessage = (event: MessageEvent) => {
-        try {
-          const msg = JSON.parse(event.data as string) as WsServerMessage;
-          if (msg.type === "auth_ok") {
-            retryCount.current = 0;
-            setConnected(true);
-            setStoreConnected(true);
-            return;
-          }
-        } catch {
-          // ignore
-        }
-        handleMessage(event);
-      };
-
-      ws.onclose = () => {
-        setConnected(false);
-        setStoreConnected(false);
-        if (retryCount.current < MAX_RETRIES) {
-          const delay = getDelay();
-          retryCount.current++;
-          reconnectTimer.current = setTimeout(connect, delay);
-        }
-      };
-
-      ws.onerror = () => {
-        ws.close();
-      };
-    }
-
-    connect();
-
-    return () => {
-      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
-      wsRef.current = null;
-    };
-  }, [storedAuth, handleMessage, setStoreConnected, getValidToken]);
+  const reconnect = useCallback(() => {
+    cleanup();
+    retryCount.current = 0;
+    if (!storedAuth) return;
+    const wsUrl = buildWsUrl(storedAuth.serverUrl);
+    const scheduleReconnect = () => reconnect();
+    connect(wsUrl, scheduleReconnect);
+  }, [storedAuth, cleanup, connect]);
 
   const send = useCallback((data: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -130,5 +180,5 @@ export function useWebSocket(): UseWebSocketReturn {
     }
   }, []);
 
-  return { isConnected: connected, send };
+  return { isConnected: connected, send, reconnect };
 }
