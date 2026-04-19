@@ -1,133 +1,117 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  Modal,
-} from "react-native";
-import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
+import { View, StyleSheet, FlatList, Alert, Modal } from "react-native";
+import { Text, List, Button, Appbar, useTheme, Divider, TouchableRipple, Icon } from "react-native-paper";
 import { useSessionsStore } from "../store/sessions";
-import { useAuthStore } from "../store/auth";
-import { createApiClient } from "../services/api";
+import { useApiClient } from "../hooks/use-api-client";
 import type { SessionInfo } from "../types/protocol";
+import { SPACING, BORDER_RADIUS } from "../constants/theme";
 
 interface SessionModalProps {
   visible: boolean;
   onClose: () => void;
+  onSwitchSession: (sessionId: string) => void;
 }
 
-export function SessionModal({ visible, onClose }: SessionModalProps) {
-  const colors = useTheme();
+export function SessionModal({ visible, onClose, onSwitchSession }: SessionModalProps) {
+  const theme = useTheme();
   const sessions = useSessionsStore((s) => s.sessions);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
-  const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const addSession = useSessionsStore((s) => s.addSession);
   const removeSession = useSessionsStore((s) => s.removeSession);
-  const storedAuth = useAuthStore((s) => s.storedAuth);
-  const getValidToken = useAuthStore((s) => s.getValidToken);
+  const getApi = useApiClient();
 
   const handleNewSession = React.useCallback(async () => {
-    if (!storedAuth) return;
-    const token = await getValidToken();
-    if (!token) return;
+    const client = await getApi();
+    if (!client) return;
     try {
-      const api = createApiClient(storedAuth.serverUrl);
-      const session = await api.createSession(token);
+      const session = await client.api.createSession(client.token);
       const now = Date.now();
-      addSession({
-        id: session.id,
-        title: session.title,
-        createdAt: now,
-        updatedAt: now,
-        messageCount: 0,
-      });
-      setActiveSessionId(session.id);
+      addSession({ id: session.id, title: session.title, createdAt: now, updatedAt: now, messageCount: 0 });
+      onSwitchSession(session.id);
+      onClose();
     } catch {
       Alert.alert("오류", "세션 생성에 실패했습니다.");
     }
-  }, [storedAuth, getValidToken, addSession, setActiveSessionId]);
+  }, [getApi, addSession, onSwitchSession, onClose]);
 
-  const handleDeleteSession = React.useCallback(
+  const handleDelete = React.useCallback(
     (session: SessionInfo) => {
-      if (!storedAuth) return;
       Alert.alert("세션 삭제", `"${session.title}" 세션을 삭제하시겠습니까?`, [
         { text: "취소", style: "cancel" },
-        {
-          text: "삭제",
-          style: "destructive",
-          onPress: async () => {
-            const token = await getValidToken();
-            if (!token) return;
-            try {
-              const api = createApiClient(storedAuth.serverUrl);
-              await api.deleteSession(token, session.id);
-              removeSession(session.id);
-              if (activeSessionId === session.id) setActiveSessionId(null);
-            } catch {
-              Alert.alert("오류", "세션 삭제에 실패했습니다.");
-            }
-          },
-        },
+        { text: "삭제", style: "destructive", onPress: async () => {
+          const client = await getApi();
+          if (!client) return;
+          try {
+            await client.api.deleteSession(client.token, session.id);
+            removeSession(session.id);
+            if (activeSessionId === session.id) onSwitchSession("");
+          } catch {
+            Alert.alert("오류", "세션 삭제에 실패했습니다.");
+          }
+        }},
       ]);
     },
-    [storedAuth, getValidToken, removeSession, activeSessionId, setActiveSessionId],
+    [getApi, removeSession, activeSessionId, onSwitchSession],
   );
 
   const formatTime = (ts: number): string => {
     const d = new Date(ts);
     const now = new Date();
-    if (d.toDateString() === now.toDateString()) {
-      return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    }
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
     return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
   };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={[styles.closeText, { color: colors.primary }]}>닫기</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>세션</Text>
-          <TouchableOpacity onPress={handleNewSession} style={styles.addButton}>
-            <Text style={[styles.addButtonText, { color: colors.primary }]}>+ 새 세션</Text>
-          </TouchableOpacity>
-        </View>
-
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <Appbar.Header style={{ backgroundColor: theme.colors.surface }} mode="center-aligned">
+          <Appbar.Action icon="close" onPress={onClose} />
+          <Appbar.Content title="세션" titleStyle={{ fontWeight: "600" }} />
+          <Button mode="text" onPress={handleNewSession} icon="plus" compact>
+            새 세션
+          </Button>
+        </Appbar.Header>
         <FlatList
           data={sessions}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.sessionItem,
-                {
-                  backgroundColor: item.id === activeSessionId ? colors.surfaceAlt : "transparent",
-                },
-              ]}
-              onPress={() => {
-                setActiveSessionId(item.id);
-                onClose();
-              }}
-              onLongPress={() => handleDeleteSession(item)}
-            >
-              <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
-                {formatTime(item.updatedAt)} · {item.messageCount}개
-              </Text>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            const isActive = item.id === activeSessionId;
+            return (
+              <TouchableRipple
+                onPress={() => { if (!isActive) onSwitchSession(item.id); onClose(); }}
+                style={{ backgroundColor: isActive ? theme.colors.primaryContainer : "transparent" }}
+              >
+                <List.Item
+                  title={item.title}
+                  titleStyle={{ fontWeight: isActive ? "600" : "400" }}
+                  description={`${formatTime(item.updatedAt)} · ${item.messageCount}개`}
+                  left={(props) => (
+                    <List.Icon
+                      {...props}
+                      icon={isActive ? "chat" : "chat-outline"}
+                      color={isActive ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                    />
+                  )}
+                  right={() => (
+                    <View style={{ justifyContent: "center" }}>
+                      <TouchableRipple onPress={() => handleDelete(item)} style={{ padding: SPACING.xs, borderRadius: 20 }}>
+                        <Icon source="delete-outline" size={18} color={theme.colors.onSurfaceVariant} />
+                      </TouchableRipple>
+                    </View>
+                  )}
+                />
+              </TouchableRipple>
+            );
+          }}
+          ItemSeparatorComponent={() => <Divider />}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              세션이 없습니다
-            </Text>
+            <View style={styles.emptyContainer}>
+              <Icon source="chat-off-outline" size={40} color={theme.colors.onSurfaceVariant} />
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: SPACING.md }}>
+                세션이 없습니다
+              </Text>
+            </View>
           }
         />
       </View>
@@ -136,55 +120,6 @@ export function SessionModal({ visible, onClose }: SessionModalProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.subtitle,
-    fontWeight: "600",
-  },
-  closeButton: {
-    padding: SPACING.xs,
-  },
-  closeText: {
-    ...TYPOGRAPHY.body,
-  },
-  addButton: {
-    padding: SPACING.xs,
-  },
-  addButtonText: {
-    ...TYPOGRAPHY.body,
-    fontWeight: "600",
-  },
-  listContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  sessionItem: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderRadius: 10,
-    marginBottom: SPACING.xs,
-  },
-  sessionTitle: {
-    ...TYPOGRAPHY.body,
-    fontWeight: "500",
-  },
-  sessionMeta: {
-    ...TYPOGRAPHY.caption,
-    marginTop: 2,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.caption,
-    textAlign: "center",
-    marginTop: SPACING.xl,
-  },
+  listContent: { paddingVertical: SPACING.sm },
+  emptyContainer: { paddingVertical: SPACING.xxl, alignItems: "center" },
 });

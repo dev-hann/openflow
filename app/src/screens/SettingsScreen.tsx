@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import { Text, List, Button, Surface, useTheme, TouchableRipple, Icon, Menu, Divider } from "react-native-paper";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -6,7 +6,7 @@ import { useAuthStore } from "../store/auth";
 import { useSessionsStore } from "../store/sessions";
 import { useSettingsStore } from "../store/settings";
 import { useProvidersStore } from "../store/providers";
-import { createApiClient } from "../services/api";
+import { useApiClient } from "../hooks/use-api-client";
 import { clearAuth } from "../services/auth";
 import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
@@ -20,7 +20,7 @@ export function SettingsScreen({ navigation }: Props) {
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const clearAll = useAuthStore((s) => s.clearAll);
   const isConnected = useAuthStore((s) => s.isConnected);
-  const getValidToken = useAuthStore((s) => s.getValidToken);
+  const getApi = useApiClient();
   const setSessions = useSessionsStore((s) => s.setSessions);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const currentModel = useSettingsStore((s) => s.currentModel);
@@ -36,11 +36,10 @@ export function SettingsScreen({ navigation }: Props) {
   const [modelMenuVisible, setModelMenuVisible] = useState(false);
 
   const refreshData = useCallback(async () => {
-    const token = await getValidToken();
-    const auth = useAuthStore.getState().storedAuth;
-    if (!token || !auth) return;
+    const client = await getApi();
+    if (!client) return;
     try {
-      const api = createApiClient(auth.serverUrl);
+      const { api, token } = client;
       const [sessions, modelInfo, providerInfo] = await Promise.all([
         api.listSessions(token), api.listModels(token), api.listProviders(token),
       ]);
@@ -51,7 +50,7 @@ export function SettingsScreen({ navigation }: Props) {
     } catch {
       return;
     }
-  }, [getValidToken, setSessions, setAvailableModels, setCurrentModel, setProviders]);
+  }, [getApi, setSessions, setAvailableModels, setCurrentModel, setProviders]);
 
   useEffect(() => { if (storedAuth) refreshData(); }, [storedAuth, refreshData]);
 
@@ -60,8 +59,8 @@ export function SettingsScreen({ navigation }: Props) {
     Alert.alert("서버 변경", "연결된 서버를 변경하시겠습니까?", [
       { text: "취소", style: "cancel" },
       { text: "변경", style: "destructive", onPress: async () => {
-        const token = await getValidToken();
-        if (token) { try { await createApiClient(storedAuth.serverUrl).unpair(token); } catch { return; } }
+        const client = await getApi();
+        if (client) { try { await client.api.unpair(client.token); } catch { return; } }
         await clearAuth();
         clearAll();
         setSessions([]);
@@ -71,19 +70,19 @@ export function SettingsScreen({ navigation }: Props) {
   }
 
   async function handleModelChange(model: string): Promise<void> {
-    const token = await getValidToken();
-    if (!token || !storedAuth) return;
+    const client = await getApi();
+    if (!client) return;
     try {
-      await createApiClient(storedAuth.serverUrl).switchModel(token, model);
+      await client.api.switchModel(client.token, model);
       setCurrentModel(model);
       setModelMenuVisible(false);
     } catch { Alert.alert("오류", "모델 변경에 실패했습니다."); }
   }
 
   async function handleDeleteProvider(p: ProviderInfo): Promise<void> {
-    const token = await getValidToken();
-    if (!token || !storedAuth) return;
-    try { await createApiClient(storedAuth.serverUrl).deleteProvider(token, p.id); refreshData(); }
+    const client = await getApi();
+    if (!client) return;
+    try { await client.api.deleteProvider(client.token, p.id); refreshData(); }
     catch { Alert.alert("오류", "Provider 삭제에 실패했습니다."); }
   }
 
@@ -101,32 +100,44 @@ export function SettingsScreen({ navigation }: Props) {
   const statusColor = isConnected ? theme.colors.tertiary : theme.colors.error;
   const statusText = isConnected ? "연결됨" : "연결 끊김";
 
+  const themed = useMemo(() => ({
+    sectionLabel: { color: theme.colors.onSurfaceVariant },
+    statusDot: { backgroundColor: statusColor },
+    statusText: { color: statusColor },
+    serverTitle: { color: theme.colors.error },
+    providerName: { color: theme.colors.onSurface, fontWeight: "600" as const },
+    providerModel: { color: theme.colors.onSurfaceVariant },
+    currentModelLabel: { color: theme.colors.onSurfaceVariant },
+    currentModelValue: { color: theme.colors.onSurface, fontWeight: "500" as const },
+    addProviderTitle: { color: theme.colors.primary, fontWeight: "500" as const },
+  }), [theme.colors, statusColor]);
+
   return (
     <>
       <ScrollView style={{ backgroundColor: theme.colors.background }} contentContainerStyle={{ padding: SPACING.md, paddingBottom: SPACING.xxl }}>
-        <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>연결</Text>
+        <Text variant="titleSmall" style={[styles.sectionLabel, themed.sectionLabel]}>연결</Text>
         <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
           <List.Item
             title="서버"
             description={storedAuth?.serverUrl ?? "-"}
             left={(props) => <List.Icon {...props} icon="server" />}
             right={() => (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xs }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: statusColor }} />
-                <Text variant="labelSmall" style={{ color: statusColor }}>{statusText}</Text>
+              <View style={styles.statusRow}>
+                <View style={[styles.statusDot, themed.statusDot]} />
+                <Text variant="labelSmall" style={themed.statusText}>{statusText}</Text>
               </View>
             )}
           />
           <Divider />
           <List.Item
             title="서버 변경"
-            titleStyle={{ color: theme.colors.error }}
+            titleStyle={themed.serverTitle}
             left={(props) => <List.Icon {...props} icon="link-off" color={theme.colors.error} />}
             onPress={handleChangeServer}
           />
         </Surface>
 
-        <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>AI Provider</Text>
+        <Text variant="titleSmall" style={[styles.sectionLabel, themed.sectionLabel]}>AI Provider</Text>
         <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
           {activeProvider ? (
             <TouchableRipple onPress={() => setProviderSheetVisible(true)}>
@@ -134,9 +145,9 @@ export function SettingsScreen({ navigation }: Props) {
                 <View style={[styles.providerIcon, { backgroundColor: theme.colors.primaryContainer }]}>
                   <Icon source="cloud-outline" size={20} color={theme.colors.primary} />
                 </View>
-                <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-                  <Text variant="bodyLarge" style={{ fontWeight: "600" }}>{activeProvider.name}</Text>
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+                <View style={styles.providerInfo}>
+                  <Text variant="bodyLarge" style={themed.providerName}>{activeProvider.name}</Text>
+                  <Text variant="bodySmall" style={themed.providerModel} numberOfLines={1}>
                     {activeProvider.model}
                   </Text>
                 </View>
@@ -154,7 +165,7 @@ export function SettingsScreen({ navigation }: Props) {
           <Divider />
           <List.Item
             title="새 Provider 추가"
-            titleStyle={{ color: theme.colors.primary, fontWeight: "500" }}
+            titleStyle={themed.addProviderTitle}
             left={(props) => <List.Icon {...props} icon="plus" color={theme.colors.primary} />}
             onPress={handleAddProvider}
           />
@@ -162,7 +173,7 @@ export function SettingsScreen({ navigation }: Props) {
 
         {storedAuth && availableModels.length > 0 && (
           <>
-            <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>모델</Text>
+            <Text variant="titleSmall" style={[styles.sectionLabel, themed.sectionLabel]}>모델</Text>
             <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
               <Menu
                 visible={modelMenuVisible}
@@ -171,9 +182,9 @@ export function SettingsScreen({ navigation }: Props) {
                   <TouchableRipple onPress={() => setModelMenuVisible(true)}>
                     <View style={styles.modelRow}>
                       <List.Icon icon="cube-outline" />
-                      <View style={{ flex: 1 }}>
-                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>현재 모델</Text>
-                        <Text variant="bodyLarge" style={{ fontWeight: "500" }}>{currentModel ?? "선택 안됨"}</Text>
+                      <View style={styles.modelInfo}>
+                        <Text variant="bodySmall" style={themed.currentModelLabel}>현재 모델</Text>
+                        <Text variant="bodyLarge" style={themed.currentModelValue}>{currentModel ?? "선택 안됨"}</Text>
                       </View>
                       <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
                     </View>
@@ -197,7 +208,7 @@ export function SettingsScreen({ navigation }: Props) {
 
         {storedAuth && (
           <>
-            <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>정보</Text>
+            <Text variant="titleSmall" style={[styles.sectionLabel, themed.sectionLabel]}>정보</Text>
             <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
               <List.Item title="버전" description="1.0.0" left={(props) => <List.Icon {...props} icon="information-outline" />} />
             </Surface>
@@ -221,5 +232,9 @@ const styles = StyleSheet.create({
   card: { borderRadius: BORDER_RADIUS.lg, marginBottom: SPACING.md, overflow: "hidden" },
   providerCard: { flexDirection: "row", alignItems: "center", paddingVertical: SPACING.md, paddingHorizontal: SPACING.md },
   providerIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+  providerInfo: { flex: 1, marginLeft: SPACING.sm },
   modelRow: { flexDirection: "row", alignItems: "center", paddingRight: SPACING.md },
+  modelInfo: { flex: 1 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
 });

@@ -1,4 +1,12 @@
-import type { TokenPair, SessionInfo, StoredAuth } from "../types/protocol";
+import type { TokenPair, SessionInfo, StoredAuth, ProviderInfo } from "../types/protocol";
+
+export function normalizeUrl(url: string): string {
+  let trimmed = url.trim().replace(/\/$/, "");
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = `http://${trimmed}`;
+  }
+  return trimmed;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -14,11 +22,7 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor(baseUrl: string) {
-    let url = baseUrl.trim().replace(/\/$/, "");
-    if (!/^https?:\/\//i.test(url)) {
-      url = `http://${url}`;
-    }
-    this.baseUrl = url;
+    this.baseUrl = normalizeUrl(baseUrl);
   }
 
   private async request(
@@ -56,17 +60,19 @@ export class ApiClient {
   }
 
   async pairVerify(pin: string, label: string): Promise<TokenPair> {
-    return (await this.request("/api/auth/pair/verify", {
+    const resp = (await this.request("/api/auth/pair/verify", {
       method: "POST",
       body: { pin, label },
-    })) as Promise<TokenPair>;
+    })) as TokenPair;
+    return resp;
   }
 
   async refreshToken(refreshToken: string): Promise<TokenPair> {
-    return (await this.request("/api/auth/refresh", {
+    const resp = (await this.request("/api/auth/refresh", {
       method: "POST",
       body: { refreshToken },
-    })) as Promise<TokenPair>;
+    })) as TokenPair;
+    return resp;
   }
 
   async unpair(accessToken: string): Promise<void> {
@@ -81,11 +87,12 @@ export class ApiClient {
   }
 
   async createSession(accessToken: string, title?: string): Promise<Pick<SessionInfo, "id" | "title">> {
-    return (await this.request("/api/sessions", {
+    const resp = (await this.request("/api/sessions", {
       method: "POST",
       body: { title: title ?? "New Chat" },
       accessToken,
-    })) as Promise<Pick<SessionInfo, "id" | "title">>;
+    })) as Pick<SessionInfo, "id" | "title">;
+    return resp;
   }
 
   async deleteSession(accessToken: string, sessionId: string): Promise<void> {
@@ -93,10 +100,11 @@ export class ApiClient {
   }
 
   async listModels(accessToken: string): Promise<{ models: string[]; current: string }> {
-    return (await this.request("/api/models", { accessToken })) as Promise<{
+    const resp = (await this.request("/api/models", { accessToken })) as {
       models: string[];
       current: string;
-    }>;
+    };
+    return resp;
   }
 
   async switchModel(accessToken: string, model: string): Promise<void> {
@@ -104,7 +112,68 @@ export class ApiClient {
   }
 
   async getStatus(): Promise<{ status: string; version: string }> {
-    return (await this.request("/api/status")) as Promise<{ status: string; version: string }>;
+    const resp = (await this.request("/api/status")) as { status: string; version: string };
+    return resp;
+  }
+
+  async listProviders(accessToken: string): Promise<{ providers: ProviderInfo[]; activeProviderId: string }> {
+    const resp = (await this.request("/api/providers", { accessToken })) as {
+      providers: ProviderInfo[];
+      activeProviderId: string;
+    };
+    return resp;
+  }
+
+  async createProvider(
+    accessToken: string,
+    params: { name: string; baseUrl: string; apiKey: string; model: string; isDefault?: boolean },
+  ): Promise<ProviderInfo> {
+    const resp = (await this.request("/api/providers", {
+      method: "POST",
+      body: params,
+      accessToken,
+    })) as ProviderInfo;
+    return resp;
+  }
+
+  async updateProvider(
+    accessToken: string,
+    id: string,
+    params: Partial<Pick<ProviderInfo, "name" | "baseUrl" | "apiKey" | "model">>,
+  ): Promise<ProviderInfo> {
+    const resp = (await this.request(`/api/providers/${id}`, {
+      method: "PUT",
+      body: params,
+      accessToken,
+    })) as ProviderInfo;
+    return resp;
+  }
+
+  async deleteProvider(accessToken: string, id: string): Promise<void> {
+    await this.request(`/api/providers/${id}`, { method: "DELETE", accessToken });
+  }
+
+  async verifyProvider(accessToken: string, id: string): Promise<{ ok: boolean; error?: string }> {
+    const resp = (await this.request(`/api/providers/${id}/verify`, {
+      method: "POST",
+      accessToken,
+    })) as { ok: boolean; error?: string };
+    return resp;
+  }
+
+  async fetchProviderModels(accessToken: string, id: string): Promise<string[]> {
+    const resp = (await this.request(`/api/providers/${id}/models`, { accessToken })) as {
+      models: string[];
+    };
+    return resp.models;
+  }
+
+  async switchProvider(accessToken: string, providerId: string): Promise<void> {
+    await this.request("/api/providers/current", {
+      method: "PUT",
+      body: { providerId },
+      accessToken,
+    });
   }
 }
 

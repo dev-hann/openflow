@@ -1,9 +1,8 @@
 import React from "react";
 import { View, StyleSheet, Alert, Modal, FlatList, Dimensions } from "react-native";
 import { Text, Button, useTheme, Divider, Chip, IconButton, TouchableRipple, Icon } from "react-native-paper";
-import { useAuthStore } from "../store/auth";
+import { useApiClient } from "../hooks/use-api-client";
 import { useProvidersStore } from "../store/providers";
-import { createApiClient } from "../services/api";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
 
@@ -22,14 +21,13 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
   const providers = useProvidersStore((s) => s.providers);
   const activeProviderId = useProvidersStore((s) => s.activeProviderId);
   const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
-  const storedAuth = useAuthStore((s) => s.storedAuth);
-  const getValidToken = useAuthStore((s) => s.getValidToken);
+  const getApi = useApiClient();
 
   async function handleSwitch(id: string): Promise<void> {
-    const token = await getValidToken();
-    if (!token || !storedAuth) return;
+    const client = await getApi();
+    if (!client) return;
     try {
-      await createApiClient(storedAuth.serverUrl).switchProvider(token, id);
+      await client.api.switchProvider(client.token, id);
       setActiveProviderId(id);
     } catch {
       Alert.alert("오류", "Provider 전환에 실패했습니다.");

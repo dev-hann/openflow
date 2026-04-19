@@ -1,16 +1,16 @@
 import React from "react";
-import { View, StyleSheet, StatusBar, useColorScheme } from "react-native";
+import { View, StyleSheet, StatusBar } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { AppNavigator } from "./navigation/index";
 import { OnboardingScreen } from "./screens/OnboardingScreen";
-import { lightTheme, darkTheme } from "./constants/theme";
+import { useAppTheme } from "./constants/theme";
 import { useAuthStore } from "./store/auth";
 import { loadAuth } from "./services/auth";
 import { useSettingsStore } from "./store/settings";
 
 export default function App() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const theme = useAppTheme();
+  const colorScheme = theme.dark ? "dark" : "light";
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const setStoredAuth = useAuthStore((s) => s.setStoredAuth);
   const setServerUrl = useSettingsStore((s) => s.setServerUrl);

@@ -11,7 +11,7 @@ import { KeyboardSafeView } from "./KeyboardSafeView";
 import { PROVIDER_PRESETS } from "../constants/presets";
 import type { ProviderPreset } from "../constants/presets";
 import { useAuthStore } from "../store/auth";
-import { createApiClient } from "../services/api";
+import { createApiClient, normalizeUrl } from "../services/api";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
 
 interface ProviderFormProps {
@@ -46,7 +46,7 @@ export function ProviderForm({ onComplete, showSkip, editProvider }: ProviderFor
   }
 
   async function handleVerify(): Promise<void> {
-    const trimmedUrl = baseUrl.trim().replace(/\/$/, "");
+    const trimmedUrl = normalizeUrl(baseUrl);
     if (!trimmedUrl) { Alert.alert("오류", "Base URL을 입력하세요."); return; }
     setVerifying(true);
     setVerifyResult(null);
@@ -77,7 +77,7 @@ export function ProviderForm({ onComplete, showSkip, editProvider }: ProviderFor
 
   async function handleSave(): Promise<void> {
     const trimmedName = name.trim();
-    const trimmedUrl = baseUrl.trim().replace(/\/$/, "");
+    const trimmedUrl = normalizeUrl(baseUrl);
     if (!trimmedName) { Alert.alert("오류", "Provider 이름을 입력하세요."); return; }
     if (!trimmedUrl) { Alert.alert("오류", "Base URL을 입력하세요."); return; }
     if (!isEditMode && selectedPreset?.needsApiKey !== false && !apiKey.trim()) {

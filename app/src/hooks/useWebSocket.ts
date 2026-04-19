@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { WsServerMessage } from "../types/protocol";
+import { normalizeUrl } from "../services/api";
 import { useAuthStore } from "../store/auth";
 import { useChatStore } from "../store/chat";
 import { useSessionsStore } from "../store/sessions";
@@ -15,11 +16,7 @@ const MAX_DELAY_MS = 30_000;
 const PING_INTERVAL_MS = 30_000;
 
 function buildWsUrl(serverUrl: string): string {
-  let url = serverUrl.trim();
-  if (!/^https?:\/\//i.test(url)) {
-    url = `http://${url}`;
-  }
-  return url.replace(/^http/, "ws") + "/ws";
+  return normalizeUrl(serverUrl).replace(/^http/, "ws") + "/ws";
 }
 
 function getBackoffDelay(count: number): number {
@@ -45,31 +42,26 @@ export function useWebSocket(): UseWebSocketReturn {
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
 
   const handleMessage = useCallback(
-    (event: MessageEvent) => {
-      try {
-        const msg = JSON.parse(event.data as string) as WsServerMessage;
-        switch (msg.type) {
-          case "token":
-            appendToLastMessage(msg.content);
-            break;
-          case "response":
-            finalizeLastMessage(msg.content);
-            setSending(false);
-            break;
-          case "error":
-            finalizeLastMessage(`Error: ${msg.message}`);
-            setSending(false);
-            break;
-          case "session_switched":
-            setActiveSessionId(msg.sessionId);
-            break;
-          case "auth_required":
-          case "pong":
-          case "auth_ok":
-            break;
-        }
-      } catch {
-        // ignore malformed messages
+    (msg: WsServerMessage) => {
+      switch (msg.type) {
+        case "token":
+          appendToLastMessage(msg.content);
+          break;
+        case "response":
+          finalizeLastMessage(msg.content);
+          setSending(false);
+          break;
+        case "error":
+          finalizeLastMessage(`Error: ${msg.message}`);
+          setSending(false);
+          break;
+        case "session_switched":
+          setActiveSessionId(msg.sessionId);
+          break;
+        case "auth_required":
+        case "pong":
+        case "auth_ok":
+          break;
       }
     },
     [appendToLastMessage, finalizeLastMessage, setSending, setActiveSessionId],
@@ -119,27 +111,28 @@ export function useWebSocket(): UseWebSocketReturn {
     };
 
     ws.onmessage = (event: MessageEvent) => {
+      let msg: WsServerMessage;
       try {
-        const msg = JSON.parse(event.data as string) as WsServerMessage;
-        if (msg.type === "auth_ok") {
-          retryCount.current = 0;
-          setConnected(true);
-          setStoreConnected(true);
-          startPing(ws);
-          return;
-        }
-        if (msg.type === "auth_required") {
-          getValidToken().then((token) => {
-            if (token && ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: "auth", accessToken: token }));
-            }
-          });
-          return;
-        }
+        msg = JSON.parse(event.data as string) as WsServerMessage;
       } catch {
-        // ignore parse errors for auth check
+        return;
       }
-      handleMessage(event);
+      if (msg.type === "auth_ok") {
+        retryCount.current = 0;
+        setConnected(true);
+        setStoreConnected(true);
+        startPing(ws);
+        return;
+      }
+      if (msg.type === "auth_required") {
+        getValidToken().then((token) => {
+          if (token && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "auth", accessToken: token }));
+          }
+        });
+        return;
+      }
+      handleMessage(msg);
     };
 
     ws.onclose = () => {
