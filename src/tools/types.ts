@@ -1,4 +1,4 @@
-import type { JsonSchemaProperty } from "../llm/types.js";
+import type { JsonSchemaProperty } from "../utils/json-schema.js";
 
 export interface ToolDefinition {
   type: "function";

@@ -7,6 +7,8 @@ export interface ToolCall {
   };
 }
 
+import type { JsonSchemaProperty } from "../utils/json-schema.js";
+
 export interface ToolDefinition {
   type: "function";
   function: {
@@ -20,12 +22,7 @@ export interface ToolDefinition {
   };
 }
 
-export interface JsonSchemaProperty {
-  type: "string" | "number" | "boolean" | "array";
-  description: string;
-  enum?: string[];
-  items?: JsonSchemaProperty;
-}
+export type { JsonSchemaProperty };
 
 export type ChatMessage =
   | { role: "system"; content: string }

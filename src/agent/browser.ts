@@ -142,7 +142,7 @@ import { chromium } from 'playwright';
   await page.goto(${JSON.stringify(url)}, { waitUntil: 'networkidle', timeout: ${config.timeout} });
   const outPath = ${JSON.stringify(outputPath)};
   ${selectorLine}
-  console.log(outPath);
+  log.info({ path: outPath }, "screenshot saved");
   await browser.close();
 })();
 `;
