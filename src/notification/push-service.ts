@@ -40,6 +40,37 @@ export function createNotificationService(
 
   const expo = new Expo();
 
+  function processTicket(r: { status: string; message?: string; details?: unknown }, recipientToken: string): PushTicket {
+    if (r.status === "error") {
+      log.error({ details: r.details, message: r.message }, "push notification error");
+      const details = r.details as { error?: string } | undefined;
+      if (details?.error === "DeviceNotRegistered") {
+        tokenStore.unregister(recipientToken);
+      }
+    }
+    return {
+      id: r.status === "ok" ? (r as { id?: string }).id ?? "unknown" : "unknown",
+      status: r.status as "ok" | "error",
+      message: r.status === "error" ? r.message : undefined,
+      details: r.status === "error" ? r.details as { error?: string } | undefined : undefined,
+    };
+  }
+
+  async function sendPushChunks(messages: Array<{ to: string; title?: string; body?: string; data?: Record<string, unknown>; sound?: string; badge?: number }>): Promise<PushTicket[]> {
+    const tickets: PushTicket[] = [];
+    for (const msg of messages) {
+      const chunks = expo.chunkPushNotifications([msg]);
+      for (const chunk of chunks) {
+        const results = await expo.sendPushNotificationsAsync(chunk);
+        for (const r of results) {
+          tickets.push(processTicket(r, msg.to));
+        }
+      }
+      tokenStore.touchLastUsed(msg.to);
+    }
+    return tickets;
+  }
+
   async function send(message: PushMessage): Promise<PushTicket> {
     if (!Expo.isExpoPushToken(message.to)) {
       log.warn({ token: String(message.to).slice(0, 8) + "..." }, "invalid Expo push token");
@@ -47,38 +78,14 @@ export function createNotificationService(
     }
 
     try {
-      const chunks = expo.chunkPushNotifications([
-        {
-          to: message.to,
-          title: message.title,
-          body: message.body,
-          data: message.data,
-          sound: message.sound ?? "default",
-          badge: message.badge,
-        },
-      ]);
-
-      const tickets: PushTicket[] = [];
-      for (const chunk of chunks) {
-        const ticketResults = await expo.sendPushNotificationsAsync(chunk);
-        for (const r of ticketResults) {
-          if (r.status === "error") {
-            log.error({ details: r.details, message: r.message }, "push notification error");
-            if (r.details?.error === "DeviceNotRegistered") {
-              tokenStore.unregister(message.to);
-            }
-          }
-          const id = r.status === "ok" ? r.id : "unknown";
-          tickets.push({
-            id: id ?? "unknown",
-            status: r.status as "ok" | "error",
-            message: r.status === "error" ? r.message : undefined,
-            details: r.status === "error" ? r.details as { error?: string } | undefined : undefined,
-          });
-        }
-      }
-
-      tokenStore.touchLastUsed(message.to);
+      const tickets = await sendPushChunks([{
+        to: message.to,
+        title: message.title,
+        body: message.body,
+        data: message.data,
+        sound: message.sound ?? "default",
+        badge: message.badge,
+      }]);
       return tickets[0] ?? { id: "no-ticket", status: "ok" };
     } catch (err) {
       log.error({ err }, "failed to send push notification");
