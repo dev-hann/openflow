@@ -1,9 +1,10 @@
 import { execSync, execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
+import { ensureDirSync } from "../utils/fs.js";
 import type { InternalTool } from "./types.js";
 
 const log = createLogger("browser");
@@ -65,7 +66,7 @@ function ensureBrowserInstalled(timeout: number): void {
 
 function ensureScreenshotDir(workspace: string): string {
   const dir = join(workspace, SCREENSHOT_DIR);
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  ensureDirSync(dir);
   return dir;
 }
 

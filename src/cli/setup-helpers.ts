@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 
 import { log as clackLog } from "@clack/prompts";
 
 import { resetConfigCache } from "../config/loader.js";
+import { ensureDirSync } from "../utils/fs.js";
 import type { OpenFlowConfig } from "../config/schema.js";
 import { formatKeyPreview } from "./presets.js";
 
@@ -48,9 +49,7 @@ export async function saveAndShowConfig(
   apiKey: string,
   enableBrowser: boolean,
 ): Promise<void> {
-  if (!existsSync(configDir)) {
-    mkdirSync(configDir, { recursive: true });
-  }
+  ensureDirSync(configDir);
   writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
   resetConfigCache();
 

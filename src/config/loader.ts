@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, watchFile, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, watchFile, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
+import { ensureDirSync } from "../utils/fs.js";
 import { openFlowConfigSchema, type OpenFlowConfig } from "./schema.js";
 
 const log = createLogger("config");
@@ -82,10 +83,7 @@ export function resetConfigCache(): void {
 }
 
 export function ensureConfigDir(): void {
-  const dir = CONFIG_DIR();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  ensureDirSync(CONFIG_DIR());
 }
 
 export function initConfig(configPath?: string): void {
@@ -115,9 +113,7 @@ export function initConfig(configPath?: string): void {
 export function editConfig(configPath?: string): void {
   const target = configPath ?? CONFIG_FILE();
   const dir = dirname(target);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  ensureDirSync(dir);
   if (!existsSync(target)) {
     initConfig(target);
   }

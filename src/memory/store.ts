@@ -1,10 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
-import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
+
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { isSqliteBusy } from "../utils/retry.js";
+import { ensureDirSync } from "../utils/fs.js";
 import type { ChatMessage, ToolCall } from "../utils/message-types.js";
 
 const log = createLogger("memory");
@@ -125,10 +126,7 @@ function wrapDb<T>(label: string, fn: () => T): T {
 }
 
 export function createMemoryStore(dbPath: string): MemoryStore {
-  const dir = dirname(dbPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  ensureDirSync(dirname(dbPath));
 
   let db: DatabaseSync;
   try {

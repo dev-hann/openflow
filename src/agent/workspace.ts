@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
+import { ensureDirSync } from "../utils/fs.js";
 
 const log = createLogger("workspace");
 
@@ -82,15 +83,11 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
     MAX_DAILY_MEMORY_DAYS,
   );
 
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-    log.info({ dir }, "created workspace directory");
-  }
+  ensureDirSync(dir);
+  log.info({ dir }, "created workspace directory");
 
   const dailyDir = join(dir, DAILY_MEMORY_DIR);
-  if (!existsSync(dailyDir)) {
-    mkdirSync(dailyDir, { recursive: true });
-  }
+  ensureDirSync(dailyDir);
 
   function loadAll(): WorkspaceFiles {
     const persona = safeRead(join(dir, "PERSONA.md"));
