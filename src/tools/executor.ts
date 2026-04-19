@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
-import { createBrowserScreenshotTool, createBrowserExecuteTool } from "../agent/browser.js";
+import { createBrowserScreenshotTool, createBrowserExecuteTool } from "./browser.js";
 import type { NotificationSender } from "../channel/types.js";
 
 import type { InternalTool, ToolDefinition } from "./types.js";

@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync, rmSync 
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createLogger } from "../utils/logger.js";
-import type { InternalTool } from "../tools/executor.js";
+import type { InternalTool } from "./types.js";
 
 const log = createLogger("browser");
 
