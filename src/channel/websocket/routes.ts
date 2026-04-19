@@ -210,7 +210,7 @@ export function createRoutes(deps: RoutesDeps) {
 
     try {
       await dispatchRequest(req, res);
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof Error && err.message === "request body too large") {
         sendJson(res, 413, { error: "payload_too_large" });
         return;

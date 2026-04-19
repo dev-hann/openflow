@@ -94,7 +94,7 @@ async function handleSessionCommand(subCommand: string, argv: string[]): Promise
     }
 
     memory.close();
-  } catch (err) {
+  } catch (err: unknown) {
     writeStderr(err instanceof OpenFlowError ? err.message : String(err));
     process.exit(1);
   }
@@ -105,7 +105,7 @@ async function handleConfigCommand(subCommand: string): Promise<void> {
     try {
       const config = loadConfig();
       showConfig(config);
-    } catch (err) {
+    } catch (err: unknown) {
       writeStderr(err instanceof OpenFlowError ? err.message : String(err));
       process.exit(1);
     }
@@ -161,7 +161,7 @@ async function main(): Promise<void> {
   let config;
   try {
     config = loadConfig();
-  } catch (err) {
+  } catch (err: unknown) {
     if (err instanceof OpenFlowError && err.code === "CONFIG_NOT_FOUND") {
       writeStdout(BANNER);
       clackLog.warn("No configuration file found.");

@@ -42,7 +42,7 @@ function installChromium(timeout: number): void {
       stdio: "pipe",
     });
     log.info("Playwright Chromium installed successfully");
-  } catch (err) {
+  } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string };
     const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
     log.error({ err: output }, "failed to install Playwright Chromium");
@@ -72,13 +72,13 @@ function runPlaywrightScript(script: string, timeout: number): string {
       env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: "0" },
     });
     return result || "(no output)";
-  } catch (err) {
+  } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string; killed?: boolean };
     if (e.killed) throw new Error(`Browser script timed out after ${timeout}ms`);
     const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
     throw new Error(output || "Browser script failed");
   } finally {
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch (err) { log.debug({ err, tmpDir }, "failed to clean temp dir"); }
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch (err: unknown) { log.debug({ err, tmpDir }, "failed to clean temp dir"); }
   }
 }
 

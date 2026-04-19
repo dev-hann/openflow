@@ -244,7 +244,7 @@ export async function verifyLlmEndpoint(
     }
     const body = await resp.text().catch(() => "");
     return { ok: false, status: resp.status, error: body.slice(0, 200) };
-  } catch (err) {
+  } catch (err: unknown) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

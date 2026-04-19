@@ -87,7 +87,7 @@ export function createNotificationService(
         badge: message.badge,
       }]);
       return tickets[0] ?? { id: "no-ticket", status: "ok" };
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, "failed to send push notification");
       return {
         id: "error",

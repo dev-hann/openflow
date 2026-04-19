@@ -96,7 +96,7 @@ function loadSkillsFromDir(
         description: meta.description,
         location: resolve(skillFilePath),
       });
-    } catch (err) {
+    } catch (err: unknown) {
       log.warn({ skill: entry.name, err }, "failed to read skill file");
     }
   }

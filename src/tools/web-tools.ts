@@ -73,7 +73,7 @@ export const webFetchTool: InternalTool = {
         .replace(/\s+/g, " ")
         .trim();
       return truncate(text, maxLen);
-    } catch (err) {
+    } catch (err: unknown) {
       throw new Error(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`);
     }
   },
@@ -121,7 +121,7 @@ export const webSearchTool: InternalTool = {
       }
       if (results.length === 0) return "No results found.";
       return results.map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.href}`).join("\n\n");
-    } catch (err) {
+    } catch (err: unknown) {
       throw new Error(`Search failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   },
@@ -172,7 +172,7 @@ export const httpClientTool: InternalTool = {
         { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
       );
       return text;
-    } catch (err) {
+    } catch (err: unknown) {
       throw new Error(`HTTP request failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   },

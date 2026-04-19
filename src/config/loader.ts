@@ -166,7 +166,7 @@ export function watchConfig(onChange: ConfigChangeCallback): () => void {
           log.info("configuration file changed, reloading");
           onChange(newConfig);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         log.warn({ err }, "failed to reload config");
         cachedConfig = null;
       }

@@ -74,7 +74,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
   function persistMessage(sessionId: string, params: { role: "user" | "assistant" | "system"; content: string; toolCalls?: ToolCall[] }): void {
     try {
       memory.addMessage({ sessionId, ...params });
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ sessionId, err }, `failed to save ${params.role} message`);
     }
   }
@@ -89,7 +89,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     try {
       memory.addMessage({ sessionId, role: "user", content });
       return null;
-    } catch (err) {
+    } catch (err: unknown) {
       const error = err instanceof OpenFlowError
         ? err
         : new OpenFlowError("Failed to save user message", "DB_ERROR", err);
@@ -104,7 +104,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       const rawContext = memory.buildContext(sessionId, 50);
       const contextMessages = await compaction.compactIfNeeded(sessionId, rawContext);
       return [{ role: "system", content: systemPrompt }, ...contextMessages];
-    } catch (err) {
+    } catch (err: unknown) {
       const error = err instanceof OpenFlowError
         ? err
         : new OpenFlowError("Failed to build context", "DB_ERROR", err);
@@ -127,7 +127,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         onToken: round === 0 ? onToken : undefined,
         signal,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       const error = err instanceof OpenFlowError
         ? err
         : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
@@ -186,7 +186,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
     try {
       memory.addMessage({ sessionId, role: "tool", content: result.content, toolCallId: toolCall.id });
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool result");
     }
 
@@ -204,7 +204,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     let messages: ChatMessage[];
     try {
       messages = await buildConversationContext(sessionId, systemPromptOverride);
-    } catch (err) {
+    } catch (err: unknown) {
       return { type: "error", error: err as OpenFlowError };
     }
 
@@ -218,7 +218,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       let response;
       try {
         response = await callLlmOnce(messages, toolDefinitions, onToken, signal, round);
-      } catch (err) {
+      } catch (err: unknown) {
         return { type: "error", error: err as OpenFlowError };
       }
 

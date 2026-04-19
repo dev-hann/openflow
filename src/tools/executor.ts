@@ -67,7 +67,7 @@ const shellTool: InternalTool = {
         shell: "/bin/bash",
       });
       return truncate(result || "(no output)", 10_000);
-    } catch (err) {
+    } catch (err: unknown) {
       const e = err as { stdout?: string; stderr?: string; killed?: boolean; signal?: string };
       if (e.killed || e.signal === "SIGTERM" || e.signal === "SIGKILL") {
         throw new Error(`Command timed out after ${timeout}ms`);
@@ -143,7 +143,7 @@ export function createToolExecutor(
         const duration = Date.now() - startedAt;
         log.info({ toolName: call.name, duration, responseLength: content.length }, "tool execution completed");
         return { toolCallId: call.id, content, isError: false };
-      } catch (err) {
+      } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const duration = Date.now() - startedAt;
         log.error({ toolName: call.name, duration, err: msg }, "tool execution failed");

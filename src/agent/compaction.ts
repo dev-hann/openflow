@@ -86,7 +86,7 @@ export function createCompaction(deps: CompactionDeps) {
       });
 
       return result || null;
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, "compaction summary generation failed");
       return null;
     }

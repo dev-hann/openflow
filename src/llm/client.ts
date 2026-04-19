@@ -215,7 +215,7 @@ async function sendRequest(
       }
 
       return parseLlmResponse(response, active, startedAt, onToken);
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof OpenFlowError) throw err;
       const action = await handleFetchError(ctx, err, attempt);
       if (action === "fallback") return sendRequest(ctx, body, onToken, signal);

@@ -114,7 +114,7 @@ function wrapDb<T>(label: string, fn: () => T): T {
   for (let attempt = 0; attempt <= DB_RETRY_DELAYS.length; attempt++) {
     try {
       return fn();
-    } catch (err) {
+    } catch (err: unknown) {
       lastErr = err;
       if (attempt < DB_RETRY_DELAYS.length && isSqliteBusy(err)) {
         const delay = DB_RETRY_DELAYS[attempt]!;
@@ -140,7 +140,7 @@ function openDatabase(dbPath: string): DatabaseSync {
     db.exec("PRAGMA busy_timeout = 5000");
     log.info({ dbPath }, "database opened");
     return db;
-  } catch (err) {
+  } catch (err: unknown) {
     log.error({ dbPath, err }, "failed to open database");
     throw new OpenFlowError(`Failed to open database: ${dbPath}`, "DB_ERROR", err);
   }
@@ -154,7 +154,7 @@ function runMigrations(db: DatabaseSync): void {
     }
     db.exec("COMMIT");
     log.info("database migration completed");
-  } catch (err) {
+  } catch (err: unknown) {
     db.exec("ROLLBACK");
     log.error({ err }, "database migration failed");
     throw new OpenFlowError("Database migration failed", "DB_MIGRATION_FAILED", err);
