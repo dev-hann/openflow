@@ -238,6 +238,16 @@ export function ProviderForm({ onComplete, showSkip, editProvider }: ProviderFor
                 </View>
               </View>
             )}
+            <TextInput
+              label="모델"
+              placeholder="예: gpt-4o"
+              value={model}
+              onChangeText={setModel}
+              mode="outlined"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.field}
+            />
             <View style={styles.buttonRow}>
               <Button
                 mode="contained"
