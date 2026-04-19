@@ -27,7 +27,7 @@ import { ItemSeparator } from "./item-separator";
 interface SessionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSwitchSession: (sessionId: string) => void;
+  onSwitchSession: (sessionId: string | null) => void;
 }
 
 export function SessionModal({
@@ -96,7 +96,7 @@ export function SessionModal({
               removeSession(session.id);
               if (activeSessionId === session.id) {
                 setActiveSessionId(null);
-                onSwitchSession("");
+                onSwitchSession(null);
               }
             } catch {
               Alert.alert("오류", "세션 삭제에 실패했습니다.");
