@@ -15,6 +15,8 @@ interface AuthState {
   updateTokens: (tokens: TokenPair) => Promise<void>;
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   storedAuth: null,
   isConnected: false,
@@ -31,16 +33,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!auth || !isStoredAuth(auth)) return null;
     if (Date.now() < auth.accessExpiresAt - 60_000) return auth.accessToken;
 
-    try {
-      const api = createApiClient(auth.serverUrl);
-      const tokens = await api.refreshToken(auth.refreshToken);
-      const newAuth: StoredAuth = { serverUrl: auth.serverUrl, ...tokens };
-      await saveAuth(newAuth);
-      set({ storedAuth: newAuth });
-      return newAuth.accessToken;
-    } catch {
-      return null;
-    }
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+      try {
+        const currentAuth = get().storedAuth;
+        if (!currentAuth) return null;
+        if (Date.now() < currentAuth.accessExpiresAt - 60_000) return currentAuth.accessToken;
+
+        const api = createApiClient(currentAuth.serverUrl);
+        const tokens = await api.refreshToken(currentAuth.refreshToken);
+        const newAuth: StoredAuth = { serverUrl: currentAuth.serverUrl, ...tokens };
+        await saveAuth(newAuth);
+        set({ storedAuth: newAuth });
+        return newAuth.accessToken;
+      } catch {
+        return null;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+
+    return refreshPromise;
   },
 
   updateTokens: async (tokens) => {

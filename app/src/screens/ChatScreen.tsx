@@ -127,7 +127,7 @@ export function ChatScreen() {
         </View>
       ) : (
         <View style={styles.messageContainer}>
-          <MessageList ref={listRef} messages={messages} onScrollStateChange={setScrolledUp} />
+          <MessageList ref={listRef} messages={messages} onScrollStateChange={setScrolledUp} onRetry={sendMessage} />
           {scrolledUp && (
             <IconButton
               icon="chevron-double-down"

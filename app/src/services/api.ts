@@ -26,25 +26,39 @@ export class ApiClient {
       method?: string;
       body?: unknown;
       accessToken?: string;
+      timeoutMs?: number;
     } = {},
   ): Promise<unknown> {
-    const { method = "GET", body, accessToken } = options;
+    const { method = "GET", body, accessToken, timeoutMs = 15_000 } = options;
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
-    const resp = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const json = (await resp.json()) as Record<string, unknown>;
-    if (!resp.ok) {
-      const error = (json.error as string) ?? "unknown_error";
-      const message = (json.message as string) ?? error;
-      throw new ApiError(resp.status, error, message);
+    try {
+      const resp = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+
+      const json = (await resp.json()) as Record<string, unknown>;
+      if (!resp.ok) {
+        const error = (json.error as string) ?? "unknown_error";
+        const message = (json.message as string) ?? error;
+        throw new ApiError(resp.status, error, message);
+      }
+      return json;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new ApiError(0, "TIMEOUT", "요청 시간이 초과되었습니다");
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
     }
-    return json;
   }
 
   private async typedRequest<T>(path: string, options?: Parameters<ApiClient["request"]>[1]): Promise<T> {

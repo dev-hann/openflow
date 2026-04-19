@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StyleSheet, FlatList, Animated, Easing, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
-import { Text, useTheme, Icon } from "react-native-paper";
+import { Text, useTheme, Icon, TouchableRipple } from "react-native-paper";
 import Markdown from "react-native-markdown-display";
 import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import type { ChatMessage } from "../store/chat";
@@ -44,9 +44,10 @@ interface MessageBubbleProps {
   message: ChatMessage;
   isFirstInGroup: boolean;
   isLastInGroup: boolean;
+  onRetry?: (content: string) => void;
 }
 
-export const MessageBubble = React.memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup }: MessageBubbleProps) {
+export const MessageBubble = React.memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, onRetry }: MessageBubbleProps) {
   const theme = useTheme();
   const isUser = message.role === "user";
 
@@ -111,6 +112,14 @@ export const MessageBubble = React.memo(function MessageBubble({ message, isFirs
               ) : (
                 <Markdown style={mdStyles}>{message.content}</Markdown>
               )}
+              {message.isFailed && onRetry && (
+                <TouchableRipple onPress={() => onRetry(message.content)} style={styles.retryButton} accessibilityLabel="메시지 재전송">
+                  <View style={styles.retryRow}>
+                    <Icon source="refresh" size={14} color={theme.colors.error} />
+                    <Text variant="labelSmall" style={{ color: theme.colors.error }}>재전송</Text>
+                  </View>
+                </TouchableRipple>
+              )}
             </View>
             {showTimestamp && (
               <Text variant="labelSmall" style={textStyles.timestampLeft}>
@@ -148,10 +157,11 @@ export const MessageBubble = React.memo(function MessageBubble({ message, isFirs
 interface MessageListProps {
   messages: ChatMessage[];
   onScrollStateChange?: (nearBottom: boolean) => void;
+  onRetry?: (content: string) => void;
   ref?: React.Ref<FlatList>;
 }
 
-export const MessageList = React.forwardRef<FlatList, MessageListProps>(function MessageList({ messages, onScrollStateChange }, forwardedRef) {
+export const MessageList = React.forwardRef<FlatList, MessageListProps>(function MessageList({ messages, onScrollStateChange, onRetry }, forwardedRef) {
   const theme = useTheme();
   const internalRef = useRef<FlatList>(null);
   const scrollToBottom = useCallback(() => {
@@ -179,8 +189,8 @@ export const MessageList = React.forwardRef<FlatList, MessageListProps>(function
     const next = index < messages.length - 1 ? messages[index + 1] : null;
     const isFirstInGroup = !prev || prev.role !== item.role;
     const isLastInGroup = !next || next.role !== item.role;
-    return <MessageBubble message={item} isFirstInGroup={isFirstInGroup} isLastInGroup={isLastInGroup} />;
-  }, [messages]);
+    return <MessageBubble message={item} isFirstInGroup={isFirstInGroup} isLastInGroup={isLastInGroup} onRetry={onRetry} />;
+  }, [messages, onRetry]);
 
   return (
     <FlatList
@@ -211,5 +221,7 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: "90%", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: BORDER_RADIUS.lg },
   typingDots: { flexDirection: "row", gap: 4, paddingVertical: 4, alignItems: "center" },
   dot: { width: 7, height: 7, borderRadius: 4 },
+  retryButton: { marginTop: 4, alignSelf: "flex-start", borderRadius: 8 },
+  retryRow: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4 },
   listContent: { paddingVertical: SPACING.sm, paddingBottom: SPACING.lg },
 });
