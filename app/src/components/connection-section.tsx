@@ -77,7 +77,7 @@ export function ConnectionSection({ onServerChanged }: ConnectionSectionProps) {
   );
 
   return (
-    <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+    <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
       <List.Item
         title="서버"
         description={storedAuth?.serverUrl ?? "-"}
@@ -96,11 +96,7 @@ export function ConnectionSection({ onServerChanged }: ConnectionSectionProps) {
         title="서버 변경"
         titleStyle={themed.serverTitle}
         left={(props) => (
-          <List.Icon
-            {...props}
-            icon="link-off"
-            color={theme.colors.error}
-          />
+          <List.Icon {...props} icon="link-off" color={theme.colors.error} />
         )}
         onPress={handleChangeServer}
       />

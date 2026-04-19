@@ -54,10 +54,7 @@ export function PresetSelector({
               <View style={styles.anchorTextWrap}>
                 {selectedPreset ? (
                   <>
-                    <Text
-                      variant="bodyMedium"
-                      style={{ fontWeight: "500" }}
-                    >
+                    <Text variant="bodyMedium" style={{ fontWeight: "500" }}>
                       {selectedPreset.label}
                     </Text>
                     <Text

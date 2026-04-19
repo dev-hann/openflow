@@ -31,10 +31,7 @@ export function ChatEmptyState({
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.background },
-      ]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <View
         style={[
@@ -66,10 +63,7 @@ export function ChatEmptyState({
           </Text>
           <Text
             variant="bodyMedium"
-            style={[
-              styles.subtitle,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
+            style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
           >
             설정 탭에서 서버에 연결하세요
           </Text>
@@ -105,10 +99,7 @@ export function ChatEmptyState({
           </Text>
           <Text
             variant="bodyMedium"
-            style={[
-              styles.subtitle,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
+            style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
           >
             아래의 추천 질문을 선택하거나{"\n"}직접 메시지를 입력하세요
           </Text>

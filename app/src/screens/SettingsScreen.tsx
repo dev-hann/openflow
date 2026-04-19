@@ -157,7 +157,7 @@ export function SettingsScreen({ navigation }: Props) {
         >
           AI Provider
         </Text>
-        <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+        <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
           {activeProvider ? (
             <TouchableRipple onPress={() => setProviderSheetVisible(true)}>
               <View style={styles.providerCard}>
@@ -237,7 +237,7 @@ export function SettingsScreen({ navigation }: Props) {
             >
               정보
             </Text>
-            <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+            <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
               <List.Item
                 title="버전"
                 description="1.0.0"

@@ -16,10 +16,17 @@ interface VerifyOutcome {
 export function useProviderVerify(baseUrl: string, apiKey: string) {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setVerifyResult(null);
   }, [baseUrl, apiKey]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const handleVerify = useCallback(async (): Promise<VerifyOutcome | null> => {
     const trimmedUrl = normalizeUrl(baseUrl);
@@ -29,7 +36,9 @@ export function useProviderVerify(baseUrl: string, apiKey: string) {
     try {
       const headers: Record<string, string> = {};
       if (apiKey.trim()) headers.Authorization = `Bearer ${apiKey.trim()}`;
+      abortRef.current?.abort();
       const controller = new AbortController();
+      abortRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
       const resp = await fetch(`${trimmedUrl}/models`, {
         headers,

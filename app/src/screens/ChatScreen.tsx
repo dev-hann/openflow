@@ -47,6 +47,15 @@ export function ChatScreen() {
   );
   const sessionTitle = activeSession?.title ?? "새 대화";
 
+  const themed = useMemo(
+    () => ({
+      background: { backgroundColor: theme.colors.background },
+      surface: { backgroundColor: theme.colors.surface },
+      onSurfaceVariant: { color: theme.colors.onSurfaceVariant },
+    }),
+    [theme.colors],
+  );
+
   useEffect(() => {
     setScrolledUp(false);
   }, [activeSessionId]);
@@ -114,7 +123,7 @@ export function ChatScreen() {
 
   return (
     <KeyboardSafeView
-      style={{ backgroundColor: theme.colors.background }}
+      style={themed.background}
       offset={Platform.OS === "ios" ? 56 : 0}
     >
       {messages.length === 0 ? (
@@ -138,7 +147,7 @@ export function ChatScreen() {
               size={20}
               iconColor={theme.colors.onPrimary}
               containerColor={theme.colors.primary}
-              style={[styles.scrollFab, { ...SHADOWS.md }]}
+              style={[styles.scrollFab, SHADOWS.md]}
               onPress={handleScrollToEnd}
               accessibilityLabel="맨 아래로 스크롤"
             />
@@ -149,13 +158,13 @@ export function ChatScreen() {
         <View
           style={[
             styles.streamingBar,
-            { backgroundColor: theme.colors.surface },
+            themed.surface,
           ]}
         >
           <ActivityIndicator size="small" color={theme.colors.primary} />
           <Text
             variant="labelMedium"
-            style={{ color: theme.colors.onSurfaceVariant }}
+            style={themed.onSurfaceVariant}
           >
             생각 중...
           </Text>

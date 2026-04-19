@@ -60,11 +60,7 @@ export function ProviderForm({
   function validateForm(): string | null {
     if (!name.trim()) return "Provider 이름을 입력하세요.";
     if (!normalizeUrl(baseUrl)) return "Base URL을 입력하세요.";
-    if (
-      !isEditMode &&
-      selectedPreset?.needsApiKey !== false &&
-      !apiKey.trim()
-    )
+    if (!isEditMode && selectedPreset?.needsApiKey !== false && !apiKey.trim())
       return "API Key를 입력하세요.";
     return null;
   }

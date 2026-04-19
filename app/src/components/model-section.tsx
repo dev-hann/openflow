@@ -45,7 +45,7 @@ export function ModelSection({
   );
 
   return (
-    <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+    <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
       <Menu
         visible={menuVisible}
         onDismiss={() => setMenuVisible(false)}
@@ -79,9 +79,7 @@ export function ModelSection({
             key={m}
             onPress={() => handleSelect(m)}
             title={m}
-            leadingIcon={
-              m === currentModel ? "check-circle" : "circle-outline"
-            }
+            leadingIcon={m === currentModel ? "check-circle" : "circle-outline"}
             titleStyle={{
               fontWeight: m === currentModel ? "600" : "400",
             }}

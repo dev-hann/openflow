@@ -150,7 +150,8 @@ export const MessageBubble = React.memo(function MessageBubble({
             <View
               style={[
                 styles.bubble,
-                { backgroundColor: bubbleBg, ...SHADOWS.sm },
+                { backgroundColor: bubbleBg },
+                SHADOWS.sm,
                 isUser && { borderBottomRightRadius: 4 },
                 !isUser && isFirstInGroup && { borderTopLeftRadius: 4 },
                 !isUser &&
@@ -214,7 +215,8 @@ export const MessageBubble = React.memo(function MessageBubble({
           <View
             style={[
               styles.bubble,
-              { backgroundColor: bubbleBg, ...SHADOWS.sm },
+              { backgroundColor: bubbleBg },
+              SHADOWS.sm,
               { borderBottomRightRadius: 4 },
               !isFirstInGroup && { borderTopRightRadius: BORDER_RADIUS.lg },
               !isLastInGroup && { borderBottomRightRadius: BORDER_RADIUS.lg },
