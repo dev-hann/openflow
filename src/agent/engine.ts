@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
-import type { LlmClient, ChatMessage } from "../llm/index.js";
+import type { LlmClient, ChatMessage, ToolCall } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { ToolExecutor, ToolResult } from "../tools/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
@@ -70,6 +70,14 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     config.workspace,
   );
   const skills = skillLoader.loadAll();
+
+  function persistMessage(sessionId: string, params: { role: "user" | "assistant" | "system"; content: string; toolCalls?: ToolCall[] }): void {
+    try {
+      memory.addMessage({ sessionId, ...params });
+    } catch (err) {
+      log.error({ sessionId, err }, `failed to save ${params.role} message`);
+    }
+  }
 
   function resolveSystemPrompt(): string {
     if (config.systemPrompt) return config.systemPrompt;
@@ -191,11 +199,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       }
 
       if (response.type === "text") {
-        try {
-          memory.addMessage({ sessionId, role: "assistant", content: response.content });
-        } catch (err) {
-          log.error({ sessionId, err }, "failed to save assistant message");
-        }
+        persistMessage(sessionId, { role: "assistant", content: response.content });
         const duration = Date.now() - startedAt;
         log.info({ sessionId, duration, rounds: round, responseLength: response.content.length }, "message handled");
         return { type: "text", content: response.content };
@@ -204,11 +208,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       const toolCalls = response.toolCalls;
       messages.push({ role: "assistant", content: null, tool_calls: toolCalls });
 
-      try {
-        memory.addMessage({ sessionId, role: "assistant", content: "", toolCalls });
-      } catch (err) {
-        log.error({ sessionId, err }, "failed to save assistant tool_calls");
-      }
+      persistMessage(sessionId, { role: "assistant", content: "", toolCalls });
 
       for (const toolCall of toolCalls) {
         await processToolCall(toolCall, sessionId, chatId, round, messages);
@@ -216,11 +216,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     }
 
     const overflowMsg = "Maximum tool call rounds reached. Please continue the conversation.";
-    try {
-      memory.addMessage({ sessionId, role: "assistant", content: overflowMsg });
-    } catch (err) {
-      log.error({ sessionId, err }, "failed to save overflow message");
-    }
+    persistMessage(sessionId, { role: "assistant", content: overflowMsg });
     const duration = Date.now() - startedAt;
     log.info({ sessionId, duration, rounds: config.maxToolRounds }, "message handled (max rounds reached)");
     return { type: "text", content: overflowMsg };
