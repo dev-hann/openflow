@@ -60,7 +60,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
               const isActive = item.id === activeProviderId;
               return (
                 <TouchableRipple
-                  onPress={() => { handleSwitch(item.id); onClose(); }}
+                  onPress={async () => { await handleSwitch(item.id); onClose(); }}
                   style={isActive ? { backgroundColor: theme.colors.primaryContainer } : undefined}
                 >
                   <View style={styles.sheetItem}>

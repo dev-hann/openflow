@@ -26,11 +26,12 @@ function getBackoffDelay(count: number): number {
 }
 
 export function useWebSocket(): UseWebSocketReturn {
-  const wsRef = useRef<WebSocket | null>(null);
+  const   wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const retryCount = useRef(0);
   const intentionalClose = useRef(false);
+  const authFailed = useRef(false);
   const [connected, setConnected] = useState(false);
 
   const storedAuth = useAuthStore((s) => s.storedAuth);
@@ -102,6 +103,7 @@ export function useWebSocket(): UseWebSocketReturn {
   const connectRef = useRef<(wsUrl: string, scheduleReconnect: () => void) => void>(() => {});
   connectRef.current = (wsUrl: string, scheduleReconnect: () => void) => {
     intentionalClose.current = false;
+    authFailed.current = false;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -139,10 +141,14 @@ export function useWebSocket(): UseWebSocketReturn {
       handleMessageRef.current?.(msg);
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event: CloseEvent) => {
       clearPingTimer();
       setConnected(false);
       setStoreConnectedRef.current(false);
+      if (event.code === 4001) {
+        authFailed.current = true;
+        return;
+      }
       if (!intentionalClose.current) {
         retryCount.current++;
         reconnectTimer.current = setTimeout(scheduleReconnect, getBackoffDelay(retryCount.current));
@@ -169,6 +175,7 @@ export function useWebSocket(): UseWebSocketReturn {
   const reconnect = useCallback(() => {
     cleanup();
     retryCount.current = 0;
+    authFailed.current = false;
     if (!storedAuth) return;
     const wsUrl = buildWsUrl(storedAuth.serverUrl);
     const scheduleReconnect = () => reconnect();

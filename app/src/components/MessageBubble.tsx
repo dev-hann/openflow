@@ -164,8 +164,11 @@ interface MessageListProps {
 export const MessageList = React.forwardRef<FlatList, MessageListProps>(function MessageList({ messages, onScrollStateChange, onRetry }, forwardedRef) {
   const theme = useTheme();
   const internalRef = useRef<FlatList>(null);
+  const nearBottomRef = useRef(true);
   const scrollToBottom = useCallback(() => {
-    internalRef.current?.scrollToEnd({ animated: true });
+    if (nearBottomRef.current) {
+      internalRef.current?.scrollToEnd({ animated: true });
+    }
   }, []);
 
   const setRef = useCallback((instance: FlatList | null) => {
@@ -181,7 +184,9 @@ export const MessageList = React.forwardRef<FlatList, MessageListProps>(function
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     if (contentSize.height === 0) return;
     const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
-    onScrollStateChange?.(distanceFromBottom > 150);
+    const isNearBottom = distanceFromBottom <= 150;
+    nearBottomRef.current = isNearBottom;
+    onScrollStateChange?.(!isNearBottom);
   }, [onScrollStateChange]);
 
   const renderMessage = useCallback(({ item, index }: { item: ChatMessage; index: number }) => {

@@ -66,6 +66,9 @@ export function SettingsScreen({ navigation }: Props) {
         clearAll();
         setSessions([]);
         setActiveSessionId(null);
+        setAvailableModels([]);
+        setCurrentModel("");
+        setProviders([], "");
       }},
     ]);
   }
