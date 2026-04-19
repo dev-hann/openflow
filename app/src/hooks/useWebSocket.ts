@@ -57,8 +57,11 @@ export function useWebSocket(): UseWebSocketReturn {
   useEffect(() => {
     if (!storedAuth) return;
 
-    const url = storedAuth.serverUrl.replace(/^http/, "ws");
-    const wsUrl = `${url}/ws`;
+    let url = storedAuth.serverUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = `http://${url}`;
+    }
+    const wsUrl = url.replace(/^http/, "ws") + "/ws";
 
     function getDelay(): number {
       const delay = BASE_DELAY_MS * Math.pow(2, retryCount.current);

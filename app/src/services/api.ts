@@ -14,7 +14,11 @@ export class ApiClient {
   private baseUrl: string;
 
   constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/$/, "");
+    let url = baseUrl.trim().replace(/\/$/, "");
+    if (!/^https?:\/\//i.test(url)) {
+      url = `http://${url}`;
+    }
+    this.baseUrl = url;
   }
 
   private async request(

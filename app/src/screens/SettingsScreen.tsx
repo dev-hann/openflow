@@ -155,7 +155,7 @@ export function SettingsScreen() {
               style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
               value={inputUrl}
               onChangeText={setInputUrl}
-              placeholder="서버 주소 (예: 192.168.0.5:9800)"
+              placeholder="서버 주소 (예: http://192.168.0.5:9800)"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}

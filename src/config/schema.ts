@@ -94,8 +94,8 @@ export const openFlowConfigSchema = z.object({
     .default({}),
   websocket: z
     .object({
-      enabled: z.boolean().default(false),
-      host: z.string().default("127.0.0.1"),
+      enabled: z.boolean().default(true),
+      host: z.string().default("0.0.0.0"),
       port: z.coerce.number().int().default(9800),
       cors: z.boolean().default(true),
     })
