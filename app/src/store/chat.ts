@@ -5,6 +5,8 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
+  isFailed?: boolean;
+  timestamp: number;
 }
 
 interface ChatState {
@@ -14,8 +16,21 @@ interface ChatState {
   addMessage: (message: ChatMessage) => void;
   appendToLastMessage: (content: string) => void;
   finalizeLastMessage: (content: string) => void;
+  markLastMessageFailed: () => void;
   clearMessages: () => void;
   setSending: (sending: boolean) => void;
+}
+
+function updateLastAssistant(
+  messages: ChatMessage[],
+  patch: Partial<ChatMessage>,
+): ChatMessage[] {
+  const updated = [...messages];
+  const last = updated[updated.length - 1];
+  if (last && last.role === "assistant") {
+    updated[updated.length - 1] = { ...last, ...patch };
+  }
+  return updated;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -26,32 +41,30 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({ messages: [...state.messages, message] })),
 
   appendToLastMessage: (content) =>
-    set((state) => {
-      const messages = [...state.messages];
-      const last = messages[messages.length - 1];
-      if (last && last.role === "assistant") {
-        messages[messages.length - 1] = {
-          ...last,
-          content: last.content + content,
-          isStreaming: true,
-        };
-      }
-      return { messages };
-    }),
+    set((state) => ({
+      messages: updateLastAssistant(state.messages, {
+        content: (state.messages[state.messages.length - 1]?.content ?? "") + content,
+        isStreaming: true,
+      }),
+    })),
 
   finalizeLastMessage: (content) =>
-    set((state) => {
-      const messages = [...state.messages];
-      const last = messages[messages.length - 1];
-      if (last && last.role === "assistant") {
-        messages[messages.length - 1] = {
-          ...last,
-          content,
-          isStreaming: false,
-        };
-      }
-      return { messages };
-    }),
+    set((state) => ({
+      messages: updateLastAssistant(state.messages, {
+        content,
+        isStreaming: false,
+        isFailed: false,
+      }),
+    })),
+
+  markLastMessageFailed: () =>
+    set((state) => ({
+      messages: updateLastAssistant(state.messages, {
+        isStreaming: false,
+        isFailed: true,
+      }),
+      isSending: false,
+    })),
 
   clearMessages: () => set({ messages: [] }),
   setSending: (sending) => set({ isSending: sending }),
