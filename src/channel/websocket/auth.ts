@@ -96,11 +96,16 @@ export function createAuthService(store?: AuthStore): AuthService {
       claimed: false,
     });
 
-    log.info(
-      { pin: "***" },
-      "\n  \x1b[1m\x1b[36m🔑 OpenFlow 페어링 PIN:\x1b[0m \x1b[1m%s\x1b[0m\n  (%d분 내 앱에서 입력하세요)\n",
-      pin,
-      Math.round(PIN_TTL_MS / 60_000),
+    log.info({ pin: "***" }, "pairing pin created");
+
+    const formatted = `${pin.slice(0, 3)} ${pin.slice(3)}`;
+    const ttlMin = Math.round(PIN_TTL_MS / 60_000);
+    const line1 = `   🔑 페어링 PIN:  ${formatted}`;
+    const line2 = `   ${ttlMin}분 내 앱에서 입력하세요`;
+    const w = Math.max(line1.length, line2.length) + 4;
+    const border = "═".repeat(w);
+    process.stdout.write(
+      `\n  ╔${border}╗\n  ║${line1.padEnd(w)}║\n  ║${line2.padEnd(w)}║\n  ╚${border}╝\n\n`,
     );
 
     return pin;

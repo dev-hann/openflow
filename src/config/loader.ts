@@ -1,26 +1,16 @@
 import { existsSync, readFileSync, watchFile, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, resolve } from "node:path";
-import { execFileSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
-import { ensureDirSync } from "../utils/fs.js";
+import { ensureDirSync, resolveHomePath } from "../utils/fs.js";
 import { openFlowConfigSchema, type OpenFlowConfig } from "./schema.js";
 
 const log = createLogger("config");
 
-const CONFIG_DIR = () => resolve(homedir(), ".openflow");
-const CONFIG_FILE = () => resolve(CONFIG_DIR(), "openflow.json");
+const CONFIG_DIR = () => resolveHomePath("~/.openflow");
+const CONFIG_FILE = () => resolveHomePath("~/.openflow/openflow.json");
 
 let cachedConfig: OpenFlowConfig | null = null;
-
-function resolveHomePath(p: string): string {
-  if (p.startsWith("~/")) {
-    return resolve(homedir(), p.slice(2));
-  }
-  return p;
-}
 
 export function getConfigPath(): string {
   const cliOverride = process.env.OPENFLOW_CONFIG;
@@ -93,11 +83,6 @@ export function initConfig(configPath?: string): void {
   }
   ensureConfigDir();
   const example = {
-    llm: {
-      baseUrl: "https://api.openai.com/v1",
-      apiKey: "${OPENAI_API_KEY}",
-      model: "gpt-4o",
-    },
     websocket: {
       enabled: true,
       host: "127.0.0.1",
@@ -108,43 +93,6 @@ export function initConfig(configPath?: string): void {
     },
   };
   writeFileSync(target, JSON.stringify(example, null, 2) + "\n", "utf-8");
-}
-
-export function editConfig(configPath?: string): void {
-  const target = configPath ?? CONFIG_FILE();
-  const dir = dirname(target);
-  ensureDirSync(dir);
-  if (!existsSync(target)) {
-    initConfig(target);
-  }
-  const editor = process.env.EDITOR ?? process.env.VISUAL ?? "vi";
-  execFileSync(editor, [target], { stdio: "inherit" });
-}
-
-export function updateCommands(commands: Record<string, unknown>): void {
-  const configPath = getConfigPath();
-  if (!existsSync(configPath)) return;
-
-  const raw = readFileSync(configPath, "utf-8");
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    log.debug({ configPath }, "failed to parse commands config JSON");
-    return;
-  }
-
-  parsed.commands = commands;
-  writeFileSync(configPath, JSON.stringify(parsed, null, 2) + "\n", "utf-8");
-  log.info({ count: Object.keys(commands).length }, "commands config updated");
-
-  cachedConfig = null;
-  try {
-    loadConfig();
-  } catch {
-    log.debug("failed to reload config after commands update");
-    cachedConfig = null;
-  }
 }
 
 export type ConfigChangeCallback = (newConfig: OpenFlowConfig) => void;

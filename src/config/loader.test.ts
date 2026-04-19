@@ -22,19 +22,13 @@ describe("loadConfig", () => {
 
   it("should load and cache valid config", () => {
     const config = {
-      llm: {
-        baseUrl: "https://api.example.com/v1",
-        apiKey: "test-key",
-        model: "test-model",
-      },
       agent: {},
       memory: {},
     };
     writeFileSync(testConfigPath, JSON.stringify(config));
 
     const result = loadConfig();
-    expect(result.llm.model).toBe("test-model");
-    expect(result.llm.apiKey).toBe("test-key");
+    expect(result.llm.maxTokens).toBe(4096);
 
     const result2 = loadConfig();
     expect(result2).toBe(result);
@@ -64,7 +58,7 @@ describe("loadConfig", () => {
   });
 
   it("should throw CONFIG_INVALID for schema validation failure", () => {
-    writeFileSync(testConfigPath, JSON.stringify({ llm: { baseUrl: "nope" } }));
+    writeFileSync(testConfigPath, JSON.stringify({ agent: { maxToolRounds: -1 } }));
 
     try {
       loadConfig();
@@ -76,11 +70,6 @@ describe("loadConfig", () => {
 
   it("should resolve ~ paths in workspace and dbPath", () => {
     const config = {
-      llm: {
-        baseUrl: "https://api.example.com/v1",
-        apiKey: "key",
-        model: "test",
-      },
       agent: {},
       memory: {},
     };

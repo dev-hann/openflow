@@ -37,6 +37,7 @@ export interface ToolExecutor {
   execute(call: ToolCall): Promise<ToolResult>;
   getDefinitions(): ToolDefinition[];
   needsConfirmation(toolName: string): boolean;
+  updateSender(sender: ChannelSender): void;
 }
 
 const shellTool: InternalTool = {
@@ -84,6 +85,7 @@ export function createToolExecutor(
   sender?: ChannelSender,
 ): ToolExecutor {
   const allTools: Map<string, InternalTool> = new Map();
+  let currentSender = sender;
 
   function register(tool: InternalTool): void {
     allTools.set(tool.name, tool);
@@ -113,9 +115,9 @@ export function createToolExecutor(
     register(browserTools.execute);
   }
 
-  if (sender) {
-    register(createSendMessageTool(sender));
-    register(createSendImageTool(sender, workspace));
+  if (currentSender) {
+    register(createSendMessageTool(currentSender));
+    register(createSendImageTool(currentSender, workspace));
   }
 
   const requireConfirmation = config.requireConfirmation ?? [];
@@ -127,6 +129,14 @@ export function createToolExecutor(
 
     needsConfirmation(toolName: string): boolean {
       return requireConfirmation.includes(toolName);
+    },
+
+    updateSender(newSender: ChannelSender): void {
+      currentSender = newSender;
+      allTools.delete("send_message");
+      allTools.delete("send_image");
+      register(createSendMessageTool(newSender));
+      register(createSendImageTool(newSender, workspace));
     },
 
     async execute(call: ToolCall): Promise<ToolResult> {

@@ -2,6 +2,20 @@ import type { InternalTool } from "./types.js";
 import { truncate } from "./utils.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#\d+;/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function validateUrl(url: string): void {
   let parsed: URL;
   try {
@@ -61,17 +75,7 @@ export const webFetchTool: InternalTool = {
         },
         { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
       );
-      const text = html
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&nbsp;/g, " ")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&#\d+;/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
+      const text = htmlToPlainText(html);
       return truncate(text, maxLen);
     } catch (err: unknown) {
       throw new Error(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`);

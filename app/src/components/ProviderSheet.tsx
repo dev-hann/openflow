@@ -26,14 +26,16 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
   const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
   const getApi = useApiClient();
 
-  async function handleSwitch(id: string): Promise<void> {
+  async function handleSwitch(id: string): Promise<boolean> {
     const client = await getApi();
-    if (!client) return;
+    if (!client) return false;
     try {
       await client.api.switchProvider(client.token, id);
       setActiveProviderId(id);
+      return true;
     } catch {
       Alert.alert("오류", "Provider 전환에 실패했습니다.");
+      return false;
     }
   }
 
@@ -60,7 +62,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
               const isActive = item.id === activeProviderId;
               return (
                 <TouchableRipple
-                  onPress={async () => { await handleSwitch(item.id); onClose(); }}
+                  onPress={async () => { const ok = await handleSwitch(item.id); if (ok) onClose(); }}
                   style={isActive ? { backgroundColor: theme.colors.primaryContainer } : undefined}
                 >
                   <View style={styles.sheetItem}>

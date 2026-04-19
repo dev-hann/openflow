@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { View, StyleSheet, FlatList, Alert, Modal } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, StyleSheet, FlatList, Alert, Modal, ActivityIndicator } from "react-native";
 import { Text, List, Button, Appbar, useTheme, Divider, TouchableRipple, Icon } from "react-native-paper";
 import { useSessionsStore } from "../store/sessions";
 import { useApiClient } from "../hooks/use-api-client";
@@ -26,6 +26,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
   const addSession = useSessionsStore((s) => s.addSession);
   const removeSession = useSessionsStore((s) => s.removeSession);
   const getApi = useApiClient();
+  const [creating, setCreating] = useState(false);
 
   const themedStyles = useMemo(() => ({
     modalBg: { backgroundColor: theme.colors.background },
@@ -35,8 +36,10 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
   }), [theme.colors]);
 
   const handleNewSession = React.useCallback(async () => {
+    if (creating) return;
+    setCreating(true);
     const client = await getApi();
-    if (!client) return;
+    if (!client) { setCreating(false); return; }
     try {
       const session = await client.api.createSession(client.token);
       addSession(buildSessionInfo(session));
@@ -44,8 +47,10 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
       onClose();
     } catch {
       Alert.alert("오류", "세션 생성에 실패했습니다.");
+    } finally {
+      setCreating(false);
     }
-  }, [getApi, addSession, onSwitchSession, onClose]);
+  }, [creating, getApi, addSession, onSwitchSession, onClose]);
 
   const handleDelete = React.useCallback(
     (session: SessionInfo) => {
@@ -76,8 +81,8 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
         <Appbar.Header style={[styles.modalHeader, themedStyles.headerBg]} mode="center-aligned">
           <Appbar.Action icon="close" onPress={onClose} />
           <Appbar.Content title="세션" titleStyle={styles.modalTitle} />
-          <Button mode="text" onPress={handleNewSession} icon="plus" compact>
-            새 세션
+          <Button mode="text" onPress={handleNewSession} icon={creating ? undefined : "plus"} compact disabled={creating}>
+            {creating ? <ActivityIndicator size="small" color={theme.colors.primary} /> : "새 세션"}
           </Button>
         </Appbar.Header>
         <FlatList

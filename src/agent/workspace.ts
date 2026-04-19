@@ -1,9 +1,10 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
 import { ensureDirSync } from "../utils/fs.js";
+import { resolveHomePath } from "../utils/fs.js";
+import { withSyncRetry } from "../utils/retry.js";
 
 const log = createLogger("workspace");
 
@@ -23,10 +24,6 @@ export interface WorkspaceFiles {
   user: string | null;
   memory: string | null;
   dailyMemory: string | null;
-}
-
-function resolvePath(p: string): string {
-  return p.startsWith("~/") ? join(homedir(), p.slice(2)) : p;
 }
 
 function safeRead(filePath: string): string | null {
@@ -60,24 +57,11 @@ function listRecentDailyFiles(dailyDir: string, days: number): string[] {
 }
 
 function safeWrite(filePath: string, content: string): void {
-  const delays = [100, 200, 400];
-  for (let attempt = 0; attempt <= delays.length; attempt++) {
-    try {
-      writeFileSync(filePath, content, "utf-8");
-      return;
-    } catch (err: unknown) {
-      if (attempt < delays.length) {
-        const end = Date.now() + delays[attempt]!;
-        while (Date.now() < end) { /* busy wait */ }
-        continue;
-      }
-      throw err;
-    }
-  }
+  withSyncRetry(() => writeFileSync(filePath, content, "utf-8"), () => true);
 }
 
 export function createWorkspaceLoader(config: WorkspaceConfig) {
-  const dir = resolvePath(config.workspaceDir);
+  const dir = resolveHomePath(config.workspaceDir);
   const dailyDays = Math.min(
     config.dailyMemoryDays ?? DEFAULT_DAILY_MEMORY_DAYS,
     MAX_DAILY_MEMORY_DAYS,

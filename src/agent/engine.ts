@@ -4,7 +4,7 @@ import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
 import type { LlmClient, ChatMessage, ToolCall, LlmResponse, ToolDefinition } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
-import type { ToolExecutor, ToolResult } from "../tools/index.js";
+import type { ToolExecutor, ToolResult, ChannelSender } from "../tools/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
 import { createCompaction } from "./compaction.js";
 import { createWorkspaceLoader, type WorkspaceLoader } from "./workspace.js";
@@ -46,6 +46,7 @@ export type AgentResponse =
 export interface AgentEngine {
   handleMessage(params: HandleMessageParams): Promise<AgentResponse>;
   getWorkspace(): WorkspaceLoader;
+  updateChannelSender(sender: ChannelSender): void;
 }
 
 export function createAgentEngine(deps: AgentDeps): AgentEngine {
@@ -242,5 +243,5 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     return { type: "text", content: overflowMsg };
   }
 
-  return { handleMessage, getWorkspace: () => workspace };
+  return { handleMessage, getWorkspace: () => workspace, updateChannelSender: (sender) => tools.updateSender(sender) };
 }

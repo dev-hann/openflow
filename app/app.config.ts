@@ -30,13 +30,14 @@ const config: ExpoConfig = {
     },
     package: "com.openflow.app",
     allowBackup: true,
+    softwareKeyboardLayoutMode: "resize",
   },
   web: {
     bundler: "metro",
     output: "static",
     favicon: "./assets/favicon.png",
   },
-  plugins: [],
+  plugins: ["expo-router"],
   extra: {
     eas: {
       projectId: "97c51cc0-050c-4ca7-b6ee-5c9158cc7b7a",

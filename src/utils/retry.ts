@@ -62,3 +62,29 @@ export function isSqliteBusy(err: unknown): boolean {
   const msg = err.message.toLowerCase();
   return msg.includes("sqlite_busy") || msg.includes("database is locked");
 }
+
+const SYNC_RETRY_DELAYS = [100, 200, 400];
+
+export function withSyncRetry<T>(
+  fn: () => T,
+  shouldRetry: (err: unknown) => boolean,
+): T {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= SYNC_RETRY_DELAYS.length; attempt++) {
+    try {
+      return fn();
+    } catch (err: unknown) {
+      lastErr = err;
+      if (attempt < SYNC_RETRY_DELAYS.length && shouldRetry(err)) {
+        const delay = SYNC_RETRY_DELAYS[attempt]!;
+        const end = Date.now() + delay;
+        while (Date.now() < end) {
+          // busy wait for sync SQLite / file I/O
+        }
+        continue;
+      }
+      throw lastErr;
+    }
+  }
+  throw lastErr;
+}

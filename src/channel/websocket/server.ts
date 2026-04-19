@@ -7,7 +7,9 @@ import { createWsHandler } from "./ws-handler.js";
 import { createRoutes } from "./routes.js";
 import type { Channel } from "../types.js";
 import type { AgentEngine } from "../../agent/index.js";
-import type { MemoryStore } from "../../memory/index.js";
+import type { MemoryStore, ProviderStore } from "../../memory/index.js";
+import type { ProviderPool } from "../../llm/pool.js";
+import type { PushTokenStore } from "../../notification/token-store.js";
 
 const log = createLogger("ws/server");
 
@@ -20,14 +22,15 @@ export interface WebSocketChannelConfig {
 export interface WebSocketChannelDeps {
   agentEngine: AgentEngine;
   memoryStore: MemoryStore;
+  providerStore: ProviderStore;
+  providerPool: ProviderPool;
+  pushTokenStore: PushTokenStore;
   createSession: (title: string) => { id: string };
-  availableModels?: string[];
-  currentModel?: string;
-  onModelChange?: (model: string) => void;
 }
 
 export interface WebSocketChannel extends Channel {
   authService: AuthService;
+  broadcastMessage(text: string): void;
 }
 
 export function createWebSocketChannel(
@@ -44,9 +47,9 @@ export function createWebSocketChannel(
   const routes = createRoutes({
     authService,
     memoryStore: deps.memoryStore,
-    availableModels: deps.availableModels,
-    currentModel: deps.currentModel,
-    onModelChange: deps.onModelChange,
+    providerStore: deps.providerStore,
+    providerPool: deps.providerPool,
+    pushTokenStore: deps.pushTokenStore,
     corsEnabled: config.cors,
   });
 
@@ -55,6 +58,10 @@ export function createWebSocketChannel(
 
   return {
     authService,
+
+    broadcastMessage(text: string): void {
+      wsHandler.broadcast("notification", { message: text });
+    },
 
     async start(): Promise<void> {
       server = createServer((req: IncomingMessage, res: ServerResponse) => {

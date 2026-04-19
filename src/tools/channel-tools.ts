@@ -10,13 +10,13 @@ export function createSendMessageTool(sender: ChannelSender): InternalTool {
       type: "function",
       function: {
         name: "send_message",
-        description: "Send a Telegram message",
+        description: "Send a message to the connected client",
         parameters: {
           type: "object",
           properties: {
             chatId: {
               type: "number",
-              description: "Telegram chat ID to send to",
+              description: "Chat ID to send to",
             },
             text: { type: "string", description: "Message text" },
           },
@@ -40,13 +40,13 @@ export function createSendImageTool(sender: ChannelSender, workspace: string): I
       type: "function",
       function: {
         name: "send_image",
-        description: "Send an image via Telegram. Supports public URLs and local file paths within the workspace.",
+        description: "Send an image to the connected client. Supports public URLs and local file paths within the workspace.",
         parameters: {
           type: "object",
           properties: {
             chatId: {
               type: "number",
-              description: "Telegram chat ID to send to",
+              description: "Chat ID to send to",
             },
             source: {
               type: "string",

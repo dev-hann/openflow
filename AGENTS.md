@@ -4,7 +4,8 @@
 
 - 초경량 개인 AI 비서 (3초 이내 기동)
 - TypeScript (ESM), Node.js 22+
-- Telegram 단일 채널, OpenAI 호환 LLM
+- WebSocket + REST API 채널, OpenAI 호환 LLM
+- **전체 스펙 및 기능 명세:** [`SPEC.md`](./SPEC.md) 참조
 
 ## 파일 참조 규칙
 
@@ -183,6 +184,22 @@ pnpm test:coverage    # 커버리지
 pnpm check            # 전체 검증
 ```
 
+## 작업 방식
+
+### 병렬 서브태스크
+
+- 모든 작업을 기능 단위로 분할하여 서브태스크로 병렬 실행
+- 각 서브태스크는 독립된 git worktree에서 작업하여 충돌 방지
+- 서브태스크 간 파일 충돌이 발생하지 않도록 작업 단위 설계
+
+### Git 워크트리
+
+- 서브태스크 실행 시 `git worktree add`로 격리된 작업 공간 생성
+- 워크트리 경로: `.worktrees/<branch-name>` 규칙 사용
+- 작업 완료 후 메인 워크트리에서 병합
+- 병합 완료 후 `git worktree remove`로 정리
+- `.worktrees/`는 `.gitignore`에 추가
+
 ## 테스트 가이드라인
 
 - 프레임워크: Vitest
@@ -198,6 +215,10 @@ pnpm check            # 전체 검증
 - 형식: `모듈: 동작 설명` (영어)
 - 예시: `llm: add retry with exponential backoff`
 - 명령문 스타일 (동사 원형)
+
+## 문서 유지보수
+
+- 코드 변경이 `SPEC.md`의 내용에 영향을 주는 경우 (새 모듈/도구 추가, API 라우트 변경, 설정 스키마 변경, 아키텍처 경계 변경 등), 변경 사항을 반영하여 `SPEC.md`도 함께 업데이트
 
 ## 보안
 

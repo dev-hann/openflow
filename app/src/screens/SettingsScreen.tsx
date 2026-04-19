@@ -73,7 +73,7 @@ export function SettingsScreen({ navigation }: Props) {
     ]);
   }
 
-  async function handleModelChange(model: string): Promise<void> {
+  const handleModelChange = useCallback(async (model: string): Promise<void> => {
     const client = await getApi();
     if (!client) return;
     try {
@@ -81,24 +81,24 @@ export function SettingsScreen({ navigation }: Props) {
       setCurrentModel(model);
       setModelMenuVisible(false);
     } catch { Alert.alert("오류", "모델 변경에 실패했습니다."); }
-  }
+  }, [getApi, setCurrentModel]);
 
-  async function handleDeleteProvider(p: ProviderInfo): Promise<void> {
+  const handleDeleteProvider = useCallback(async (p: ProviderInfo): Promise<void> => {
     const client = await getApi();
     if (!client) return;
     try { await client.api.deleteProvider(client.token, p.id); refreshData(); }
     catch { Alert.alert("오류", "Provider 삭제에 실패했습니다."); }
-  }
+  }, [getApi, refreshData]);
 
-  function handleEditProvider(p: ProviderInfo): void {
+  const handleEditProvider = useCallback((p: ProviderInfo): void => {
     navigation.navigate("ProviderEdit", {
       editProvider: { id: p.id, name: p.name, baseUrl: p.baseUrl, apiKey: p.apiKey, model: p.model },
     });
-  }
+  }, [navigation]);
 
-  function handleAddProvider(): void {
+  const handleAddProvider = useCallback((): void => {
     navigation.navigate("ProviderEdit", {});
-  }
+  }, [navigation]);
 
   const activeProvider = providers.find((p) => p.id === activeProviderId);
   const statusColor = isConnected ? theme.colors.tertiary : theme.colors.error;

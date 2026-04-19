@@ -34,5 +34,6 @@ export function mockToolExecutor(
       return { toolCallId: call.id, content, isError: false };
     }),
     needsConfirmation: needsConfirmationFn ?? (() => false),
+    updateSender: vi.fn(),
   };
 }

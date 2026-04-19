@@ -1,3 +1,7 @@
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { homedir } from "node:os";
+
 import { createLogger } from "../utils/logger.js";
 
 const log = createLogger("notification/tokens");
@@ -22,11 +26,33 @@ interface StoreData {
   tokens: PushTokenRecord[];
 }
 
-export function createPushTokenStore(): PushTokenStore {
-  let data: StoreData = { tokens: [] };
+const DEFAULT_DATA: StoreData = { tokens: [] };
+
+export function createPushTokenStore(filePath?: string): PushTokenStore {
+  const resolvedPath = filePath ?? `${homedir()}/.openflow/push-tokens.json`;
+  let data: StoreData = loadData(resolvedPath);
+
+  function loadData(path: string): StoreData {
+    try {
+      if (!existsSync(path)) return { ...DEFAULT_DATA };
+      const raw = readFileSync(path, "utf-8").trim();
+      const parsed = JSON.parse(raw) as StoreData;
+      if (!Array.isArray(parsed.tokens)) return { ...DEFAULT_DATA };
+      return parsed;
+    } catch {
+      log.debug({ path }, "failed to load push token store, using defaults");
+      return { ...DEFAULT_DATA };
+    }
+  }
 
   function save(): void {
-    log.debug({ count: data.tokens.length }, "token store updated");
+    const dir = dirname(resolvedPath);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(resolvedPath, JSON.stringify(data, null, 2) + "\n", {
+      encoding: "utf-8",
+      mode: 0o600,
+    });
+    log.debug({ count: data.tokens.length }, "token store saved");
   }
 
   function register(token: string, platform: PushTokenRecord["platform"], label: string): void {

@@ -4,13 +4,11 @@ import { randomUUID } from "node:crypto";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
-import { isSqliteBusy } from "../utils/retry.js";
+import { isSqliteBusy, withSyncRetry } from "../utils/retry.js";
 import { ensureDirSync } from "../utils/fs.js";
 import type { ChatMessage, ToolCall } from "../utils/message-types.js";
 
 const log = createLogger("memory");
-
-const DB_RETRY_DELAYS = [100, 200, 400];
 
 export interface Session {
   id: string;
@@ -36,6 +34,25 @@ export interface SearchResult {
   snippet: string;
 }
 
+export interface Provider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  isDefault: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AddProviderParams {
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  isDefault?: boolean;
+}
+
 export interface MemoryStore {
   createSession(title?: string): Session;
   listSessions(): Session[];
@@ -46,6 +63,17 @@ export interface MemoryStore {
   searchMessages(query: string, limit?: number): SearchResult[];
   buildContext(sessionId: string, maxSize: number): ChatMessage[];
   close(): void;
+  getDb(): DatabaseSync;
+}
+
+export interface ProviderStore {
+  listProviders(): Provider[];
+  getProvider(id: string): Provider | null;
+  getDefaultProvider(): Provider | null;
+  addProvider(params: AddProviderParams): Provider;
+  updateProvider(id: string, params: Partial<Pick<Provider, "name" | "baseUrl" | "apiKey" | "model">>): Provider | null;
+  deleteProvider(id: string): void;
+  setDefault(id: string): Provider | null;
 }
 
 const MIGRATIONS = [
@@ -67,6 +95,16 @@ const MIGRATIONS = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_messages_content ON messages(content)`,
+  `CREATE TABLE IF NOT EXISTS providers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    base_url TEXT NOT NULL,
+    api_key TEXT NOT NULL,
+    model TEXT NOT NULL,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
 ];
 
 function generateId(): string {
@@ -81,6 +119,19 @@ function rowToSession(row: Record<string, unknown>): Session {
   return {
     id: row.id as string,
     title: row.title as string,
+    createdAt: row.created_at as number,
+    updatedAt: row.updated_at as number,
+  };
+}
+
+function rowToProvider(row: Record<string, unknown>): Provider {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    baseUrl: row.base_url as string,
+    apiKey: row.api_key as string,
+    model: row.model as string,
+    isDefault: (row.is_default as number) === 1,
     createdAt: row.created_at as number,
     updatedAt: row.updated_at as number,
   };
@@ -110,26 +161,18 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
 }
 
 function wrapDb<T>(label: string, fn: () => T): T {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= DB_RETRY_DELAYS.length; attempt++) {
-    try {
-      return fn();
-    } catch (err: unknown) {
-      lastErr = err;
-      if (attempt < DB_RETRY_DELAYS.length && isSqliteBusy(err)) {
-        const delay = DB_RETRY_DELAYS[attempt]!;
-        log.warn({ label, attempt, delay }, "database busy, retrying");
-        const end = Date.now() + delay;
-        while (Date.now() < end) {
-          // busy wait for sync SQLite
-        }
-        continue;
+  try {
+    return withSyncRetry(fn, (err) => {
+      if (isSqliteBusy(err)) {
+        log.warn({ label }, "database busy, retrying");
+        return true;
       }
-      log.error({ label, err }, "database operation failed");
-      throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
-    }
+      return false;
+    });
+  } catch (err: unknown) {
+    log.error({ label, err }, "database operation failed");
+    throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
   }
-  throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", lastErr);
 }
 
 function openDatabase(dbPath: string): DatabaseSync {
@@ -278,6 +321,119 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     close(): void {
       db.close();
       log.info("database closed");
+    },
+
+    getDb(): DatabaseSync {
+      return db;
+    },
+  };
+}
+
+export function createProviderStore(db: DatabaseSync): ProviderStore {
+  runMigrations(db);
+
+  const stmts = {
+    listProviders: db.prepare(
+      "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers ORDER BY created_at ASC",
+    ),
+    getProvider: db.prepare(
+      "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers WHERE id = ?",
+    ),
+    getDefaultProvider: db.prepare(
+      "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers WHERE is_default = 1 LIMIT 1",
+    ),
+    insertProvider: db.prepare(
+      "INSERT INTO providers (id, name, base_url, api_key, model, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    ),
+    updateProviderPartial: db.prepare(
+      "UPDATE providers SET name = COALESCE(?, name), base_url = COALESCE(?, base_url), api_key = COALESCE(?, api_key), model = COALESCE(?, model), updated_at = ? WHERE id = ?",
+    ),
+    deleteProvider: db.prepare("DELETE FROM providers WHERE id = ?"),
+    clearDefault: db.prepare("UPDATE providers SET is_default = 0"),
+    setDefault: db.prepare("UPDATE providers SET is_default = 1, updated_at = ? WHERE id = ?"),
+    getUpdatedProvider: db.prepare(
+      "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers WHERE id = ?",
+    ),
+  };
+
+  return {
+    listProviders(): Provider[] {
+      return wrapDb("listProviders", () =>
+        (stmts.listProviders.all() as Array<Record<string, unknown>>).map(rowToProvider),
+      );
+    },
+
+    getProvider(id: string): Provider | null {
+      return wrapDb("getProvider", () => {
+        const row = stmts.getProvider.get(id) as Record<string, unknown> | undefined;
+        return row ? rowToProvider(row) : null;
+      });
+    },
+
+    getDefaultProvider(): Provider | null {
+      return wrapDb("getDefaultProvider", () => {
+        const row = stmts.getDefaultProvider.get() as Record<string, unknown> | undefined;
+        return row ? rowToProvider(row) : null;
+      });
+    },
+
+    addProvider(params: AddProviderParams): Provider {
+      const id = generateId();
+      const now = nowMs();
+      const isDefault = params.isDefault ? 1 : 0;
+      wrapDb("addProvider", () =>
+        stmts.insertProvider.run(id, params.name, params.baseUrl, params.apiKey, params.model, isDefault, now, now),
+      );
+      log.info({ providerId: id, name: params.name }, "provider added");
+      return {
+        id,
+        name: params.name,
+        baseUrl: params.baseUrl,
+        apiKey: params.apiKey,
+        model: params.model,
+        isDefault: params.isDefault ?? false,
+        createdAt: now,
+        updatedAt: now,
+      };
+    },
+
+    updateProvider(id: string, params: Partial<Pick<Provider, "name" | "baseUrl" | "apiKey" | "model">>): Provider | null {
+      const now = nowMs();
+      wrapDb("updateProvider", () =>
+        stmts.updateProviderPartial.run(
+          params.name ?? null,
+          params.baseUrl ?? null,
+          params.apiKey ?? null,
+          params.model ?? null,
+          now,
+          id,
+        ),
+      );
+      const row = wrapDb("updateProvider:get", () =>
+        stmts.getUpdatedProvider.get(id) as Record<string, unknown> | undefined,
+      );
+      if (!row) return null;
+      log.info({ providerId: id }, "provider updated");
+      return rowToProvider(row);
+    },
+
+    deleteProvider(id: string): void {
+      wrapDb("deleteProvider", () => stmts.deleteProvider.run(id));
+      log.info({ providerId: id }, "provider deleted");
+    },
+
+    setDefault(id: string): Provider | null {
+      const now = nowMs();
+      wrapDb("setDefault", () => {
+        stmts.clearDefault.run();
+        stmts.setDefault.run(now, id);
+      });
+      const row = wrapDb("setDefault:get", () =>
+        stmts.getUpdatedProvider.get(id) as Record<string, unknown> | undefined,
+      );
+      if (!row) return null;
+      log.info({ providerId: id }, "provider set as default");
+      return rowToProvider(row);
     },
   };
 }

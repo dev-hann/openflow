@@ -1,19 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { openFlowConfigSchema } from "./schema.js";
 
 describe("openFlowConfigSchema", () => {
-  const validConfig = {
-    llm: {
-      baseUrl: "https://api.example.com/v1",
-      apiKey: "sk-test-key",
-      model: "test-model",
-    },
-    agent: {},
-    memory: {},
-  };
-
-  it("should parse minimal valid config with defaults", () => {
-    const result = openFlowConfigSchema.parse(validConfig);
+  it("should parse minimal config with defaults", () => {
+    const result = openFlowConfigSchema.parse({ agent: {}, memory: {} });
     expect(result.llm.maxTokens).toBe(4096);
     expect(result.llm.temperature).toBe(0.7);
     expect(result.agent.maxToolRounds).toBe(10);
@@ -34,9 +24,6 @@ describe("openFlowConfigSchema", () => {
   it("should parse full config with overrides", () => {
     const full = {
       llm: {
-        baseUrl: "https://api.openai.com/v1",
-        apiKey: "sk-key",
-        model: "gpt-4o",
         maxTokens: 8192,
         temperature: 0.5,
       },
@@ -77,93 +64,21 @@ describe("openFlowConfigSchema", () => {
     expect(result.logging.level).toBe("debug");
   });
 
-  describe("env var resolution", () => {
-    beforeEach(() => {
-      process.env.TEST_OPENFLOW_KEY = "resolved-api-key";
-    });
-
-    afterEach(() => {
-      delete process.env.TEST_OPENFLOW_KEY;
-    });
-
-    it("should resolve ${ENV_VAR} in apiKey", () => {
-      const config = {
-        llm: {
-          baseUrl: "https://api.example.com/v1",
-          apiKey: "${TEST_OPENFLOW_KEY}",
-          model: "test",
-        },
-        agent: {},
-        memory: {},
-      };
-      const result = openFlowConfigSchema.parse(config);
-      expect(result.llm.apiKey).toBe("resolved-api-key");
-    });
-
-    it("should throw for missing env var", () => {
-      const config = {
-        llm: {
-          baseUrl: "https://api.example.com/v1",
-          apiKey: "${NONEXISTENT_VAR_12345}",
-          model: "test",
-        },
-        agent: {},
-        memory: {},
-      };
-      expect(() => openFlowConfigSchema.parse(config)).toThrow(
-        /NONEXISTENT_VAR_12345/,
-      );
-    });
-
-    it("should pass through plain strings", () => {
-      const config = {
-        llm: {
-          baseUrl: "https://api.example.com/v1",
-          apiKey: "plain-key",
-          model: "test",
-        },
-        agent: {},
-        memory: {},
-      };
-      const result = openFlowConfigSchema.parse(config);
-      expect(result.llm.apiKey).toBe("plain-key");
-    });
-  });
-
-  it("should reject missing required fields", () => {
-    expect(() => openFlowConfigSchema.parse({})).toThrow();
-  });
-
-  it("should reject empty apiKey", () => {
-    const config = {
-      llm: {
-        baseUrl: "https://api.example.com/v1",
-        apiKey: "",
-        model: "test",
-      },
-    };
-    expect(() => openFlowConfigSchema.parse(config)).toThrow();
+  it("should accept empty config with all defaults", () => {
+    const result = openFlowConfigSchema.parse({ agent: {}, memory: {} });
+    expect(result.llm.maxTokens).toBe(4096);
+    expect(result.llm.temperature).toBe(0.7);
   });
 
   it("should reject invalid temperature", () => {
     const config = {
-      llm: {
-        baseUrl: "https://api.example.com/v1",
-        apiKey: "key",
-        model: "test",
-        temperature: 5,
-      },
+      llm: { temperature: 5 },
     };
     expect(() => openFlowConfigSchema.parse(config)).toThrow();
   });
 
   it("should reject invalid log level", () => {
     const config = {
-      llm: {
-        baseUrl: "https://api.example.com/v1",
-        apiKey: "key",
-        model: "test",
-      },
       logging: { level: "verbose" },
     };
     expect(() => openFlowConfigSchema.parse(config)).toThrow();

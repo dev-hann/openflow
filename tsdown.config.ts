@@ -8,4 +8,5 @@ export default defineConfig({
   shims: true,
   platform: "node",
   target: "node22",
+  exclude: ["**/*.test.ts", "**/test-helpers.ts"],
 });

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { createLogger } from "../utils/logger.js";
+import { resolveHomePath } from "../utils/fs.js";
 
 const log = createLogger("skill-loader");
 
@@ -23,10 +23,6 @@ interface ParsedFrontmatter {
 }
 
 const MAX_SKILL_FILE_BYTES = 256 * 1024;
-
-function resolvePath(p: string): string {
-  return p.startsWith("~/") ? join(homedir(), p.slice(2)) : p;
-}
 
 export function parseFrontmatter(content: string): ParsedFrontmatter | null {
   const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
@@ -118,18 +114,18 @@ export function createSkillLoader(
       const disabledEntries = config.entries ?? {};
 
       for (const dir of config.extraDirs) {
-        const resolved = resolvePath(dir);
+        const resolved = resolveHomePath(dir);
         for (const skill of loadSkillsFromDir(resolved, disabledEntries)) {
           merged.set(skill.name, skill);
         }
       }
 
-      const globalDir = options?.globalDir ?? resolvePath("~/.openflow/skills");
+      const globalDir = options?.globalDir ?? resolveHomePath("~/.openflow/skills");
       for (const skill of loadSkillsFromDir(globalDir, disabledEntries)) {
         merged.set(skill.name, skill);
       }
 
-      const wsSkillsDir = join(resolvePath(workspaceDir), "skills");
+      const wsSkillsDir = join(resolveHomePath(workspaceDir), "skills");
       for (const skill of loadSkillsFromDir(wsSkillsDir, disabledEntries)) {
         merged.set(skill.name, skill);
       }

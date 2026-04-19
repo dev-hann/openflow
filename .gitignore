@@ -10,3 +10,4 @@ telegram-offset.json
 *.pem
 *.key
 paired-devices.json
+.worktrees/

@@ -47,25 +47,28 @@ better-sqlite3 단일 데이터베이스. FTS5 대신 단순 `LIKE` 키워드 �
 
 ---
 
-## ADR-003: Telegram Long-Polling (WebSocket 게이트웨이 없음)
+## ADR-003: WebSocket + HTTP 서버를 통신 채널로 채택
 
-### 상태: 수락됨
+### 상태: 수락됨 (revoked & replaced)
 
 ### 배경
-OpenClaw는 WebSocket 게이트웨이 서버(856줄) 구축. HTTP + WS + 인증 + 세션 관리 필요.
+초기 설계에서는 Telegram Bot API long-polling을 메인 채널로 계획. 이후 모바일 앱(Expo React Native)과의 실시간 통신이 필요해짐.
 
 ### 결정
-Telegram Bot API `getUpdates` long-polling 직접 사용. 별도 서버 없음.
+WebSocket + HTTP 서버를 기본 통신 채널로 채택. 클라이언트는 PIN 기반 페어링으로 인증 후 WebSocket으로 실시간 채팅, HTTP REST로 세션/프로바이더 관리.
 
 ### 근거
-- 단일 채널이므로 게이트웨이 불필요
-- HTTP 서버 바인딩/포트 관리 불필요
-- 방화벽/포트 포워딩 불필요 (아웃바운드 연결만)
-- grammy 라이브러리가 long-polling을 내장 지원
+- 모바일 앱과의 실시간 양방향 통신 필요
+- 스트리밍 토큰 전송을 위한 WebSocket 필요
+- REST API로 세션, 프로바이더, 모델 관리
+- PIN 기반 페어링으로 간단한 보안
+- Expo 푸시 알림 연동
 
 ### 결과
-- 네트워크 코드 ~100줄
-- WebChat/API 엔드포인트 제공 불가
+- WebSocket + HTTP 서버가 포함됨 (포트 9800)
+- Telegram 의존성(grammy) 제거
+- 인증 시스템(auth.ts, auth-store.ts) 추가
+- REST API 16개 엔드포인트
 
 ---
 

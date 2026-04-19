@@ -26,7 +26,7 @@ function getBackoffDelay(count: number): number {
 }
 
 export function useWebSocket(): UseWebSocketReturn {
-  const   wsRef = useRef<WebSocket | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const retryCount = useRef(0);
@@ -108,12 +108,16 @@ export function useWebSocket(): UseWebSocketReturn {
     wsRef.current = ws;
 
     ws.onopen = async () => {
-      const token = await getValidTokenRef.current();
-      if (!token) {
-        ws.close(4001, "no valid token");
-        return;
+      try {
+        const token = await getValidTokenRef.current();
+        if (!token) {
+          ws.close(4001, "no valid token");
+          return;
+        }
+        ws.send(JSON.stringify({ type: "auth", accessToken: token }));
+      } catch {
+        ws.close(4001, "token fetch failed");
       }
-      ws.send(JSON.stringify({ type: "auth", accessToken: token }));
     };
 
     ws.onmessage = (event: MessageEvent) => {

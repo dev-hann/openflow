@@ -1,36 +1,10 @@
 import { z } from "zod";
 
-import { OpenFlowError } from "../utils/errors.js";
-
-function resolveEnvVar(value: string): string {
-  const envVarPattern = /^\$\{([^}]+)\}$/;
-  const match = envVarPattern.exec(value);
-  if (!match?.[1]) {
-    return value;
-  }
-  const envValue = process.env[match[1]];
-  if (!envValue) {
-    throw new OpenFlowError(`Environment variable "${match[1]}" is not set`, "CONFIG_INVALID");
-  }
-  return envValue;
-}
-
-const envString = z.string().transform(resolveEnvVar);
-
 export const openFlowConfigSchema = z.object({
   llm: z.object({
-    baseUrl: envString,
-    apiKey: envString,
-    model: envString,
     maxTokens: z.coerce.number().int().positive().default(4096),
     temperature: z.coerce.number().min(0).max(2).default(0.7),
-    apiKeys: z.array(envString).optional(),
-    fallbackModels: z.array(z.object({
-      model: z.string(),
-      baseUrl: envString.optional(),
-      apiKey: envString.optional(),
-    })).optional(),
-  }),
+  }).default({}),
   notification: z.object({
     enabled: z.boolean().default(true),
     onStart: z.string().default("🟢 OpenFlow가 시작되었습니다."),
@@ -80,17 +54,6 @@ export const openFlowConfigSchema = z.object({
         )
         .default({}),
     })
-    .default({}),
-  commands: z
-    .record(
-      z.object({
-        action: z.union([z.literal("shell"), z.literal("reply")]),
-        command: z.string().optional(),
-        text: z.string().optional(),
-        description: z.string().optional(),
-        timeout: z.coerce.number().int().positive().default(10_000),
-      }),
-    )
     .default({}),
   websocket: z
     .object({

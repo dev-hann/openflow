@@ -1,6 +1,6 @@
 import type { WebSocket } from "ws";
 
-import { parseWsClientMessage, serializeWsServerMessage } from "./protocol.js";
+import { parseWsClientMessage, serializeWsServerMessage, type WsServerMessage } from "./protocol.js";
 import { createStreamingTokenHandler, sendError, sendFinalResponse } from "./streaming.js";
 import type { AuthService } from "./auth.js";
 import type { AgentEngine } from "../../agent/index.js";
@@ -130,6 +130,7 @@ export function createWsHandler(deps: WsHandlerDeps) {
       userMessage: content,
       onToken,
       systemPromptOverride,
+      chatId: state.sessionKey,
     });
 
     if (result.type === "text") {
@@ -143,5 +144,14 @@ export function createWsHandler(deps: WsHandlerDeps) {
     return clients.size;
   }
 
-  return { handleConnection, getConnectedCount };
+  function broadcast(type: string, payload: Record<string, unknown>): void {
+    const msg = serializeWsServerMessage({ type, ...payload } as WsServerMessage);
+    for (const ws of clients.keys()) {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(msg);
+      }
+    }
+  }
+
+  return { handleConnection, getConnectedCount, broadcast };
 }
