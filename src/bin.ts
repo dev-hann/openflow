@@ -22,7 +22,6 @@ import { createLlmClient } from "./llm/client.js";
 import { createMemoryStore } from "./memory/store.js";
 import { createToolExecutor, type ChannelSender } from "./tools/executor.js";
 import { createAgentEngine } from "./agent/engine.js";
-import { createTelegramChannel } from "./channel/telegram.js";
 import { createWebSocketChannel } from "./channel/websocket/index.js";
 import type { ConfirmationHandler } from "./tools/confirmation.js";
 
@@ -670,54 +669,27 @@ async function runServer(config: OpenFlowConfig): Promise<void> {
     confirmationTimeout: config.tools.confirmationTimeout,
   });
 
-  const telegramEnabled = config.telegram.botToken !== "NOT_SET";
-  const wsEnabled = config.websocket.enabled;
-
-  if (!telegramEnabled && !wsEnabled) {
-    log.error("no channel enabled. Enable telegram or websocket in config.");
+  if (!config.websocket.enabled) {
+    log.error("websocket channel not enabled. Set websocket.enabled=true in config.");
     process.exit(1);
   }
 
-  const channels: Array<{ stop: () => Promise<void> }> = [];
-
-  if (telegramEnabled) {
-    const channel = createTelegramChannel(
-      { ...config.telegram, customCommands: config.commands },
-      agent,
-      (title: string) => memory.createSession(title),
-      memory,
-      confirmationHandler,
-    );
-    sender.sendMessage = (chatId, text) => channel.sendMessage(chatId, text);
-    sender.sendPhoto = (chatId, photo, caption) => channel.sendPhoto(chatId, photo, caption);
-    channels.push(channel);
-
-    log.info("starting Telegram bot...");
-    await channel.start();
-    if (config.telegram.notify?.enabled) {
-      await channel.notifyAll(config.telegram.notify.onStart);
-    }
-  }
-
-  if (wsEnabled) {
-    const wsChannel = createWebSocketChannel(
-      { host: config.websocket.host, port: config.websocket.port, cors: config.websocket.cors },
-      {
-        agentEngine: agent,
-        memoryStore: memory,
-        createSession: (title: string) => memory.createSession(title),
-        availableModels: config.llm.apiKeys ? undefined : [config.llm.model],
-        currentModel: config.llm.model,
-        onModelChange: (model: string) => {
-          config.llm.model = model;
-        },
+  const wsChannel = createWebSocketChannel(
+    { host: config.websocket.host, port: config.websocket.port, cors: config.websocket.cors },
+    {
+      agentEngine: agent,
+      memoryStore: memory,
+      createSession: (title: string) => memory.createSession(title),
+      availableModels: config.llm.apiKeys ? undefined : [config.llm.model],
+      currentModel: config.llm.model,
+      onModelChange: (model: string) => {
+        config.llm.model = model;
       },
-    );
-    channels.push(wsChannel);
+    },
+  );
 
-    log.info("starting WebSocket server...");
-    await wsChannel.start();
-  }
+  log.info("starting WebSocket server...");
+  await wsChannel.start();
 
   const unwatch = watchConfig(() => {
     log.info("config file changed, restart required for full effect");
@@ -726,12 +698,7 @@ async function runServer(config: OpenFlowConfig): Promise<void> {
   const cleanup = async () => {
     log.info("shutting down...");
     unwatch();
-    if (telegramEnabled && config.telegram.notify?.enabled) {
-      log.info("sending stop notification...");
-    }
-    for (const ch of channels) {
-      await ch.stop();
-    }
+    await wsChannel.stop();
     memory.close();
     process.exit(0);
   };
@@ -790,10 +757,12 @@ function showConfig(config: OpenFlowConfig): void {
       ...config.llm,
       apiKey: formatKeyPreview(config.llm.apiKey),
     },
-    telegram: {
-      ...config.telegram,
-      botToken: config.telegram.botToken === "NOT_SET" ? "(not configured)" : formatKeyPreview(config.telegram.botToken),
-    },
+    telegram: config.telegram
+      ? {
+          ...config.telegram,
+          botToken: formatKeyPreview(config.telegram.botToken),
+        }
+      : undefined,
   };
   console.log(JSON.stringify(masked, null, 2));
 }

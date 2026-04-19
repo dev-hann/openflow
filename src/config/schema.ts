@@ -49,7 +49,7 @@ export const openFlowConfigSchema = z.object({
       onStart: z.string().default("🟢 OpenFlow가 시작되었습니다."),
       onStop: z.string().default("🔴 OpenFlow가 종료됩니다."),
     }).default({}),
-  }),
+  }).optional(),
   agent: z.object({
     systemPrompt: z.string().default(""),
     maxToolRounds: z.coerce.number().int().positive().default(10),

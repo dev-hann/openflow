@@ -19,7 +19,7 @@ describe("openFlowConfigSchema", () => {
     const result = openFlowConfigSchema.parse(validConfig);
     expect(result.llm.maxTokens).toBe(4096);
     expect(result.llm.temperature).toBe(0.7);
-    expect(result.telegram.allowedUsers).toEqual([]);
+    expect(result.telegram!.allowedUsers).toEqual([]);
     expect(result.agent.maxToolRounds).toBe(10);
     expect(result.agent.workspace).toBe("~/.openflow/workspace");
     expect(result.memory.contextSize).toBe(50);
@@ -69,7 +69,7 @@ describe("openFlowConfigSchema", () => {
     const result = openFlowConfigSchema.parse(full);
     expect(result.llm.maxTokens).toBe(8192);
     expect(result.llm.temperature).toBe(0.5);
-    expect(result.telegram.allowedUsers).toEqual([123, 456]);
+    expect(result.telegram!.allowedUsers).toEqual([123, 456]);
     expect(result.agent.systemPrompt).toBe("You are helpful");
     expect(result.tools.shell.enabled).toBe(false);
     expect(result.tools.httpRequest.enabled).toBe(true);
@@ -116,7 +116,7 @@ describe("openFlowConfigSchema", () => {
         memory: {},
       };
       const result = openFlowConfigSchema.parse(config);
-      expect(result.telegram.botToken).toBe("resolved-bot-token");
+      expect(result.telegram!.botToken).toBe("resolved-bot-token");
     });
 
     it("should throw for missing env var", () => {
@@ -148,7 +148,7 @@ describe("openFlowConfigSchema", () => {
       };
       const result = openFlowConfigSchema.parse(config);
       expect(result.llm.apiKey).toBe("plain-key");
-      expect(result.telegram.botToken).toBe("plain-token");
+      expect(result.telegram!.botToken).toBe("plain-token");
     });
   });
 
