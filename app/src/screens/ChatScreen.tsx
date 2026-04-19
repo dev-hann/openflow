@@ -14,12 +14,7 @@ import {
   Platform,
   FlatList,
 } from "react-native";
-import {
-  Text,
-  useTheme,
-  Icon,
-  IconButton,
-} from "react-native-paper";
+import { Text, useTheme, Icon, IconButton } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { MessageList } from "../components/message-list";
 import { InputBar } from "../components/InputBar";
@@ -160,10 +155,7 @@ export function ChatScreen() {
           <ActivityIndicator size="small" color={theme.colors.primary} />
           <Text
             variant="labelMedium"
-            style={[
-              styles.streamingText,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
+            style={{ color: theme.colors.onSurfaceVariant }}
           >
             생각 중...
           </Text>
@@ -190,7 +182,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs + 2,
   },
-  streamingText: {},
   scrollFab: {
     position: "absolute",
     bottom: 16,

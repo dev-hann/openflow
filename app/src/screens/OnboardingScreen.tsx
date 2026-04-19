@@ -11,6 +11,7 @@ import { useAuthStore } from "../store/auth";
 import { useSettingsStore } from "../store/settings";
 import { createApiClient } from "../services/api";
 import { saveAuth } from "../services/auth";
+import { normalizeUrl } from "../utils/normalize-url";
 import { ProviderForm } from "../components/ProviderForm";
 import { KeyboardSafeView } from "../components/KeyboardSafeView";
 import { SPACING } from "../constants/theme";
@@ -96,10 +97,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     try {
       const api = createApiClient(inputUrl.trim());
       const tokens = await api.pairVerify(pin.trim(), "Mobile App");
-      const auth = { serverUrl: inputUrl.trim(), ...tokens };
+      const serverUrl = normalizeUrl(inputUrl.trim());
+      const auth = { serverUrl, ...tokens };
       await saveAuth(auth);
       setStoredAuth(auth);
-      setServerUrl(inputUrl.trim());
+      setServerUrl(serverUrl);
       setStep("provider");
     } catch (err) {
       Alert.alert(

@@ -161,7 +161,14 @@ export function SessionModal({
         </TouchableRipple>
       );
     },
-    [activeSessionId, onSwitchSession, onClose, themedStyles.activeBg, theme.colors, handleDelete],
+    [
+      activeSessionId,
+      onSwitchSession,
+      onClose,
+      themedStyles.activeBg,
+      theme.colors,
+      handleDelete,
+    ],
   );
 
   return (
@@ -172,10 +179,7 @@ export function SessionModal({
       onRequestClose={onClose}
     >
       <View style={[styles.modalContainer, themedStyles.modalBg]}>
-        <Appbar.Header
-          style={[styles.modalHeader, themedStyles.headerBg]}
-          mode="center-aligned"
-        >
+        <Appbar.Header style={themedStyles.headerBg} mode="center-aligned">
           <Appbar.Action icon="close" onPress={onClose} />
           <Appbar.Content title="세션" titleStyle={styles.modalTitle} />
           <Button
@@ -218,7 +222,6 @@ export function SessionModal({
 
 const styles = StyleSheet.create({
   modalContainer: { flex: 1 },
-  modalHeader: {},
   modalTitle: { fontWeight: "600" },
   listContent: { paddingVertical: SPACING.sm },
   emptyContainer: { paddingVertical: SPACING.xxl, alignItems: "center" },

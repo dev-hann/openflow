@@ -48,10 +48,7 @@ const ProviderListItem = React.memo(function ProviderListItem({
 
   return (
     <TouchableRipple
-      onPress={async () => {
-        const ok = await onSelect(item.id);
-        if (ok) return;
-      }}
+      onPress={() => onSelect(item.id)}
       style={
         isActive
           ? { backgroundColor: theme.colors.primaryContainer }
@@ -73,9 +70,7 @@ const ProviderListItem = React.memo(function ProviderListItem({
             source="cloud-outline"
             size={18}
             color={
-              isActive
-                ? theme.colors.onPrimary
-                : theme.colors.onSurfaceVariant
+              isActive ? theme.colors.onPrimary : theme.colors.onSurfaceVariant
             }
           />
         </View>
@@ -88,10 +83,7 @@ const ProviderListItem = React.memo(function ProviderListItem({
           </Text>
           <Text
             variant="bodySmall"
-            style={[
-              styles.sheetItemModel,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
+            style={{ color: theme.colors.onSurfaceVariant }}
             numberOfLines={1}
           >
             {item.model}
@@ -312,7 +304,6 @@ const styles = StyleSheet.create({
   sheetItemInfo: { flex: 1, marginLeft: SPACING.sm },
   sheetItemNameActive: { fontWeight: "600" },
   sheetItemName: { fontWeight: "400" },
-  sheetItemModel: {},
   activeChipText: { fontSize: 10 },
   switchLoader: { marginRight: SPACING.xs },
   listContent: { paddingBottom: SPACING.xl },

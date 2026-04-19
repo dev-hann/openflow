@@ -113,7 +113,10 @@ export function SettingsScreen({ navigation }: Props) {
     navigation.navigate("ProviderEdit", {});
   }, [navigation]);
 
-  const activeProvider = providers.find((p) => p.id === activeProviderId);
+  const activeProvider = useMemo(
+    () => providers.find((p) => p.id === activeProviderId),
+    [providers, activeProviderId],
+  );
 
   const themed = useMemo(
     () => ({

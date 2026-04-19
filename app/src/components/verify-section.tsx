@@ -4,8 +4,6 @@ import { Text, Button, Chip, useTheme } from "react-native-paper";
 import { SPACING } from "../constants/theme";
 import type { VerifyResult } from "../hooks/use-provider-verify";
 
-export type { VerifyResult };
-
 interface VerifySectionProps {
   verifying: boolean;
   verifyResult: VerifyResult | null;
@@ -43,7 +41,7 @@ export function VerifySection({
   const colors = isOk ? resultStyles.ok : resultStyles.fail;
 
   const models = useMemo(
-    () => verifyResult?.ok ? (verifyResult.models ?? []).slice(0, 10) : [],
+    () => (verifyResult?.ok ? (verifyResult.models ?? []).slice(0, 10) : []),
     [verifyResult],
   );
 
