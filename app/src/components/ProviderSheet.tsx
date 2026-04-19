@@ -72,7 +72,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
                       <Text variant="bodyLarge" style={isActive ? styles.sheetItemNameActive : styles.sheetItemName}>
                         {item.name}
                       </Text>
-                      <Text variant="bodySmall" style={styles.sheetItemModel} numberOfLines={1}>
+                      <Text variant="bodySmall" style={[styles.sheetItemModel, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
                         {item.model}
                       </Text>
                     </View>
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   sheetItemInfo: { flex: 1, marginLeft: SPACING.sm },
   sheetItemNameActive: { fontWeight: "600" },
   sheetItemName: { fontWeight: "400" },
-  sheetItemModel: { color: "#6B7280" },
+  sheetItemModel: {},
   activeChipText: { fontSize: 10 },
   listContent: { paddingBottom: SPACING.xl },
 });
