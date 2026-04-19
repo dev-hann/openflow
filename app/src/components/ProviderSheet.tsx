@@ -47,7 +47,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
         <View style={[styles.sheetContainer, { backgroundColor: theme.colors.surface }]}>
           <View style={[styles.sheetHandle, { backgroundColor: theme.colors.outline }]} />
           <View style={styles.sheetHeader}>
-            <Text variant="titleMedium" style={{ fontWeight: "600" }}>Provider 선택</Text>
+            <Text variant="titleMedium" style={styles.sheetTitle}>Provider 선택</Text>
             <Button mode="text" onPress={onAdd} icon="plus" compact>추가</Button>
           </View>
           <FlatList
@@ -58,21 +58,21 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
               return (
                 <TouchableRipple
                   onPress={() => { handleSwitch(item.id); onClose(); }}
-                  style={{ backgroundColor: isActive ? theme.colors.primaryContainer : "transparent" }}
+                  style={isActive ? { backgroundColor: theme.colors.primaryContainer } : undefined}
                 >
                   <View style={styles.sheetItem}>
                     <View style={[styles.sheetItemIcon, { backgroundColor: isActive ? theme.colors.primary : theme.colors.surfaceVariant }]}>
                       <Icon source="cloud-outline" size={18} color={isActive ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} />
                     </View>
-                    <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-                      <Text variant="bodyLarge" style={{ fontWeight: isActive ? "600" : "400" }}>
+                    <View style={styles.sheetItemInfo}>
+                      <Text variant="bodyLarge" style={isActive ? styles.sheetItemNameActive : styles.sheetItemName}>
                         {item.name}
                       </Text>
-                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+                      <Text variant="bodySmall" style={styles.sheetItemModel} numberOfLines={1}>
                         {item.model}
                       </Text>
                     </View>
-                    {isActive && <Chip compact selected textStyle={{ fontSize: 10 }}>활성</Chip>}
+                    {isActive && <Chip compact selected textStyle={styles.activeChipText}>활성</Chip>}
                     <IconButton icon="pencil-outline" size={16} onPress={() => { onEdit(item); onClose(); }} />
                     <IconButton icon="delete-outline" size={16} iconColor={theme.colors.error} onPress={() => handleDelete(item)} />
                   </View>
@@ -80,7 +80,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
               );
             }}
             ItemSeparatorComponent={() => <Divider />}
-            contentContainerStyle={{ paddingBottom: SPACING.xl }}
+            contentContainerStyle={styles.listContent}
           />
         </View>
       </View>
@@ -95,4 +95,11 @@ const styles = StyleSheet.create({
   sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   sheetItem: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   sheetItemIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
+  sheetTitle: { fontWeight: "600" },
+  sheetItemInfo: { flex: 1, marginLeft: SPACING.sm },
+  sheetItemNameActive: { fontWeight: "600" },
+  sheetItemName: { fontWeight: "400" },
+  sheetItemModel: { color: "#6B7280" },
+  activeChipText: { fontSize: 10 },
+  listContent: { paddingBottom: SPACING.xl },
 });

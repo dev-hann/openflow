@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet, FlatList, Alert, Modal } from "react-native";
 import { Text, List, Button, Appbar, useTheme, Divider, TouchableRipple, Icon } from "react-native-paper";
 import { useSessionsStore } from "../store/sessions";
@@ -21,6 +21,13 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
   const addSession = useSessionsStore((s) => s.addSession);
   const removeSession = useSessionsStore((s) => s.removeSession);
   const getApi = useApiClient();
+
+  const themedStyles = useMemo(() => ({
+    modalBg: { backgroundColor: theme.colors.background },
+    headerBg: { backgroundColor: theme.colors.surface },
+    activeBg: { backgroundColor: theme.colors.primaryContainer },
+    emptyText: { color: theme.colors.onSurfaceVariant, marginTop: SPACING.md },
+  }), [theme.colors]);
 
   const handleNewSession = React.useCallback(async () => {
     const client = await getApi();
@@ -57,10 +64,10 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <Appbar.Header style={{ backgroundColor: theme.colors.surface }} mode="center-aligned">
+      <View style={[styles.modalContainer, themedStyles.modalBg]}>
+        <Appbar.Header style={[styles.modalHeader, themedStyles.headerBg]} mode="center-aligned">
           <Appbar.Action icon="close" onPress={onClose} />
-          <Appbar.Content title="세션" titleStyle={{ fontWeight: "600" }} />
+          <Appbar.Content title="세션" titleStyle={styles.modalTitle} />
           <Button mode="text" onPress={handleNewSession} icon="plus" compact>
             새 세션
           </Button>
@@ -73,11 +80,11 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
             return (
               <TouchableRipple
                 onPress={() => { if (!isActive) onSwitchSession(item.id); onClose(); }}
-                style={{ backgroundColor: isActive ? theme.colors.primaryContainer : "transparent" }}
+                style={isActive ? themedStyles.activeBg : undefined}
               >
                 <List.Item
                   title={item.title}
-                  titleStyle={{ fontWeight: isActive ? "600" : "400" }}
+                  titleStyle={isActive ? styles.activeItemTitle : styles.inactiveItemTitle}
                   description={`${formatRelativeTime(item.updatedAt)} · ${item.messageCount}개`}
                   left={(props) => (
                     <List.Icon
@@ -87,8 +94,8 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
                     />
                   )}
                   right={() => (
-                    <View style={{ justifyContent: "center" }}>
-                      <TouchableRipple onPress={() => handleDelete(item)} style={{ padding: SPACING.xs, borderRadius: 20 }}>
+                    <View style={styles.deleteButtonContainer}>
+                      <TouchableRipple onPress={() => handleDelete(item)} style={styles.deleteButton}>
                         <Icon source="delete-outline" size={18} color={theme.colors.onSurfaceVariant} />
                       </TouchableRipple>
                     </View>
@@ -102,7 +109,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Icon source="chat-off-outline" size={40} color={theme.colors.onSurfaceVariant} />
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: SPACING.md }}>
+              <Text variant="bodyMedium" style={themedStyles.emptyText}>
                 세션이 없습니다
               </Text>
             </View>
@@ -114,6 +121,13 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
 }
 
 const styles = StyleSheet.create({
+  modalContainer: { flex: 1 },
+  modalHeader: {},
+  modalTitle: { fontWeight: "600" },
   listContent: { paddingVertical: SPACING.sm },
   emptyContainer: { paddingVertical: SPACING.xxl, alignItems: "center" },
+  activeItemTitle: { fontWeight: "600" },
+  inactiveItemTitle: { fontWeight: "400" },
+  deleteButtonContainer: { justifyContent: "center" },
+  deleteButton: { padding: SPACING.xs, borderRadius: 20 },
 });

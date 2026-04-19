@@ -66,8 +66,13 @@ export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: Messag
     em: { fontStyle: "italic" as const },
   }), [theme.colors]);
 
+  const textStyles = useMemo(() => ({
+    userText: { color: theme.colors.onPrimary, fontSize: 15, lineHeight: 22 },
+    timestampLeft: { color: theme.colors.onSurfaceVariant, marginTop: 2, marginHorizontal: 4 },
+    timestampRight: { color: theme.colors.onSurfaceVariant, marginTop: 2, marginHorizontal: 4, textAlign: "right" as const },
+  }), [theme.colors]);
+
   const bubbleBg = isUser ? theme.colors.primary : theme.colors.surface;
-  const textColor = isUser ? theme.colors.onPrimary : theme.colors.onSurface;
 
   const showAvatar = !isUser && isFirstInGroup;
   const showTimestamp = isLastInGroup;
@@ -102,13 +107,13 @@ export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: Messag
               {message.isStreaming && !message.content ? (
                 <TypingIndicator color={theme.colors.onSurfaceVariant} />
               ) : isUser ? (
-                <Text style={{ color: textColor, fontSize: 15, lineHeight: 22 }} selectable>{message.content}</Text>
+                <Text style={textStyles.userText} selectable>{message.content}</Text>
               ) : (
                 <Markdown style={mdStyles}>{message.content}</Markdown>
               )}
             </View>
             {showTimestamp && (
-              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2, marginHorizontal: 4 }}>
+              <Text variant="labelSmall" style={textStyles.timestampLeft}>
                 {message.isFailed ? "전송 실패" : formatTime(message.timestamp)}
               </Text>
             )}
@@ -127,10 +132,10 @@ export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: Messag
               message.isFailed && { borderWidth: 1.5, borderColor: theme.colors.error },
             ]}
           >
-            <Text style={{ color: textColor, fontSize: 15, lineHeight: 22 }} selectable>{message.content}</Text>
+            <Text style={textStyles.userText} selectable>{message.content}</Text>
           </View>
           {showTimestamp && (
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2, marginHorizontal: 4, textAlign: "right" }}>
+            <Text variant="labelSmall" style={textStyles.timestampRight}>
               {message.isFailed ? "전송 실패" : formatTime(message.timestamp)}
             </Text>
           )}
