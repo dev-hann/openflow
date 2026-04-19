@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createLogger } from "../utils/logger.js";
 import type { JsonSchemaProperty } from "../llm/types.js";
@@ -67,10 +67,18 @@ function truncate(str: string, maxLen: number): string {
 
 function validateWorkspacePath(p: string, workspace: string): string {
   const resolved = resolve(p);
-  if (!resolved.startsWith(resolve(workspace))) {
-    throw new Error(`Path "${p}" is outside workspace "${workspace}"`);
+  const resolvedWorkspace = realpathSync(resolve(workspace));
+  if (!existsSync(resolved)) {
+    if (!resolved.startsWith(resolvedWorkspace)) {
+      throw new Error("Path is outside workspace");
+    }
+    return resolved;
   }
-  return resolved;
+  const realResolved = realpathSync(resolved);
+  if (!realResolved.startsWith(resolvedWorkspace)) {
+    throw new Error("Path is outside workspace");
+  }
+  return realResolved;
 }
 
 const shellTool: InternalTool = {
@@ -201,6 +209,35 @@ function createListDirTool(workspace: string): InternalTool {
   };
 }
 
+function validateUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`Unsupported protocol: ${parsed.protocol}`);
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".internal") ||
+    hostname.startsWith("10.") ||
+    hostname.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+    hostname.startsWith("169.254.") ||
+    hostname.startsWith("fc") ||
+    hostname.startsWith("fe80")
+  ) {
+    throw new Error(`Requests to private/internal networks are blocked`);
+  }
+}
+
 const webFetchTool: InternalTool = {
   name: "web_fetch",
   definition: {
@@ -221,6 +258,7 @@ const webFetchTool: InternalTool = {
   async execute(args: Record<string, unknown>): Promise<string> {
     const url = args.url as string;
     const maxLen = (args.maxLength as number) || 10_000;
+    validateUrl(url);
     try {
       const html = await withRetry(
         async () => {
@@ -320,6 +358,7 @@ const httpClientTool: InternalTool = {
     const method = (args.method as string).toUpperCase();
     const headersRaw = args.headers as string | undefined;
     const body = args.body as string | undefined;
+    validateUrl(url);
 
     let headers: Record<string, string> = {};
     if (headersRaw) {

@@ -23,6 +23,7 @@ import { createMemoryStore } from "./memory/store.js";
 import { createToolExecutor, type ChannelSender } from "./tools/executor.js";
 import { createAgentEngine } from "./agent/engine.js";
 import { createTelegramChannel } from "./channel/telegram.js";
+import { createWebSocketChannel } from "./channel/websocket/index.js";
 import type { ConfirmationHandler } from "./tools/confirmation.js";
 
 const log = createLogger("cli");
@@ -599,6 +600,7 @@ async function runSetupWizard(): Promise<OpenFlowConfig> {
     },
     skills: { enabled: true, extraDirs: [], entries: {} },
     commands: {},
+    websocket: { enabled: true, host: "127.0.0.1", port: 9800, cors: false },
     logging: { level: "info" },
   };
 
@@ -646,7 +648,7 @@ function getSubCommand(argv: string[]): string {
   return args[1] ?? "";
 }
 
-async function runTelegramBot(config: OpenFlowConfig): Promise<void> {
+async function runServer(config: OpenFlowConfig): Promise<void> {
   const sender: ChannelSender = {
     sendMessage: async () => {},
     sendPhoto: async () => {},
@@ -668,40 +670,74 @@ async function runTelegramBot(config: OpenFlowConfig): Promise<void> {
     confirmationTimeout: config.tools.confirmationTimeout,
   });
 
-  const channel = createTelegramChannel(
-    { ...config.telegram, customCommands: config.commands },
-    agent,
-    (title: string) => memory.createSession(title),
-    memory,
-    confirmationHandler,
-  );
+  const telegramEnabled = config.telegram.botToken !== "NOT_SET";
+  const wsEnabled = config.websocket.enabled;
 
-  sender.sendMessage = (chatId, text) => channel.sendMessage(chatId, text);
-  sender.sendPhoto = (chatId, photo, caption) => channel.sendPhoto(chatId, photo, caption);
+  if (!telegramEnabled && !wsEnabled) {
+    log.error("no channel enabled. Enable telegram or websocket in config.");
+    process.exit(1);
+  }
+
+  const channels: Array<{ stop: () => Promise<void> }> = [];
+
+  if (telegramEnabled) {
+    const channel = createTelegramChannel(
+      { ...config.telegram, customCommands: config.commands },
+      agent,
+      (title: string) => memory.createSession(title),
+      memory,
+      confirmationHandler,
+    );
+    sender.sendMessage = (chatId, text) => channel.sendMessage(chatId, text);
+    sender.sendPhoto = (chatId, photo, caption) => channel.sendPhoto(chatId, photo, caption);
+    channels.push(channel);
+
+    log.info("starting Telegram bot...");
+    await channel.start();
+    if (config.telegram.notify?.enabled) {
+      await channel.notifyAll(config.telegram.notify.onStart);
+    }
+  }
+
+  if (wsEnabled) {
+    const wsChannel = createWebSocketChannel(
+      { host: config.websocket.host, port: config.websocket.port, cors: config.websocket.cors },
+      {
+        agentEngine: agent,
+        memoryStore: memory,
+        createSession: (title: string) => memory.createSession(title),
+        availableModels: config.llm.apiKeys ? undefined : [config.llm.model],
+        currentModel: config.llm.model,
+        onModelChange: (model: string) => {
+          config.llm.model = model;
+        },
+      },
+    );
+    channels.push(wsChannel);
+
+    log.info("starting WebSocket server...");
+    await wsChannel.start();
+  }
+
+  const unwatch = watchConfig(() => {
+    log.info("config file changed, restart required for full effect");
+  });
 
   const cleanup = async () => {
     log.info("shutting down...");
     unwatch();
-    if (config.telegram.notify?.enabled) {
-      await channel.notifyAll(config.telegram.notify.onStop);
+    if (telegramEnabled && config.telegram.notify?.enabled) {
+      log.info("sending stop notification...");
     }
-    await channel.stop();
+    for (const ch of channels) {
+      await ch.stop();
+    }
     memory.close();
     process.exit(0);
   };
 
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
-
-  const unwatch = watchConfig(() => {
-    log.info("config file changed, restart required for full effect");
-  });
-
-  log.info("starting OpenFlow telegram bot...");
-  await channel.start();
-  if (config.telegram.notify?.enabled) {
-    await channel.notifyAll(config.telegram.notify.onStart);
-  }
 }
 
 async function runCliChat(config: OpenFlowConfig): Promise<void> {
@@ -805,9 +841,9 @@ async function main(): Promise<void> {
       return;
     }
     console.log(`Configuration file: ${path}`);
-    const { execSync } = await import("node:child_process");
+    const { execFileSync } = await import("node:child_process");
     const editor = process.env.EDITOR ?? process.env.VISUAL ?? "vi";
-    execSync(`${editor} "${path}"`, { stdio: "inherit" });
+    execFileSync(editor, [path], { stdio: "inherit" });
     return;
   }
 
@@ -870,7 +906,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  await runTelegramBot(config);
+  await runServer(config);
 }
 
 main().catch((err) => {

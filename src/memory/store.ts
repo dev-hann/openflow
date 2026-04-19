@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { isSqliteBusy } from "../utils/retry.js";
@@ -74,7 +75,7 @@ const MIGRATIONS = [
 ];
 
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return randomUUID();
 }
 
 function nowMs(): number {

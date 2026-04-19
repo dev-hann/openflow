@@ -8,7 +8,26 @@
   },
   "telegram": {
     "botToken": "${TELEGRAM_BOT_TOKEN}",
-    "allowedUsers": []
+    "allowedUsers": [123456789],
+    "streamingMode": "partial",
+    "errorPolicy": "once",
+    "groupEnabled": false,
+    "webhook": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": 8787
+    },
+    "notify": {
+      "enabled": true,
+      "onStart": "🟢 OpenFlow가 시작되었습니다.",
+      "onStop": "🔴 OpenFlow가 종료됩니다."
+    }
+  },
+  "websocket": {
+    "enabled": false,
+    "host": "127.0.0.1",
+    "port": 9800,
+    "cors": false
   },
   "agent": {
     "systemPrompt": "",
@@ -33,9 +52,20 @@
     "httpRequest": {
       "enabled": false
     },
+    "browser": {
+      "enabled": false,
+      "timeout": 30000,
+      "headless": true
+    },
     "requireConfirmation": ["shell"],
     "confirmationTimeout": 60000
   },
+  "skills": {
+    "enabled": true,
+    "extraDirs": [],
+    "entries": {}
+  },
+  "commands": {},
   "logging": {
     "level": "info"
   }

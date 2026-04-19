@@ -3,6 +3,29 @@ import { createLogger } from "../utils/logger.js";
 
 const log = createLogger("commands");
 
+const DANGEROUS_PATTERNS = [
+  /\brm\s+-rf\s+\//,
+  /\bmkfs\b/,
+  /\bdd\s+if=/,
+  /\bchmod\s+777\s+\//,
+  />\s*\/dev\/sd/,
+  /\bcurl\b.*\|\s*(ba)?sh/,
+  /\bwget\b.*\|\s*(ba)?sh/,
+  /\b(nc|ncat|netcat)\s+-/i,
+];
+
+export function validateShellCommand(command: string): string | null {
+  const trimmed = command.trim();
+  if (trimmed.length === 0) return "Command is empty";
+  if (trimmed.length > 500) return "Command too long (max 500 chars)";
+  for (const pattern of DANGEROUS_PATTERNS) {
+    if (pattern.test(trimmed)) {
+      return "Command contains a potentially dangerous pattern";
+    }
+  }
+  return null;
+}
+
 export interface CustomCommand {
   action: "shell" | "reply";
   command?: string;

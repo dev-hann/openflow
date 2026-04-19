@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, watchFile, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { openFlowConfigSchema, type OpenFlowConfig } from "./schema.js";
@@ -117,7 +117,7 @@ export function editConfig(configPath?: string): void {
     initConfig(target);
   }
   const editor = process.env.EDITOR ?? process.env.VISUAL ?? "vi";
-  execSync(`${editor} "${target}"`, { stdio: "inherit" });
+  execFileSync(editor, [target], { stdio: "inherit" });
 }
 
 export function updateCommands(commands: Record<string, unknown>): void {

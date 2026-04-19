@@ -148,8 +148,9 @@ export function createLlmClient(config: LlmConfig): LlmClient {
             await sleep(RETRY_DELAYS[attempt]!);
             continue;
           }
+          const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
           throw new OpenFlowError(
-            `LLM API error ${response.status}: ${text}`,
+            `LLM API error ${response.status}: ${safeText}`,
             "LLM_REQUEST_FAILED",
           );
         }

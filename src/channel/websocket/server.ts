@@ -1,0 +1,103 @@
+import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
+import { WebSocketServer, type WebSocket } from "ws";
+import { createLogger } from "../../utils/logger.js";
+import { createAuthService, type AuthService } from "./auth.js";
+import { createWsHandler } from "./ws-handler.js";
+import { createRoutes } from "./routes.js";
+import type { Channel } from "../types.js";
+import type { AgentEngine } from "../../agent/index.js";
+import type { MemoryStore } from "../../memory/index.js";
+
+const log = createLogger("ws/server");
+
+export interface WebSocketChannelConfig {
+  host: string;
+  port: number;
+  cors: boolean;
+}
+
+export interface WebSocketChannelDeps {
+  agentEngine: AgentEngine;
+  memoryStore: MemoryStore;
+  createSession: (title: string) => { id: string };
+  availableModels?: string[];
+  currentModel?: string;
+  onModelChange?: (model: string) => void;
+}
+
+export interface WebSocketChannel extends Channel {
+  authService: AuthService;
+}
+
+export function createWebSocketChannel(
+  config: WebSocketChannelConfig,
+  deps: WebSocketChannelDeps,
+): WebSocketChannel {
+  const authService = createAuthService();
+
+  const wsHandler = createWsHandler({
+    authService,
+    agentEngine: deps.agentEngine,
+  });
+
+  const routes = createRoutes({
+    authService,
+    memoryStore: deps.memoryStore,
+    availableModels: deps.availableModels,
+    currentModel: deps.currentModel,
+    onModelChange: deps.onModelChange,
+    corsEnabled: config.cors,
+  });
+
+  let server: Server | undefined;
+  let wss: WebSocketServer | undefined;
+
+  return {
+    authService,
+
+    async start(): Promise<void> {
+      server = createServer((req: IncomingMessage, res: ServerResponse) => {
+        routes(req, res).catch((err) => {
+          log.error({ err }, "unhandled route error");
+        });
+      });
+
+      wss = new WebSocketServer({ noServer: true });
+
+      server.on("upgrade", (req: IncomingMessage, socket, head) => {
+        wss!.handleUpgrade(req, socket, head, (ws: WebSocket) => {
+          (ws as unknown as { upgradeReq: typeof req }).upgradeReq = req;
+          wss!.emit("connection", ws, req);
+        });
+      });
+
+      wss.on("connection", (ws: WebSocket, _req: IncomingMessage) => {
+        wsHandler.handleConnection(ws);
+      });
+
+      await new Promise<void>((resolve) => {
+        server!.listen(config.port, config.host, () => resolve());
+      });
+
+      log.info(
+        { host: config.host, port: config.port },
+        `WebSocket + HTTP server listening on ${config.host}:${config.port}`,
+      );
+    },
+
+    async stop(): Promise<void> {
+      if (wss) {
+        for (const client of wss.clients) {
+          client.close(1001, "server shutting down");
+        }
+        await new Promise<void>((resolve) => wss!.close(() => resolve()));
+        wss = undefined;
+      }
+      if (server) {
+        await new Promise<void>((resolve) => server!.close(() => resolve()));
+        server = undefined;
+      }
+      log.info("WebSocket server stopped");
+    },
+  };
+}

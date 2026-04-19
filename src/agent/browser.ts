@@ -1,7 +1,7 @@
 import { execSync, execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { createLogger } from "../utils/logger.js";
 import type { InternalTool } from "../tools/executor.js";
 
@@ -69,9 +69,8 @@ function ensureScreenshotDir(workspace: string): string {
 }
 
 function runPlaywrightScript(script: string, timeout: number): string {
-  const tmpDir = resolve(join(process.env.RUNNER_TEMP ?? "/tmp", "openflow-browser"));
-  if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
-  const scriptPath = join(tmpDir, `browser-${Date.now()}.mjs`);
+  const tmpDir = mkdtempSync(join(process.env.RUNNER_TEMP ?? "/tmp", "openflow-browser-"));
+  const scriptPath = join(tmpDir, "script.mjs");
   writeFileSync(scriptPath, script, "utf-8");
 
   try {
@@ -88,6 +87,8 @@ function runPlaywrightScript(script: string, timeout: number): string {
     if (e.killed) throw new Error(`Browser script timed out after ${timeout}ms`);
     const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
     throw new Error(output || "Browser script failed");
+  } finally {
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
   }
 }
 
@@ -130,7 +131,7 @@ export function createBrowserScreenshotTool(workspace: string, config: BrowserCo
       const outputPath = join(screenshotDir, filename);
 
       const selectorLine = selector
-        ? `const el = await page.locator('${selector.replace(/'/g, "\\'")}'); await el.screenshot({ path: outPath });`
+        ? `const el = await page.locator(${JSON.stringify(selector)}); await el.screenshot({ path: outPath });`
         : `await page.screenshot({ path: outPath, fullPage: ${fullPage} });`;
 
       const script = `
@@ -138,8 +139,8 @@ import { chromium } from 'playwright';
 (async () => {
   const browser = await chromium.launch({ headless: ${config.headless} });
   const page = await browser.newPage({ viewport: { width: ${width}, height: ${height} } });
-  await page.goto('${url.replace(/'/g, "\\'")}', { waitUntil: 'networkidle', timeout: ${config.timeout} });
-  const outPath = '${outputPath.replace(/'/g, "\\'")}';
+  await page.goto(${JSON.stringify(url)}, { waitUntil: 'networkidle', timeout: ${config.timeout} });
+  const outPath = ${JSON.stringify(outputPath)};
   ${selectorLine}
   console.log(outPath);
   await browser.close();
@@ -186,7 +187,7 @@ export function createBrowserExecuteTool(workspace: string, config: BrowserConfi
       ensureBrowserInstalled(config.timeout);
 
       const script = (args.script as string)
-        .replace(/\{WORKSPACE\}/g, workspace.replace(/'/g, "\\'"));
+        .replace(/\{WORKSPACE\}/g, JSON.stringify(workspace).slice(1, -1));
 
       const result = runPlaywrightScript(script, config.timeout);
       log.info("browser script executed");

@@ -5,3 +5,8 @@ dist/
 *.db-shm
 .env
 openflow.json
+auth-store.json
+telegram-offset.json
+*.pem
+*.key
+paired-devices.json

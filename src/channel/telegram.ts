@@ -22,7 +22,7 @@ import {
   formatMediaDescription,
   type MediaInfo,
 } from "./telegram/media.js";
-import { executeCustomCommand, generateDescription, type CommandsConfig, type CustomCommand } from "../commands/custom-command.js";
+import { executeCustomCommand, generateDescription, validateShellCommand, type CommandsConfig, type CustomCommand } from "../commands/custom-command.js";
 import { updateCommands } from "../config/loader.js";
 import type { ConfirmationHandler, ConfirmationResult } from "../tools/confirmation.js";
 
@@ -164,7 +164,10 @@ export function createTelegramChannel(
   }
 
   function isAllowed(userId: number): boolean {
-    if (config.allowedUsers.length === 0) return true;
+    if (config.allowedUsers.length === 0) {
+      log.warn({ userId }, "no allowed users configured, denying all");
+      return false;
+    }
     return config.allowedUsers.includes(userId);
   }
 
@@ -390,6 +393,11 @@ export function createTelegramChannel(
         timeout: 10_000,
       };
       if (action === "shell") {
+        const validation = validateShellCommand(value);
+        if (validation) {
+          await ctx.reply(`⚠️ ${validation}`);
+          return;
+        }
         cmd.command = value;
       } else {
         cmd.text = value;
@@ -592,8 +600,8 @@ export function createTelegramChannel(
       return new Promise<ConfirmationResult>((resolve) => {
         const timer = setTimeout(() => {
           pendingConfirmations.delete(id);
-          log.info({ id, toolName: request.toolName }, "confirmation timed out, auto-approving");
-          resolve({ approved: true });
+          log.info({ id, toolName: request.toolName }, "confirmation timed out, auto-denying");
+          resolve({ approved: false });
         }, timeout);
         timer.unref();
         pendingConfirmations.set(id, { resolve, timer });
@@ -607,10 +615,11 @@ export function createTelegramChannel(
         const me = await withTimeout(bot.api.getMe(), GETME_TIMEOUT_MS, "getMe");
         log.info({ username: me.username }, "telegram bot connected");
       } catch (err) {
+        const sanitized = (err instanceof Error ? err.message : String(err))
+          .replace(/bot\d+:[a-zA-Z0-9_-]+/g, "bot***:***");
         throw new OpenFlowError(
-          `Telegram authentication failed: ${err instanceof Error ? err.message : String(err)}`,
+          `Telegram authentication failed: ${sanitized}`,
           "TELEGRAM_AUTH_FAILED",
-          err,
         );
       }
 
