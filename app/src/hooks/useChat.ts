@@ -73,8 +73,10 @@ export function useChat() {
   const switchSession = useCallback(
     (sessionId: string) => {
       clearMessages();
-      setActiveSessionId(sessionId);
-      send({ type: "switch_session", sessionId });
+      setActiveSessionId(sessionId || null);
+      if (sessionId) {
+        send({ type: "switch_session", sessionId });
+      }
     },
     [clearMessages, setActiveSessionId, send],
   );
