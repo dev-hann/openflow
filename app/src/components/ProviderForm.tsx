@@ -131,7 +131,7 @@ export function ProviderForm({ onComplete, showSkip, editProvider }: ProviderFor
                   visible={presetMenuVisible}
                   onDismiss={() => setPresetMenuVisible(false)}
                   anchor={
-                    <TouchableRipple onPress={() => setPresetMenuVisible(true)} style={styles.dropdownAnchor}>
+                    <TouchableRipple onPress={() => setPresetMenuVisible(true)} style={[styles.dropdownAnchor, { borderColor: theme.colors.outline, backgroundColor: theme.colors.surfaceVariant }]}>
                        <View style={styles.dropdownContent}>
                          <View style={styles.dropdownTextWrap}>
                           {selectedPreset ? (
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   card: { overflow: "hidden" },
   presetSection: { marginBottom: SPACING.sm },
   presetLabel: { marginBottom: SPACING.xs },
-  dropdownAnchor: { borderRadius: BORDER_RADIUS.md, borderWidth: 1, borderColor: "rgba(0,0,0,0.12)", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, backgroundColor: "rgba(0,0,0,0.04)" },
+  dropdownAnchor: { borderRadius: BORDER_RADIUS.md, borderWidth: 1, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   dropdownContent: { flexDirection: "row", alignItems: "center" },
   dropdownTextWrap: { flex: 1 },
   presetSelectedText: {},

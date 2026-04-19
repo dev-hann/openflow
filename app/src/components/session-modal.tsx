@@ -103,7 +103,7 @@ export function SessionModal({ visible, onClose, onSwitchSession }: SessionModal
                   )}
                   right={() => (
                     <View style={styles.deleteButtonContainer}>
-                      <TouchableRipple onPress={() => handleDelete(item)} style={styles.deleteButton}>
+                       <TouchableRipple onPress={() => handleDelete(item)} style={styles.deleteButton} accessibilityLabel={`${item.title} 세션 삭제`}>
                         <Icon source="delete-outline" size={18} color={theme.colors.onSurfaceVariant} />
                       </TouchableRipple>
                     </View>

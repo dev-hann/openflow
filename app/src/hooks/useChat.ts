@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useApiClient } from "./use-api-client";
 import { useChatStore } from "../store/chat";
@@ -6,6 +6,7 @@ import { useSessionsStore } from "../store/sessions";
 import { buildSessionInfo } from "../utils/session";
 
 export function useChat() {
+  const sendingRef = useRef(false);
   const { send, reconnect: wsReconnect } = useWebSocket();
   const getApi = useApiClient();
   const addMessage = useChatStore((s) => s.addMessage);
@@ -35,10 +36,11 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!content.trim()) return;
+      if (!content.trim() || sendingRef.current) return;
+      sendingRef.current = true;
 
       const sessionId = await ensureSession();
-      if (!sessionId) return;
+      if (!sessionId) { sendingRef.current = false; return; }
 
       const now = Date.now();
       addMessage({
@@ -66,6 +68,8 @@ export function useChat() {
         });
       } catch {
         markLastMessageFailed();
+      } finally {
+        sendingRef.current = false;
       }
     },
     [send, addMessage, setSending, markLastMessageFailed, ensureSession],

@@ -45,6 +45,9 @@ export function ChatScreen() {
           style={styles.headerTitle}
           onPress={() => setSessionModalVisible(true)}
           activeOpacity={0.7}
+          accessibilityLabel="세션 선택"
+          accessibilityHint="세션 목록을 엽니다"
+          accessibilityRole="button"
         >
           <Text
             variant="titleMedium"
@@ -133,6 +136,7 @@ export function ChatScreen() {
               containerColor={theme.colors.primary}
               style={[styles.scrollFab, { ...SHADOWS.md }]}
               onPress={handleScrollToEnd}
+              accessibilityLabel="맨 아래로 스크롤"
             />
           )}
         </View>

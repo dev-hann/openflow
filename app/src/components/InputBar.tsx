@@ -35,7 +35,7 @@ export const InputBar = React.memo(function InputBar({ onSend, disabled }: Input
   const canSend = text.trim().length > 0 && !disabled;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface }, SHADOWS.inputBar]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant }, SHADOWS.inputBar]}>
       <View style={[styles.inputWrapper, { backgroundColor: theme.colors.surfaceVariant }]}>
         <TextInput
           mode="flat"
@@ -61,6 +61,7 @@ export const InputBar = React.memo(function InputBar({ onSend, disabled }: Input
         size={20}
         onPress={handleSend}
         disabled={!canSend}
+        accessibilityLabel="메시지 전송"
         iconColor={canSend ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
         containerColor={canSend ? theme.colors.primary : "transparent"}
         style={[styles.sendButton, canSend && { ...SHADOWS.sm }]}
@@ -77,7 +78,6 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.xs,
     paddingBottom: SPACING.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.06)",
   },
   inputWrapper: {
     flex: 1,

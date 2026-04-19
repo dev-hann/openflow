@@ -76,8 +76,8 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
                       </Text>
                     </View>
                     {isActive && <Chip compact selected textStyle={styles.activeChipText}>활성</Chip>}
-                    <IconButton icon="pencil-outline" size={16} onPress={() => { onEdit(item); onClose(); }} />
-                    <IconButton icon="delete-outline" size={16} iconColor={theme.colors.error} onPress={() => handleDelete(item)} />
+                    <IconButton icon="pencil-outline" size={16} onPress={() => { onEdit(item); onClose(); }} accessibilityLabel={`${item.name} 편집`} />
+                    <IconButton icon="delete-outline" size={16} iconColor={theme.colors.error} onPress={() => handleDelete(item)} accessibilityLabel={`${item.name} 삭제`} />
                   </View>
                 </TouchableRipple>
               );

@@ -188,6 +188,8 @@ export const MessageList = React.forwardRef<FlatList, MessageListProps>(function
       data={messages}
       keyExtractor={(item) => item.id}
       renderItem={renderMessage}
+      initialNumToRender={20}
+      maxToRenderPerBatch={10}
       contentContainerStyle={[styles.listContent, { backgroundColor: theme.colors.background }]}
       showsVerticalScrollIndicator={false}
       keyboardDismissMode="interactive"
