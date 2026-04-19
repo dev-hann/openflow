@@ -84,6 +84,17 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
             }}
             ItemSeparatorComponent={ItemSeparator}
             contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Icon source="cloud-off-outline" size={40} color={theme.colors.onSurfaceVariant} />
+                <Text variant="bodyMedium" style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>
+                  Provider가 없습니다
+                </Text>
+                <Button mode="outlined" onPress={() => { onAdd(); onClose(); }} icon="plus" style={styles.emptyAddButton}>
+                  추가하기
+                </Button>
+              </View>
+            }
           />
         </View>
       </View>
@@ -105,4 +116,7 @@ const styles = StyleSheet.create({
   sheetItemModel: {},
   activeChipText: { fontSize: 10 },
   listContent: { paddingBottom: SPACING.xl },
+  emptyContainer: { paddingVertical: SPACING.xxl, alignItems: "center" },
+  emptyText: { marginTop: SPACING.md },
+  emptyAddButton: { marginTop: SPACING.md },
 });
