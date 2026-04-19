@@ -55,7 +55,7 @@ export function SettingsScreen({ navigation }: Props) {
 
   useEffect(() => { if (storedAuth) refreshData(); }, [storedAuth, refreshData]);
 
-  function handleChangeServer(): void {
+  const handleChangeServer = useCallback((): void => {
     if (!storedAuth) return;
     Alert.alert("서버 변경", "연결된 서버를 변경하시겠습니까?", [
       { text: "취소", style: "cancel" },
@@ -71,7 +71,7 @@ export function SettingsScreen({ navigation }: Props) {
         setProviders([], "");
       }},
     ]);
-  }
+  }, [storedAuth, getApi, clearAll, setSessions, setActiveSessionId, setAvailableModels, setCurrentModel, setProviders]);
 
   const handleModelChange = useCallback(async (model: string): Promise<void> => {
     const client = await getApi();
