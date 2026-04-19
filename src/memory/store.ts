@@ -86,6 +86,13 @@ function rowToSession(row: Record<string, unknown>): Session {
   };
 }
 
+function buildSearchSnippet(content: string, query: string): string {
+  const idx = content.toLowerCase().indexOf(query.toLowerCase());
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(content.length, idx + query.length + 40);
+  return (start > 0 ? "..." : "") + content.slice(start, end) + (end < content.length ? "..." : "");
+}
+
 function rowToMessage(row: Record<string, unknown>): ChatMessage {
   const role = row.role as string;
   const content = row.content as string;
@@ -247,20 +254,14 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     searchMessages(query: string, limit = 20): SearchResult[] {
       return wrapDb("searchMessages", () => {
         const rows = stmts.searchMessages.all(`%${query}%`, limit) as Array<Record<string, unknown>>;
-        return rows.map((row) => {
-          const content = row.content as string;
-          const idx = content.toLowerCase().indexOf(query.toLowerCase());
-          const start = Math.max(0, idx - 40);
-          const end = Math.min(content.length, idx + query.length + 40);
-          return {
-            sessionId: row.session_id as string,
-            sessionTitle: row.session_title as string,
-            role: row.role as string,
-            content,
-            timestamp: row.created_at as number,
-            snippet: (start > 0 ? "..." : "") + content.slice(start, end) + (end < content.length ? "..." : ""),
-          };
-        });
+        return rows.map((row) => ({
+          sessionId: row.session_id as string,
+          sessionTitle: row.session_title as string,
+          role: row.role as string,
+          content: row.content as string,
+          timestamp: row.created_at as number,
+          snippet: buildSearchSnippet(row.content as string, query),
+        }));
       });
     },
 
