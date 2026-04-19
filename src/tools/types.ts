@@ -1,17 +1,6 @@
-import type { JsonSchemaProperty } from "../utils/json-schema.js";
+import type { ToolDefinition } from "../utils/message-types.js";
 
-export interface ToolDefinition {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: "object";
-      properties: Record<string, JsonSchemaProperty>;
-      required?: string[];
-    };
-  };
-}
+export type { ToolDefinition };
 
 export interface InternalTool {
   name: string;

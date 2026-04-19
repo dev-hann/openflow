@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
 import { createBrowserScreenshotTool, createBrowserExecuteTool } from "./browser.js";
-import type { NotificationSender } from "../channel/types.js";
 
 import type { InternalTool, ToolDefinition } from "./types.js";
 export type { InternalTool, ToolDefinition } from "./types.js";
@@ -13,7 +12,10 @@ import { createFileReadTool, createFileWriteTool, createListDirTool, validateWor
 
 const log = createLogger("tools");
 
-export interface ChannelSender extends NotificationSender {}
+export interface ChannelSender {
+  sendMessage(chatId: number | string, text: string): Promise<void>;
+  sendPhoto(chatId: number | string, photo: string | Buffer, caption?: string): Promise<void>;
+}
 
 export interface ToolCall {
   id: string;

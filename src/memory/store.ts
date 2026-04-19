@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { isSqliteBusy } from "../utils/retry.js";
-import type { ChatMessage, ToolCall } from "../llm/types.js";
+import type { ChatMessage, ToolCall } from "../utils/message-types.js";
 
 const log = createLogger("memory");
 
