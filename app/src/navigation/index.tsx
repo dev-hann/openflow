@@ -6,7 +6,10 @@ import { View, StyleSheet } from "react-native";
 import { Icon, useTheme } from "react-native-paper";
 import { ChatScreen } from "../screens/ChatScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
-import { ProviderEditScreen, type SettingsStackParamList } from "../screens/ProviderEditScreen";
+import {
+  ProviderEditScreen,
+  type SettingsStackParamList,
+} from "../screens/ProviderEditScreen";
 import { SPACING } from "../constants/theme";
 import { useAuthStore } from "../store/auth";
 
@@ -40,23 +43,26 @@ export function AppNavigator() {
   const isConnected = useAuthStore((s) => s.isConnected);
   const storedAuth = useAuthStore((s) => s.storedAuth);
 
-  const navTheme = useMemo(() => ({
-    dark: theme.dark,
-    colors: {
-      primary: theme.colors.primary,
-      background: theme.colors.background,
-      card: theme.colors.surface,
-      text: theme.colors.onSurface,
-      border: theme.colors.outline,
-      notification: theme.colors.error,
-    },
-    fonts: {
-      regular: { fontFamily: "System", fontWeight: "400" as const },
-      medium: { fontFamily: "System", fontWeight: "500" as const },
-      bold: { fontFamily: "System", fontWeight: "700" as const },
-      heavy: { fontFamily: "System", fontWeight: "900" as const },
-    },
-  }), [theme]);
+  const navTheme = useMemo(
+    () => ({
+      dark: theme.dark,
+      colors: {
+        primary: theme.colors.primary,
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        text: theme.colors.onSurface,
+        border: theme.colors.outline,
+        notification: theme.colors.error,
+      },
+      fonts: {
+        regular: { fontFamily: "System", fontWeight: "400" as const },
+        medium: { fontFamily: "System", fontWeight: "500" as const },
+        bold: { fontFamily: "System", fontWeight: "700" as const },
+        heavy: { fontFamily: "System", fontWeight: "900" as const },
+      },
+    }),
+    [theme],
+  );
 
   return (
     <NavigationContainer theme={navTheme}>
@@ -70,7 +76,11 @@ export function AppNavigator() {
           },
           tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
           headerStyle: { backgroundColor: theme.colors.surface },
-          headerTitleStyle: { fontSize: 20, fontWeight: "bold", color: theme.colors.onSurface },
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: "bold",
+            color: theme.colors.onSurface,
+          },
           headerShadowVisible: false,
         }}
       >
@@ -90,7 +100,11 @@ export function AppNavigator() {
                   <View
                     style={[
                       styles.statusDot,
-                      { backgroundColor: isConnected ? theme.colors.tertiary : theme.colors.error },
+                      {
+                        backgroundColor: isConnected
+                          ? theme.colors.tertiary
+                          : theme.colors.error,
+                      },
                     ]}
                   />
                 </View>

@@ -44,7 +44,8 @@ export const useChatStore = create<ChatState>((set) => ({
   appendToLastMessage: (content) =>
     set((state) => ({
       messages: updateLastAssistant(state.messages, {
-        content: (state.messages[state.messages.length - 1]?.content ?? "") + content,
+        content:
+          (state.messages[state.messages.length - 1]?.content ?? "") + content,
         isStreaming: true,
       }),
     })),

@@ -1,8 +1,5 @@
 import React, { useMemo } from "react";
-import {
-  View,
-  StyleSheet,
-} from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text, useTheme, Icon, TouchableRipple } from "react-native-paper";
 import Markdown from "react-native-markdown-display";
 import { TypingIndicator } from "./typing-indicator";
@@ -11,6 +8,10 @@ import type { ChatMessage } from "../store/chat";
 import { formatTime } from "../utils/format-time";
 
 const MAX_ACCESSIBILITY_LENGTH = 150;
+
+function formatTimestampLabel(message: ChatMessage): string {
+  return message.isFailed ? "전송 실패" : formatTime(message.timestamp);
+}
 
 function truncateForAccessibility(text: string): string {
   if (text.length <= MAX_ACCESSIBILITY_LENGTH) return text;
@@ -203,7 +204,7 @@ export const MessageBubble = React.memo(function MessageBubble({
             </View>
             {showTimestamp && (
               <Text variant="labelSmall" style={textStyles.timestampLeft}>
-                {message.isFailed ? "전송 실패" : formatTime(message.timestamp)}
+                {formatTimestampLabel(message)}
               </Text>
             )}
           </View>
@@ -230,7 +231,7 @@ export const MessageBubble = React.memo(function MessageBubble({
           </View>
           {showTimestamp && (
             <Text variant="labelSmall" style={textStyles.timestampRight}>
-              {message.isFailed ? "전송 실패" : formatTime(message.timestamp)}
+              {formatTimestampLabel(message)}
             </Text>
           )}
         </View>

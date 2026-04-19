@@ -1,6 +1,12 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Menu, TouchableRipple, Icon, useTheme } from "react-native-paper";
+import {
+  Text,
+  Menu,
+  TouchableRipple,
+  Icon,
+  useTheme,
+} from "react-native-paper";
 import { PROVIDER_PRESETS } from "../constants/presets";
 import type { ProviderPreset } from "../constants/presets";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
@@ -50,13 +56,13 @@ export function PresetSelector({
                   <>
                     <Text
                       variant="bodyMedium"
-                      style={[styles.selectedText, { fontWeight: "500" }]}
+                      style={{ fontWeight: "500" }}
                     >
                       {selectedPreset.label}
                     </Text>
                     <Text
                       variant="labelSmall"
-                      style={[styles.hint, { color: theme.colors.onSurfaceVariant }]}
+                      style={{ color: theme.colors.onSurfaceVariant }}
                     >
                       {selectedPreset.hint}
                     </Text>
@@ -64,7 +70,7 @@ export function PresetSelector({
                 ) : (
                   <Text
                     variant="bodyMedium"
-                    style={[styles.placeholder, { color: theme.colors.onSurfaceVariant }]}
+                    style={{ color: theme.colors.onSurfaceVariant }}
                   >
                     선택하세요
                   </Text>
@@ -78,7 +84,10 @@ export function PresetSelector({
             </View>
           </TouchableRipple>
         }
-        contentStyle={[styles.menuContent, { backgroundColor: theme.colors.surface }]}
+        contentStyle={[
+          styles.menuContent,
+          { backgroundColor: theme.colors.surface },
+        ]}
       >
         {PROVIDER_PRESETS.map((preset) => (
           <Menu.Item
@@ -90,12 +99,9 @@ export function PresetSelector({
                 ? "check-circle"
                 : "circle-outline"
             }
-            titleStyle={[
-              styles.menuItemTitle,
-              {
-                fontWeight: preset.id === selectedPreset?.id ? "600" : "400",
-              },
-            ]}
+            titleStyle={{
+              fontWeight: preset.id === selectedPreset?.id ? "600" : "400",
+            }}
           />
         ))}
       </Menu>
@@ -114,9 +120,5 @@ const styles = StyleSheet.create({
   },
   anchorContent: { flexDirection: "row", alignItems: "center" },
   anchorTextWrap: { flex: 1 },
-  selectedText: {},
-  hint: {},
-  placeholder: {},
   menuContent: { maxHeight: 400 },
-  menuItemTitle: {},
 });

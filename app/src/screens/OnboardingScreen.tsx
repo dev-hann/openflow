@@ -1,6 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { Text, TextInput, Button, ProgressBar, useTheme } from "react-native-paper";
+import {
+  Text,
+  TextInput,
+  Button,
+  ProgressBar,
+  useTheme,
+} from "react-native-paper";
 import { useAuthStore } from "../store/auth";
 import { useSettingsStore } from "../store/settings";
 import { createApiClient } from "../services/api";
@@ -29,38 +35,63 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const stepIndex = step === "server" ? 0 : step === "pin" ? 1 : 2;
   const progress = (stepIndex + 1) / STEPS.length;
 
-  const themed = useMemo(() => ({
-    providerBg: { backgroundColor: theme.colors.background },
-    keyboardBg: { backgroundColor: theme.colors.background },
-    title: { color: theme.colors.primary, textAlign: "center" as const, marginBottom: SPACING.xs },
-    subtitle: { color: theme.colors.onSurfaceVariant, textAlign: "center" as const, marginBottom: SPACING.xl },
-    progress: { marginBottom: SPACING.lg },
-    stepLabel: (i: number) => ({
-      color: i <= stepIndex ? theme.colors.primary : theme.colors.onSurfaceVariant,
-      textAlign: "center" as const,
-      flex: 1,
+  const themed = useMemo(
+    () => ({
+      providerBg: { backgroundColor: theme.colors.background },
+      keyboardBg: { backgroundColor: theme.colors.background },
+      title: {
+        color: theme.colors.primary,
+        textAlign: "center" as const,
+        marginBottom: SPACING.xs,
+      },
+      subtitle: {
+        color: theme.colors.onSurfaceVariant,
+        textAlign: "center" as const,
+        marginBottom: SPACING.xl,
+      },
+      progress: { marginBottom: SPACING.lg },
+      stepLabel: (i: number) => ({
+        color:
+          i <= stepIndex ? theme.colors.primary : theme.colors.onSurfaceVariant,
+        textAlign: "center" as const,
+        flex: 1,
+      }),
+      promptTitle: {
+        textAlign: "center" as const,
+        marginTop: SPACING.lg,
+        marginBottom: SPACING.xl,
+      },
+      inputMargin: { marginBottom: SPACING.md },
+      flexButton: { flex: 1 },
     }),
-    promptTitle: { textAlign: "center" as const, marginTop: SPACING.lg, marginBottom: SPACING.xl },
-    inputMargin: { marginBottom: SPACING.md },
-    flexButton: { flex: 1 },
-  }), [theme.colors, stepIndex]);
+    [theme.colors, stepIndex],
+  );
 
   async function handleConnect(): Promise<void> {
-    if (!inputUrl.trim()) { Alert.alert("오류", "서버 주소를 입력하세요."); return; }
+    if (!inputUrl.trim()) {
+      Alert.alert("오류", "서버 주소를 입력하세요.");
+      return;
+    }
     setLoading(true);
     try {
       const api = createApiClient(inputUrl.trim());
       await api.pairInit();
       setStep("pin");
     } catch (err) {
-      Alert.alert("연결 실패", err instanceof Error ? err.message : "서버에 연결할 수 없습니다.");
+      Alert.alert(
+        "연결 실패",
+        err instanceof Error ? err.message : "서버에 연결할 수 없습니다.",
+      );
     } finally {
       setLoading(false);
     }
   }
 
   async function handleVerify(): Promise<void> {
-    if (pin.trim().length !== 6) { Alert.alert("오류", "6자리 PIN을 입력하세요."); return; }
+    if (pin.trim().length !== 6) {
+      Alert.alert("오류", "6자리 PIN을 입력하세요.");
+      return;
+    }
     setLoading(true);
     try {
       const api = createApiClient(inputUrl.trim());
@@ -71,7 +102,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       setServerUrl(inputUrl.trim());
       setStep("provider");
     } catch (err) {
-      Alert.alert("인증 실패", err instanceof Error ? err.message : "PIN이 올바르지 않습니다.");
+      Alert.alert(
+        "인증 실패",
+        err instanceof Error ? err.message : "PIN이 올바르지 않습니다.",
+      );
     } finally {
       setLoading(false);
     }
@@ -95,20 +129,23 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         <Text variant="bodyLarge" style={themed.subtitle}>
           개인 AI 비서
         </Text>
-        <ProgressBar progress={progress} color={theme.colors.primary} style={themed.progress} />
+        <ProgressBar
+          progress={progress}
+          color={theme.colors.primary}
+          style={themed.progress}
+        />
         <View style={styles.stepLabels}>
           {STEPS.map((label, i) => (
-            <Text
-              key={label}
-              variant="labelSmall"
-              style={themed.stepLabel(i)}
-            >
-              {i < stepIndex ? "✓ " : `${i + 1}. `}{label}
+            <Text key={label} variant="labelSmall" style={themed.stepLabel(i)}>
+              {i < stepIndex ? "✓ " : `${i + 1}. `}
+              {label}
             </Text>
           ))}
         </View>
         <Text variant="titleMedium" style={themed.promptTitle}>
-          {step === "server" ? "OpenFlow 서버 주소를 입력하세요" : "서버 터미널에 표시된 PIN을 입력하세요"}
+          {step === "server"
+            ? "OpenFlow 서버 주소를 입력하세요"
+            : "서버 터미널에 표시된 PIN을 입력하세요"}
         </Text>
         {step === "server" ? (
           <View>
@@ -124,25 +161,38 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               autoFocus
               style={themed.inputMargin}
             />
-            <Button mode="contained" onPress={handleConnect} loading={loading} disabled={loading} contentStyle={styles.buttonContent}>
+            <Button
+              mode="contained"
+              onPress={handleConnect}
+              loading={loading}
+              disabled={loading}
+              contentStyle={styles.buttonContent}
+            >
               연결
             </Button>
           </View>
         ) : (
           <View>
-              <TextInput
-                label="PIN"
-                placeholder="000000"
-                value={pin}
-                onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ""))}
-                mode="outlined"
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
-                style={styles.pinInput}
-              />
+            <TextInput
+              label="PIN"
+              placeholder="000000"
+              value={pin}
+              onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ""))}
+              mode="outlined"
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+              style={styles.pinInput}
+            />
             <View style={styles.row}>
-              <Button mode="outlined" onPress={() => { setStep("server"); setPin(""); }} style={themed.flexButton}>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  setStep("server");
+                  setPin("");
+                }}
+                style={themed.flexButton}
+              >
                 이전
               </Button>
               <Button

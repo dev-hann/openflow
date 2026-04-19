@@ -8,7 +8,10 @@ interface InputBarProps {
   disabled?: boolean;
 }
 
-export const InputBar = React.memo(function InputBar({ onSend, disabled }: InputBarProps) {
+export const InputBar = React.memo(function InputBar({
+  onSend,
+  disabled,
+}: InputBarProps) {
   const theme = useTheme();
   const [text, setText] = useState("");
 
@@ -19,24 +22,41 @@ export const InputBar = React.memo(function InputBar({ onSend, disabled }: Input
     setText("");
   }, [text, disabled, onSend]);
 
-  const handleChangeText = useCallback((newText: string): void => {
-    if (Platform.OS === "android" && newText.includes("\n")) {
-      const withoutNewline = newText.replace(/\n/g, "");
-      const trimmed = withoutNewline.trim();
-      if (trimmed && !disabled) {
-        onSend(trimmed);
-        setText("");
-        return;
+  const handleChangeText = useCallback(
+    (newText: string): void => {
+      if (Platform.OS === "android" && newText.includes("\n")) {
+        const withoutNewline = newText.replace(/\n/g, "");
+        const trimmed = withoutNewline.trim();
+        if (trimmed && !disabled) {
+          onSend(trimmed);
+          setText("");
+          return;
+        }
       }
-    }
-    setText(newText);
-  }, [disabled, onSend]);
+      setText(newText);
+    },
+    [disabled, onSend],
+  );
 
   const canSend = text.trim().length > 0 && !disabled;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant }, SHADOWS.inputBar]}>
-      <View style={[styles.inputWrapper, { backgroundColor: theme.colors.surfaceVariant }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.outlineVariant,
+        },
+        SHADOWS.inputBar,
+      ]}
+    >
+      <View
+        style={[
+          styles.inputWrapper,
+          { backgroundColor: theme.colors.surfaceVariant },
+        ]}
+      >
         <TextInput
           mode="flat"
           value={text}
@@ -64,7 +84,9 @@ export const InputBar = React.memo(function InputBar({ onSend, disabled }: Input
         onPress={handleSend}
         disabled={!canSend}
         accessibilityLabel="메시지 전송"
-        iconColor={canSend ? theme.colors.onPrimary : theme.colors.onSurfaceVariant}
+        iconColor={
+          canSend ? theme.colors.onPrimary : theme.colors.onSurfaceVariant
+        }
         containerColor={canSend ? theme.colors.primary : "transparent"}
         style={[styles.sendButton, canSend && { ...SHADOWS.sm }]}
       />

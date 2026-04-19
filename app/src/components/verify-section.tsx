@@ -25,16 +25,19 @@ export function VerifySection({
 }: VerifySectionProps) {
   const theme = useTheme();
 
-  const resultStyles = useMemo(() => ({
-    ok: {
-      bg: theme.colors.tertiaryContainer,
-      text: theme.colors.tertiary,
-    },
-    fail: {
-      bg: theme.colors.errorContainer,
-      text: theme.colors.error,
-    },
-  }), [theme.colors]);
+  const resultStyles = useMemo(
+    () => ({
+      ok: {
+        bg: theme.colors.tertiaryContainer,
+        text: theme.colors.tertiary,
+      },
+      fail: {
+        bg: theme.colors.errorContainer,
+        text: theme.colors.error,
+      },
+    }),
+    [theme.colors],
+  );
 
   const isOk = verifyResult?.ok ?? false;
   const colors = isOk ? resultStyles.ok : resultStyles.fail;
@@ -52,16 +55,8 @@ export function VerifySection({
         연결 테스트
       </Button>
       {verifyResult && (
-        <View
-          style={[
-            styles.verifyResult,
-            { backgroundColor: colors.bg },
-          ]}
-        >
-          <Text
-            variant="labelLarge"
-            style={{ color: colors.text }}
-          >
+        <View style={[styles.verifyResult, { backgroundColor: colors.bg }]}>
+          <Text variant="labelLarge" style={{ color: colors.text }}>
             {verifyResult.ok
               ? `연결 성공 (${verifyResult.models?.length ?? 0}개 모델)`
               : `연결 실패: ${verifyResult.error}`}

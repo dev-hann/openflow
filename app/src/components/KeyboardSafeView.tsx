@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, type ViewStyle, type StyleProp } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  type ViewStyle,
+  type StyleProp,
+} from "react-native";
 
 interface KeyboardSafeViewProps {
   children: ReactNode;
@@ -7,7 +12,11 @@ interface KeyboardSafeViewProps {
   offset?: number;
 }
 
-export function KeyboardSafeView({ children, style, offset }: KeyboardSafeViewProps) {
+export function KeyboardSafeView({
+  children,
+  style,
+  offset,
+}: KeyboardSafeViewProps) {
   return (
     <KeyboardAvoidingView
       style={[{ flex: 1 }, style]}

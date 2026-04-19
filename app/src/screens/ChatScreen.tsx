@@ -1,6 +1,27 @@
-import React, { useState, useCallback, useLayoutEffect, useRef, useMemo, useEffect } from "react";
-import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform, FlatList } from "react-native";
-import { Text, Button, useTheme, Icon, Chip, IconButton } from "react-native-paper";
+import React, {
+  useState,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useEffect,
+} from "react";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Platform,
+  FlatList,
+} from "react-native";
+import {
+  Text,
+  Button,
+  useTheme,
+  Icon,
+  Chip,
+  IconButton,
+} from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
 import { MessageList } from "../components/message-list";
 import { InputBar } from "../components/InputBar";
@@ -35,10 +56,15 @@ export function ChatScreen() {
   const sessions = useSessionsStore((s) => s.sessions);
   const { sendMessage, switchSession, reconnect, retryLastMessage } = useChat();
 
-  const activeSession = useMemo(() => sessions.find((s) => s.id === activeSessionId), [sessions, activeSessionId]);
+  const activeSession = useMemo(
+    () => sessions.find((s) => s.id === activeSessionId),
+    [sessions, activeSessionId],
+  );
   const sessionTitle = activeSession?.title ?? "새 대화";
 
-  useEffect(() => { setScrolledUp(false); }, [activeSessionId]);
+  useEffect(() => {
+    setScrolledUp(false);
+  }, [activeSessionId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -58,15 +84,22 @@ export function ChatScreen() {
           >
             {sessionTitle}
           </Text>
-          <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+          <Icon
+            source="chevron-down"
+            size={20}
+            color={theme.colors.onSurfaceVariant}
+          />
         </TouchableOpacity>
       ),
     });
   }, [navigation, sessionTitle, theme]);
 
-  const handleSuggestion = useCallback((text: string) => {
-    sendMessage(text);
-  }, [sendMessage]);
+  const handleSuggestion = useCallback(
+    (text: string) => {
+      sendMessage(text);
+    },
+    [sendMessage],
+  );
 
   const handleScrollToEnd = useCallback(() => {
     listRef.current?.scrollToEnd({ animated: true });
@@ -74,12 +107,34 @@ export function ChatScreen() {
 
   if (!storedAuth) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
-        <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Icon source="link-variant-off" size={32} color={theme.colors.primary} />
+      <View
+        style={[
+          styles.emptyContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <View
+          style={[
+            styles.emptyIconWrap,
+            { backgroundColor: theme.colors.primaryContainer },
+          ]}
+        >
+          <Icon
+            source="link-variant-off"
+            size={32}
+            color={theme.colors.primary}
+          />
         </View>
-        <Text variant="titleMedium" style={styles.disconnectedTitle}>서버에 연결되지 않았습니다</Text>
-        <Text variant="bodyMedium" style={[styles.disconnectedSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+        <Text variant="titleMedium" style={styles.disconnectedTitle}>
+          서버에 연결되지 않았습니다
+        </Text>
+        <Text
+          variant="bodyMedium"
+          style={[
+            styles.disconnectedSubtitle,
+            { color: theme.colors.onSurfaceVariant },
+          ]}
+        >
           설정 탭에서 서버에 연결하세요
         </Text>
       </View>
@@ -88,12 +143,28 @@ export function ChatScreen() {
 
   if (!isConnected) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          styles.emptyContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text variant="bodyMedium" style={[styles.connectingText, { color: theme.colors.onSurfaceVariant }]}>
+        <Text
+          variant="bodyMedium"
+          style={[
+            styles.connectingText,
+            { color: theme.colors.onSurfaceVariant },
+          ]}
+        >
           서버에 연결 중...
         </Text>
-        <Button mode="outlined" onPress={reconnect} style={styles.reconnectButton} icon="refresh">
+        <Button
+          mode="outlined"
+          onPress={reconnect}
+          style={styles.reconnectButton}
+          icon="refresh"
+        >
           다시 연결
         </Button>
       </View>
@@ -101,16 +172,34 @@ export function ChatScreen() {
   }
 
   return (
-    <KeyboardSafeView style={{ backgroundColor: theme.colors.background }} offset={Platform.OS === "ios" ? 56 : 0}>
+    <KeyboardSafeView
+      style={{ backgroundColor: theme.colors.background }}
+      offset={Platform.OS === "ios" ? 56 : 0}
+    >
       {messages.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="robot-happy-outline" size={40} color={theme.colors.primary} />
+          <View
+            style={[
+              styles.emptyIconWrap,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
+            <Icon
+              source="robot-happy-outline"
+              size={40}
+              color={theme.colors.primary}
+            />
           </View>
           <Text variant="headlineSmall" style={styles.emptyHeadline}>
             무엇이든 물어보세요
           </Text>
-          <Text variant="bodyMedium" style={[styles.emptySubtitle, { color: theme.colors.onSurfaceVariant }]}>
+          <Text
+            variant="bodyMedium"
+            style={[
+              styles.emptySubtitle,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
             아래의 추천 질문을 선택하거나{"\n"}직접 메시지를 입력하세요
           </Text>
           <View style={styles.suggestionGrid}>
@@ -120,8 +209,14 @@ export function ChatScreen() {
                 mode="outlined"
                 onPress={() => handleSuggestion(s)}
                 disabled={isSending}
-                style={[styles.suggestionChip, { borderColor: theme.colors.outline }]}
-                textStyle={[styles.suggestionChipText, { color: theme.colors.onSurface }]}
+                style={[
+                  styles.suggestionChip,
+                  { borderColor: theme.colors.outline },
+                ]}
+                textStyle={[
+                  styles.suggestionChipText,
+                  { color: theme.colors.onSurface },
+                ]}
               >
                 {s}
               </Chip>
@@ -130,7 +225,12 @@ export function ChatScreen() {
         </View>
       ) : (
         <View style={styles.messageContainer}>
-          <MessageList ref={listRef} messages={messages} onScrollStateChange={setScrolledUp} onRetry={retryLastMessage} />
+          <MessageList
+            ref={listRef}
+            messages={messages}
+            onScrollStateChange={setScrolledUp}
+            onRetry={retryLastMessage}
+          />
           {scrolledUp && (
             <IconButton
               icon="chevron-double-down"
@@ -145,22 +245,48 @@ export function ChatScreen() {
         </View>
       )}
       {isSending && (
-        <View style={[styles.streamingBar, { backgroundColor: theme.colors.surface }]}>
+        <View
+          style={[
+            styles.streamingBar,
+            { backgroundColor: theme.colors.surface },
+          ]}
+        >
           <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text variant="labelMedium" style={[styles.streamingText, { color: theme.colors.onSurfaceVariant }]}>
+          <Text
+            variant="labelMedium"
+            style={[
+              styles.streamingText,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
             생각 중...
           </Text>
         </View>
       )}
       <InputBar onSend={sendMessage} disabled={isSending} />
-      <SessionModal visible={sessionModalVisible} onClose={() => setSessionModalVisible(false)} onSwitchSession={switchSession} />
+      <SessionModal
+        visible={sessionModalVisible}
+        onClose={() => setSessionModalVisible(false)}
+        onSwitchSession={switchSession}
+      />
     </KeyboardSafeView>
   );
 }
 
 const styles = StyleSheet.create({
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: SPACING.xl },
-  emptyIconWrap: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center" },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: { flexDirection: "row", alignItems: "center", gap: 2 },
   headerTitleText: { fontWeight: "600", maxWidth: 200 },
   disconnectedTitle: { marginTop: SPACING.lg },
@@ -169,11 +295,30 @@ const styles = StyleSheet.create({
   reconnectButton: { marginTop: SPACING.md },
   emptyHeadline: { marginTop: SPACING.lg, fontWeight: "600" },
   emptySubtitle: { marginTop: SPACING.xs, textAlign: "center" },
-  suggestionGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SPACING.sm, marginTop: SPACING.xl, paddingHorizontal: SPACING.md },
+  suggestionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: SPACING.sm,
+    marginTop: SPACING.xl,
+    paddingHorizontal: SPACING.md,
+  },
   suggestionChip: { borderRadius: BORDER_RADIUS.xl },
   suggestionChipText: { fontSize: 13 },
   messageContainer: { flex: 1 },
-  streamingBar: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs + 2 },
+  streamingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+  },
   streamingText: {},
-  scrollFab: { position: "absolute", bottom: 16, right: 16, borderRadius: 20, margin: 0 },
+  scrollFab: {
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+    borderRadius: 20,
+    margin: 0,
+  },
 });

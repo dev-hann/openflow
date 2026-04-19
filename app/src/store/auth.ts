@@ -45,11 +45,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const currentAuth = get().storedAuth;
         if (!currentAuth) return null;
-        if (Date.now() < currentAuth.accessExpiresAt - 60_000) return currentAuth.accessToken;
+        if (Date.now() < currentAuth.accessExpiresAt - 60_000)
+          return currentAuth.accessToken;
 
         const api = createApiClient(currentAuth.serverUrl);
         const tokens = await api.refreshToken(currentAuth.refreshToken);
-        const newAuth: StoredAuth = { serverUrl: currentAuth.serverUrl, ...tokens };
+        const newAuth: StoredAuth = {
+          serverUrl: currentAuth.serverUrl,
+          ...tokens,
+        };
         await saveAuth(newAuth);
         set({ storedAuth: newAuth });
         return newAuth.accessToken;

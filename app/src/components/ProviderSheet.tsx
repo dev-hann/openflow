@@ -74,12 +74,15 @@ export function ProviderSheet({
     [getApi, setActiveProviderId],
   );
 
-  function handleDelete(p: ProviderInfo): void {
-    Alert.alert("삭제", `"${p.name}" 삭제하시겠습니까?`, [
-      { text: "취소", style: "cancel" },
-      { text: "삭제", style: "destructive", onPress: () => onDelete(p) },
-    ]);
-  }
+  const handleDelete = React.useCallback(
+    (p: ProviderInfo): void => {
+      Alert.alert("삭제", `"${p.name}" 삭제하시겠습니까?`, [
+        { text: "취소", style: "cancel" },
+        { text: "삭제", style: "destructive", onPress: () => onDelete(p) },
+      ]);
+    },
+    [onDelete],
+  );
 
   return (
     <Modal

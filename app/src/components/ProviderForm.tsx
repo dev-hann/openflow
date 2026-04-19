@@ -1,24 +1,14 @@
 import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from "react-native";
-import {
-  Text,
-  TextInput,
-  Button,
-  Card,
-  useTheme,
-} from "react-native-paper";
+import { View, StyleSheet, ScrollView, Alert } from "react-native";
+import { Text, TextInput, Button, Card, useTheme } from "react-native-paper";
 import { KeyboardSafeView } from "./KeyboardSafeView";
 import { PresetSelector } from "./preset-selector";
 import { VerifySection } from "./verify-section";
 import type { ProviderPreset } from "../constants/presets";
 import type { ProviderInfo } from "../types/protocol";
 import { useAuthStore } from "../store/auth";
-import { createApiClient, normalizeUrl } from "../services/api";
+import { createApiClient } from "../services/api";
+import { normalizeUrl } from "../utils/normalize-url";
 import { SPACING } from "../constants/theme";
 import { useProviderVerify } from "../hooks/use-provider-verify";
 
@@ -103,7 +93,9 @@ export function ProviderForm({
     try {
       const api = createApiClient(storedAuth.serverUrl);
       if (editProvider) {
-        const params: Partial<Pick<ProviderInfo, "name" | "baseUrl" | "apiKey" | "model">> = {
+        const params: Partial<
+          Pick<ProviderInfo, "name" | "baseUrl" | "apiKey" | "model">
+        > = {
           name: trimmedName,
           baseUrl: trimmedUrl,
           model: model || "default",

@@ -74,14 +74,17 @@ export function useWebSocket(): UseWebSocketReturn {
     }
   }, []);
 
-  const startPing = useCallback((ws: WebSocket) => {
-    clearPingTimer();
-    pingTimer.current = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "ping" }));
-      }
-    }, PING_INTERVAL_MS);
-  }, [clearPingTimer]);
+  const startPing = useCallback(
+    (ws: WebSocket) => {
+      clearPingTimer();
+      pingTimer.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "ping" }));
+        }
+      }, PING_INTERVAL_MS);
+    },
+    [clearPingTimer],
+  );
 
   const cleanup = useCallback(() => {
     if (reconnectTimer.current) {
@@ -96,7 +99,9 @@ export function useWebSocket(): UseWebSocketReturn {
     }
   }, [clearPingTimer]);
 
-  const connectRef = useRef<(wsUrl: string, scheduleReconnect: () => void) => void>(() => {});
+  const connectRef = useRef<
+    (wsUrl: string, scheduleReconnect: () => void) => void
+  >(() => {});
   connectRef.current = (wsUrl: string, scheduleReconnect: () => void) => {
     intentionalClose.current = false;
     authFailed.current = false;
@@ -151,7 +156,10 @@ export function useWebSocket(): UseWebSocketReturn {
       }
       if (!intentionalClose.current) {
         retryCount.current++;
-        reconnectTimer.current = setTimeout(scheduleReconnect, getBackoffDelay(retryCount.current));
+        reconnectTimer.current = setTimeout(
+          scheduleReconnect,
+          getBackoffDelay(retryCount.current),
+        );
       }
     };
 
@@ -160,16 +168,21 @@ export function useWebSocket(): UseWebSocketReturn {
     };
   };
 
-  const stableConnect = useCallback((wsUrl: string, scheduleReconnect: () => void) => {
-    connectRef.current?.(wsUrl, scheduleReconnect);
-  }, []);
+  const stableConnect = useCallback(
+    (wsUrl: string, scheduleReconnect: () => void) => {
+      connectRef.current?.(wsUrl, scheduleReconnect);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!storedAuth) return;
     const wsUrl = buildWsUrl(storedAuth.serverUrl);
     const scheduleReconnect = () => stableConnect(wsUrl, scheduleReconnect);
     stableConnect(wsUrl, scheduleReconnect);
-    return () => { cleanup(); };
+    return () => {
+      cleanup();
+    };
   }, [storedAuth, stableConnect, cleanup]);
 
   const reconnect = useCallback(() => {

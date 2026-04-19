@@ -12,7 +12,10 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -39,11 +42,16 @@ function ErrorFallback({ onReset }: ErrorFallbackProps) {
   const theme = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <Text variant="titleLarge" style={{ color: theme.colors.onSurface }}>
         문제가 발생했습니다
       </Text>
-      <Text variant="bodyMedium" style={[styles.message, { color: theme.colors.onSurfaceVariant }]}>
+      <Text
+        variant="bodyMedium"
+        style={[styles.message, { color: theme.colors.onSurfaceVariant }]}
+      >
         예기치 않은 오류가 발생했습니다. 다시 시도해주세요.
       </Text>
       <Button mode="contained" onPress={onReset}>
@@ -54,6 +62,15 @@ function ErrorFallback({ onReset }: ErrorFallbackProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: SPACING.xl },
-  message: { marginTop: SPACING.sm, marginBottom: SPACING.lg, textAlign: "center" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.xl,
+  },
+  message: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.lg,
+    textAlign: "center",
+  },
 });

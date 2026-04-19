@@ -45,7 +45,10 @@ export function useChat() {
       sendingRef.current = true;
 
       const sessionId = await ensureSession();
-      if (!sessionId) { sendingRef.current = false; return; }
+      if (!sessionId) {
+        sendingRef.current = false;
+        return;
+      }
 
       const now = Date.now();
       addMessage({
@@ -105,14 +108,22 @@ export function useChat() {
 
   const retryLastMessage = useCallback(() => {
     const { messages } = useChatStore.getState();
-    let lastUser: typeof messages[number] | undefined;
+    let lastUser: (typeof messages)[number] | undefined;
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "user") { lastUser = messages[i]; break; }
+      if (messages[i].role === "user") {
+        lastUser = messages[i];
+        break;
+      }
     }
     if (!lastUser) return;
     removeFailedPair();
     sendMessage(lastUser.content);
   }, [removeFailedPair, sendMessage]);
 
-  return { sendMessage, switchSession, reconnect: wsReconnect, retryLastMessage };
+  return {
+    sendMessage,
+    switchSession,
+    reconnect: wsReconnect,
+    retryLastMessage,
+  };
 }
