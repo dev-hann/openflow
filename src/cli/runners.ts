@@ -140,5 +140,5 @@ export function showConfig(config: OpenFlowConfig): void {
       apiKey: formatKeyPreview(config.llm.apiKey),
     },
   };
-  console.log(JSON.stringify(masked, null, 2));
+  process.stdout.write(JSON.stringify(masked, null, 2) + "\n");
 }

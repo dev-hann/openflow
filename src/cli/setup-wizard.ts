@@ -129,7 +129,7 @@ export async function runSetupWizard(): Promise<OpenFlowConfig> {
   const configPath = getConfigPath();
   const configDir = dirname(configPath);
 
-  console.log(BANNER);
+  process.stdout.write(BANNER + "\n");
   intro("OpenFlow Setup Wizard");
 
   const providerChoice = guardCancel(

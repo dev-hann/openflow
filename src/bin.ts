@@ -62,16 +62,24 @@ function getSubCommand(argv: string[]): string {
   return args[1] ?? "";
 }
 
+function writeStdout(text: string): void {
+  process.stdout.write(text + "\n");
+}
+
+function writeStderr(text: string): void {
+  process.stderr.write(text + "\n");
+}
+
 async function main(): Promise<void> {
   const argv = process.argv;
 
   if (hasFlag(argv, "--help") || hasFlag(argv, "-h")) {
-    console.log(HELP_TEXT);
+    writeStdout(HELP_TEXT);
     return;
   }
 
   if (hasFlag(argv, "--version") || hasFlag(argv, "-v")) {
-    console.log(`OpenFlow v${VERSION}`);
+    writeStdout(`OpenFlow v${VERSION}`);
     return;
   }
 
@@ -93,7 +101,7 @@ async function main(): Promise<void> {
         const config = loadConfig();
         showConfig(config);
       } catch (err) {
-        console.error(err instanceof OpenFlowError ? err.message : String(err));
+        writeStderr(err instanceof OpenFlowError ? err.message : String(err));
         process.exit(1);
       }
       return;
@@ -104,7 +112,7 @@ async function main(): Promise<void> {
       await runSetupWizard();
       return;
     }
-    console.log(`Configuration file: ${path}`);
+    writeStdout(`Configuration file: ${path}`);
     const { execFileSync } = await import("node:child_process");
     const editor = process.env.EDITOR ?? process.env.VISUAL ?? "vi";
     execFileSync(editor, [path], { stdio: "inherit" });
@@ -120,23 +128,23 @@ async function main(): Promise<void> {
       if (subCommand === "list") {
         const sessions = memory.listSessions();
         if (sessions.length === 0) {
-          console.log("No sessions found.");
+          writeStdout("No sessions found.");
         } else {
           for (const s of sessions) {
-            console.log(`  ${s.id}  ${s.title}  ${new Date(s.updatedAt).toISOString()}`);
+            writeStdout(`  ${s.id}  ${s.title}  ${new Date(s.updatedAt).toISOString()}`);
           }
         }
       } else if (subCommand === "reset" && process.argv[process.argv.indexOf("reset") + 1]) {
         const sessionId = process.argv[process.argv.indexOf("reset") + 1]!;
         memory.deleteSession(sessionId);
-        console.log(`Session ${sessionId} deleted.`);
+        writeStdout(`Session ${sessionId} deleted.`);
       } else {
-        console.log("Usage: openflow session list | openflow session reset <id>");
+        writeStdout("Usage: openflow session list | openflow session reset <id>");
       }
 
       memory.close();
     } catch (err) {
-      console.error(err instanceof OpenFlowError ? err.message : String(err));
+      writeStderr(err instanceof OpenFlowError ? err.message : String(err));
       process.exit(1);
     }
     return;
@@ -147,7 +155,7 @@ async function main(): Promise<void> {
     config = loadConfig();
   } catch (err) {
     if (err instanceof OpenFlowError && err.code === "CONFIG_NOT_FOUND") {
-      console.log(BANNER);
+      writeStdout(BANNER);
       clackLog.warn("No configuration file found.");
       const shouldSetup = guardCancel(
         await confirm({
