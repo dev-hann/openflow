@@ -3,11 +3,11 @@ import { execSync } from "node:child_process";
 import { createLogger } from "../utils/logger.js";
 import { createBrowserTools } from "./browser.js";
 import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
-export type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 import { truncate } from "./utils.js";
 import { webFetchTool, webSearchTool, httpClientTool } from "./web-tools.js";
 import { createFileReadTool, createFileWriteTool, createListDirTool } from "./file-tools.js";
 import { createSendMessageTool, createSendImageTool } from "./channel-tools.js";
+export type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 
 const log = createLogger("tools");
 
@@ -93,7 +93,10 @@ export function createToolExecutor(
     const shellWithConfig: InternalTool = {
       ...shellTool,
       async execute(args: Record<string, unknown>): Promise<string> {
-        return shellTool.execute({ ...args, timeout: (args.timeout as number) || config.shell.timeout });
+        return shellTool.execute({
+          ...args,
+          timeout: (args.timeout as number) || config.shell.timeout,
+        });
       },
     };
     register(shellWithConfig);
@@ -141,7 +144,10 @@ export function createToolExecutor(
       try {
         const content = await tool.execute(call.arguments);
         const duration = Date.now() - startedAt;
-        log.info({ toolName: call.name, duration, responseLength: content.length }, "tool execution completed");
+        log.info(
+          { toolName: call.name, duration, responseLength: content.length },
+          "tool execution completed",
+        );
         return { toolCallId: call.id, content, isError: false };
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);

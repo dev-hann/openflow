@@ -2,42 +2,12 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } 
 import { createAgentEngine, type AgentConfig } from "./engine.js";
 import type { LlmClient, LlmResponse } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
-import type { ToolExecutor } from "../tools/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdirSync, rmSync } from "node:fs";
 import { createMemoryStore } from "../memory/store.js";
-
-function mockLlmClient(responses: LlmResponse[]): LlmClient {
-  let callIndex = 0;
-  return {
-    chat: vi.fn().mockImplementation(async () => {
-      const response = responses[Math.min(callIndex, responses.length - 1)];
-      callIndex++;
-      return response!;
-    }),
-    complete: vi.fn(),
-  };
-}
-
-function mockToolExecutor(results: Record<string, string>, needsConfirmationFn?: (name: string) => boolean): ToolExecutor {
-  return {
-    getDefinitions: () => [{
-      type: "function" as const,
-      function: {
-        name: "test_tool",
-        description: "A test tool",
-        parameters: { type: "object" as const, properties: {} },
-      },
-    }],
-    execute: vi.fn().mockImplementation(async (call) => {
-      const content = results[call.name] ?? "tool result";
-      return { toolCallId: call.id, content, isError: false };
-    }),
-    needsConfirmation: needsConfirmationFn ?? (() => false),
-  };
-}
+import { mockLlmClient, mockToolExecutor } from "./test-helpers.js";
 
 describe("createAgentEngine", () => {
   const testDir = join(tmpdir(), "openflow-test-agent-" + Date.now());
@@ -60,9 +30,7 @@ describe("createAgentEngine", () => {
   });
 
   it("should return text response directly", async () => {
-    const llm = mockLlmClient([
-      { type: "text", content: "Hello! How can I help?" },
-    ]);
+    const llm = mockLlmClient([{ type: "text", content: "Hello! How can I help?" }]);
     const tools = mockToolExecutor({});
     const config: AgentConfig = {
       systemPrompt: "",
@@ -88,11 +56,13 @@ describe("createAgentEngine", () => {
     const llm = mockLlmClient([
       {
         type: "tool_calls",
-        toolCalls: [{
-          id: "tc_1",
-          type: "function" as const,
-          function: { name: "test_tool", arguments: '{"key":"value"}' },
-        }],
+        toolCalls: [
+          {
+            id: "tc_1",
+            type: "function" as const,
+            function: { name: "test_tool", arguments: '{"key":"value"}' },
+          },
+        ],
       },
       { type: "text", content: "Done! Result was: tool result" },
     ]);
@@ -119,11 +89,13 @@ describe("createAgentEngine", () => {
   it("should stop after maxToolRounds", async () => {
     const toolCallResponse: LlmResponse = {
       type: "tool_calls",
-      toolCalls: [{
-        id: "tc_loop",
-        type: "function" as const,
-        function: { name: "test_tool", arguments: "{}" },
-      }],
+      toolCalls: [
+        {
+          id: "tc_loop",
+          type: "function" as const,
+          function: { name: "test_tool", arguments: "{}" },
+        },
+      ],
     };
     const llm = mockLlmClient([toolCallResponse, toolCallResponse, toolCallResponse]);
     const tools = mockToolExecutor({ test_tool: "looping" });
@@ -148,9 +120,7 @@ describe("createAgentEngine", () => {
   });
 
   it("should store user and assistant messages in memory", async () => {
-    const llm = mockLlmClient([
-      { type: "text", content: "Got it" },
-    ]);
+    const llm = mockLlmClient([{ type: "text", content: "Got it" }]);
     const tools = mockToolExecutor({});
     const config: AgentConfig = {
       systemPrompt: "",
@@ -200,18 +170,17 @@ describe("createAgentEngine", () => {
       const llm = mockLlmClient([
         {
           type: "tool_calls",
-          toolCalls: [{
-            id: "tc_confirm",
-            type: "function" as const,
-            function: { name: "shell", arguments: '{"command":"ls"}' },
-          }],
+          toolCalls: [
+            {
+              id: "tc_confirm",
+              type: "function" as const,
+              function: { name: "shell", arguments: '{"command":"ls"}' },
+            },
+          ],
         },
         { type: "text", content: "Done!" },
       ]);
-      const tools = mockToolExecutor(
-        { shell: "file1\nfile2" },
-        (name) => name === "shell",
-      );
+      const tools = mockToolExecutor({ shell: "file1\nfile2" }, (name) => name === "shell");
       const confirmationHandler: ConfirmationHandler = {
         requestConfirmation: vi.fn().mockResolvedValue({ approved: true }),
       };
@@ -241,18 +210,17 @@ describe("createAgentEngine", () => {
       const llm = mockLlmClient([
         {
           type: "tool_calls",
-          toolCalls: [{
-            id: "tc_deny",
-            type: "function" as const,
-            function: { name: "shell", arguments: '{"command":"rm -rf /"}' },
-          }],
+          toolCalls: [
+            {
+              id: "tc_deny",
+              type: "function" as const,
+              function: { name: "shell", arguments: '{"command":"rm -rf /"}' },
+            },
+          ],
         },
         { type: "text", content: "Understood, I won't do that." },
       ]);
-      const tools = mockToolExecutor(
-        { shell: "should not run" },
-        (name) => name === "shell",
-      );
+      const tools = mockToolExecutor({ shell: "should not run" }, (name) => name === "shell");
       const confirmationHandler: ConfirmationHandler = {
         requestConfirmation: vi.fn().mockResolvedValue({ approved: false }),
       };
@@ -279,18 +247,17 @@ describe("createAgentEngine", () => {
       const llm = mockLlmClient([
         {
           type: "tool_calls",
-          toolCalls: [{
-            id: "tc_noconfirm",
-            type: "function" as const,
-            function: { name: "read_file", arguments: '{"path":"/tmp/test.txt"}' },
-          }],
+          toolCalls: [
+            {
+              id: "tc_noconfirm",
+              type: "function" as const,
+              function: { name: "read_file", arguments: '{"path":"/tmp/test.txt"}' },
+            },
+          ],
         },
         { type: "text", content: "Here's the file." },
       ]);
-      const tools = mockToolExecutor(
-        { read_file: "file content" },
-        (name) => name === "shell",
-      );
+      const tools = mockToolExecutor({ read_file: "file content" }, (name) => name === "shell");
       const confirmationHandler: ConfirmationHandler = {
         requestConfirmation: vi.fn().mockResolvedValue({ approved: true }),
       };
@@ -318,18 +285,17 @@ describe("createAgentEngine", () => {
       const llm = mockLlmClient([
         {
           type: "tool_calls",
-          toolCalls: [{
-            id: "tc_nochatid",
-            type: "function" as const,
-            function: { name: "shell", arguments: '{"command":"echo test"}' },
-          }],
+          toolCalls: [
+            {
+              id: "tc_nochatid",
+              type: "function" as const,
+              function: { name: "shell", arguments: '{"command":"echo test"}' },
+            },
+          ],
         },
         { type: "text", content: "Done." },
       ]);
-      const tools = mockToolExecutor(
-        { shell: "test" },
-        (name) => name === "shell",
-      );
+      const tools = mockToolExecutor({ shell: "test" }, (name) => name === "shell");
       const confirmationHandler: ConfirmationHandler = {
         requestConfirmation: vi.fn().mockResolvedValue({ approved: true }),
       };
@@ -356,18 +322,17 @@ describe("createAgentEngine", () => {
       const llm = mockLlmClient([
         {
           type: "tool_calls",
-          toolCalls: [{
-            id: "tc_nohandler",
-            type: "function" as const,
-            function: { name: "shell", arguments: '{"command":"echo test"}' },
-          }],
+          toolCalls: [
+            {
+              id: "tc_nohandler",
+              type: "function" as const,
+              function: { name: "shell", arguments: '{"command":"echo test"}' },
+            },
+          ],
         },
         { type: "text", content: "Done." },
       ]);
-      const tools = mockToolExecutor(
-        { shell: "test" },
-        (name) => name === "shell",
-      );
+      const tools = mockToolExecutor({ shell: "test" }, (name) => name === "shell");
       const config: AgentConfig = {
         systemPrompt: "",
         maxToolRounds: 5,

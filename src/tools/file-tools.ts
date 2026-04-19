@@ -1,7 +1,16 @@
-import { existsSync, readdirSync, statSync, readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  statSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  realpathSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 import type { InternalTool } from "./types.js";
+import { truncate } from "./utils.js";
 
 export function validateWorkspacePath(p: string, workspace: string): string {
   const resolved = resolve(p);
@@ -37,7 +46,6 @@ export function createFileReadTool(workspace: string): InternalTool {
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const { truncate } = await import("./utils.js");
       const path = validateWorkspacePath(args.path as string, workspace);
       if (!existsSync(path)) throw new Error(`File not found: ${path}`);
       const content = readFileSync(path, "utf-8");
