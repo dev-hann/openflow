@@ -61,7 +61,7 @@ export function SettingsScreen({ navigation }: Props) {
       { text: "취소", style: "cancel" },
       { text: "변경", style: "destructive", onPress: async () => {
         const client = await getApi();
-        if (client) { try { await client.api.unpair(client.token); } catch { /* unpair best-effort */ } }
+        if (client) { try { await client.api.unpair(client.token); } catch (err) { console.warn("unpair failed", err instanceof Error ? err.message : err); } }
         await clearAuth();
         clearAll();
         setSessions([]);
