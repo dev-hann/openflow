@@ -7,11 +7,10 @@ import { buildSessionInfo } from "../utils/session";
 
 const SEND_TIMEOUT_MS = 60_000;
 
-let messageSeq = 0;
-
 export function useChat() {
   const sendingRef = useRef(false);
   const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messageSeqRef = useRef(0);
   const { send, reconnect: wsReconnect } = useWebSocket();
   const getApi = useApiClient();
   const addMessage = useChatStore((s) => s.addMessage);
@@ -50,14 +49,14 @@ export function useChat() {
 
       const now = Date.now();
       addMessage({
-        id: `user-${++messageSeq}`,
+        id: `user-${++messageSeqRef.current}`,
         role: "user",
         content: content.trim(),
         timestamp: now,
       });
 
       addMessage({
-        id: `assistant-${++messageSeq}`,
+        id: `assistant-${++messageSeqRef.current}`,
         role: "assistant",
         content: "",
         isStreaming: true,

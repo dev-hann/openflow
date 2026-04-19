@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Alert, Modal, FlatList, useWindowDimensions } from "react-native";
+import { View, StyleSheet, Alert, Modal, FlatList, useWindowDimensions, ActivityIndicator } from "react-native";
 import { Text, Button, useTheme, Divider, Chip, IconButton, TouchableRipple, Icon } from "react-native-paper";
 import { useApiClient } from "../hooks/use-api-client";
 import { useProvidersStore } from "../store/providers";
@@ -25,10 +25,13 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
   const activeProviderId = useProvidersStore((s) => s.activeProviderId);
   const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
   const getApi = useApiClient();
+  const [switchingId, setSwitchingId] = React.useState<string | null>(null);
 
   async function handleSwitch(id: string): Promise<boolean> {
+    if (switchingId) return false;
+    setSwitchingId(id);
     const client = await getApi();
-    if (!client) return false;
+    if (!client) { setSwitchingId(null); return false; }
     try {
       await client.api.switchProvider(client.token, id);
       setActiveProviderId(id);
@@ -36,6 +39,8 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
     } catch {
       Alert.alert("오류", "Provider 전환에 실패했습니다.");
       return false;
+    } finally {
+      setSwitchingId(null);
     }
   }
 
@@ -77,7 +82,8 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
                         {item.model}
                       </Text>
                     </View>
-                    {isActive && <Chip compact selected textStyle={styles.activeChipText}>활성</Chip>}
+                    {switchingId === item.id && <ActivityIndicator size="small" color={theme.colors.primary} style={styles.switchLoader} />}
+                    {isActive && !switchingId && <Chip compact selected textStyle={styles.activeChipText}>활성</Chip>}
                     <IconButton icon="pencil-outline" size={16} onPress={() => { onEdit(item); onClose(); }} accessibilityLabel={`${item.name} 편집`} />
                     <IconButton icon="delete-outline" size={16} iconColor={theme.colors.error} onPress={() => handleDelete(item)} accessibilityLabel={`${item.name} 삭제`} />
                   </View>
@@ -117,6 +123,7 @@ const styles = StyleSheet.create({
   sheetItemName: { fontWeight: "400" },
   sheetItemModel: {},
   activeChipText: { fontSize: 10 },
+  switchLoader: { marginRight: SPACING.xs },
   listContent: { paddingBottom: SPACING.xl },
   emptyContainer: { paddingVertical: SPACING.xxl, alignItems: "center" },
   emptyText: { marginTop: SPACING.md },

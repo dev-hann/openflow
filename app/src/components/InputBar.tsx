@@ -54,6 +54,8 @@ export const InputBar = React.memo(function InputBar({ onSend, disabled }: Input
           underlineColor="transparent"
           activeUnderlineColor="transparent"
           textColor={theme.colors.onSurface}
+          accessibilityLabel="메시지 입력"
+          accessibilityHint="메시지를 입력하고 전송 버튼을 누르세요"
         />
       </View>
       <IconButton

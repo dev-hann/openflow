@@ -79,10 +79,14 @@ export const MessageBubble = React.memo(function MessageBubble({ message, isFirs
   const showTimestamp = isLastInGroup;
 
   return (
-    <View style={[
-      styles.container,
-      { marginTop: isFirstInGroup ? SPACING.md : SPACING.xs },
-    ]}>
+    <View
+      style={[
+        styles.container,
+        { marginTop: isFirstInGroup ? SPACING.md : SPACING.xs },
+      ]}
+      accessibilityLabel={isUser ? `사용자: ${message.content}` : `어시스턴트: ${message.content}`}
+      accessibilityRole="text"
+    >
       {!isUser && (
         <View style={styles.assistantRow}>
           {showAvatar ? (

@@ -130,17 +130,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           </View>
         ) : (
           <View>
-            <TextInput
-              label="PIN"
-              placeholder="000000"
-              value={pin}
-              onChangeText={setPin}
-              mode="outlined"
-              keyboardType="number-pad"
-              maxLength={6}
-              autoFocus
-              style={styles.pinInput}
-            />
+              <TextInput
+                label="PIN"
+                placeholder="000000"
+                value={pin}
+                onChangeText={(text) => setPin(text.replace(/[^0-9]/g, ""))}
+                mode="outlined"
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+                style={styles.pinInput}
+              />
             <View style={styles.row}>
               <Button mode="outlined" onPress={() => { setStep("server"); setPin(""); }} style={themed.flexButton}>
                 이전
