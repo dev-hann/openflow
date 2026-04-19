@@ -26,11 +26,12 @@ export function useChat() {
       const session = await client.api.createSession(client.token);
       addSession(buildSessionInfo(session));
       setActiveSessionId(session.id);
+      clearMessages();
       return session.id;
     } catch {
       return null;
     }
-  }, [activeSessionId, getApi, addSession, setActiveSessionId]);
+  }, [activeSessionId, getApi, addSession, setActiveSessionId, clearMessages]);
 
   const sendMessage = useCallback(
     async (content: string) => {
