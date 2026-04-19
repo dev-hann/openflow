@@ -125,21 +125,21 @@ function wrapDb<T>(label: string, fn: () => T): T {
   throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", lastErr);
 }
 
-export function createMemoryStore(dbPath: string): MemoryStore {
-  ensureDirSync(dirname(dbPath));
-
-  let db: DatabaseSync;
+function openDatabase(dbPath: string): DatabaseSync {
   try {
-    db = new DatabaseSync(dbPath);
+    const db = new DatabaseSync(dbPath);
     db.exec("PRAGMA journal_mode = WAL");
     db.exec("PRAGMA foreign_keys = ON");
     db.exec("PRAGMA busy_timeout = 5000");
     log.info({ dbPath }, "database opened");
+    return db;
   } catch (err) {
     log.error({ dbPath, err }, "failed to open database");
     throw new OpenFlowError(`Failed to open database: ${dbPath}`, "DB_ERROR", err);
   }
+}
 
+function runMigrations(db: DatabaseSync): void {
   try {
     db.exec("BEGIN");
     for (const sql of MIGRATIONS) {
@@ -152,6 +152,12 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     log.error({ err }, "database migration failed");
     throw new OpenFlowError("Database migration failed", "DB_MIGRATION_FAILED", err);
   }
+}
+
+export function createMemoryStore(dbPath: string): MemoryStore {
+  ensureDirSync(dirname(dbPath));
+  const db = openDatabase(dbPath);
+  runMigrations(db);
 
   const stmts = {
     insertSession: db.prepare(
