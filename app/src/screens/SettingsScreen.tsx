@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -24,41 +24,43 @@ export function SettingsScreen() {
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const setStoredAuth = useAuthStore((s) => s.setStoredAuth);
   const isConnected = useAuthStore((s) => s.isConnected);
+  const getValidToken = useAuthStore((s) => s.getValidToken);
   const setSessions = useSessionsStore((s) => s.setSessions);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const currentModel = useSettingsStore((s) => s.currentModel);
   const availableModels = useSettingsStore((s) => s.availableModels);
   const setCurrentModel = useSettingsStore((s) => s.setCurrentModel);
   const setAvailableModels = useSettingsStore((s) => s.setAvailableModels);
-  const setServerVersion = useSettingsStore((s) => s.setServerVersion);
 
   const [inputUrl, setInputUrl] = useState(storedAuth?.serverUrl ?? "");
   const [pin, setPin] = useState("");
   const [pairing, setPairing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (storedAuth) {
-      setInputUrl(storedAuth.serverUrl);
-      refreshData();
-    }
-  }, []);
-
-  async function refreshData(): Promise<void> {
-    if (!storedAuth) return;
+  const refreshData = useCallback(async () => {
+    const token = await getValidToken();
+    const auth = useAuthStore.getState().storedAuth;
+    if (!token || !auth) return;
     try {
-      const api = createApiClient(storedAuth.serverUrl);
+      const api = createApiClient(auth.serverUrl);
       const [sessions, modelInfo] = await Promise.all([
-        api.listSessions(storedAuth.accessToken),
-        api.listModels(storedAuth.accessToken),
+        api.listSessions(token),
+        api.listModels(token),
       ]);
-      setSessions(sessions as unknown as SessionInfo[]);
+      setSessions(sessions);
       setAvailableModels(modelInfo.models);
       setCurrentModel(modelInfo.current);
     } catch {
       // token might be expired
     }
-  }
+  }, [getValidToken, setSessions, setAvailableModels, setCurrentModel]);
+
+  useEffect(() => {
+    if (storedAuth) {
+      setInputUrl(storedAuth.serverUrl);
+      refreshData();
+    }
+  }, [storedAuth, refreshData]);
 
   async function handlePairInit(): Promise<void> {
     if (!inputUrl.trim()) {
@@ -91,7 +93,6 @@ export function SettingsScreen() {
       setStoredAuth(auth);
       setPairing(false);
       setPin("");
-      await refreshData();
     } catch (err) {
       Alert.alert("인증 실패", err instanceof Error ? err.message : "PIN이 올바르지 않습니다.");
     } finally {
@@ -107,11 +108,14 @@ export function SettingsScreen() {
         text: "해제",
         style: "destructive",
         onPress: async () => {
-          try {
-            const api = createApiClient(storedAuth.serverUrl);
-            await api.unpair(storedAuth.accessToken);
-          } catch {
-            // clear local anyway
+          const token = await getValidToken();
+          if (token) {
+            try {
+              const api = createApiClient(storedAuth.serverUrl);
+              await api.unpair(token);
+            } catch {
+              // clear local anyway
+            }
           }
           await clearAuth();
           setStoredAuth(null);
@@ -123,10 +127,11 @@ export function SettingsScreen() {
   }
 
   async function handleModelChange(model: string): Promise<void> {
-    if (!storedAuth) return;
+    const token = await getValidToken();
+    if (!token || !storedAuth) return;
     try {
       const api = createApiClient(storedAuth.serverUrl);
-      await api.switchModel(storedAuth.accessToken, model);
+      await api.switchModel(token, model);
       setCurrentModel(model);
     } catch {
       Alert.alert("오류", "모델 변경에 실패했습니다.");
@@ -143,7 +148,6 @@ export function SettingsScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* 연결 */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>연결</Text>
         {!storedAuth ? (
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -231,7 +235,6 @@ export function SettingsScreen() {
           </View>
         )}
 
-        {/* 모델 */}
         {storedAuth && availableModels.length > 0 && (
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>모델</Text>
@@ -261,7 +264,6 @@ export function SettingsScreen() {
           </>
         )}
 
-        {/* 정보 */}
         {storedAuth && (
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>정보</Text>

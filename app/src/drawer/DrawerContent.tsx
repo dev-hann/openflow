@@ -14,18 +14,28 @@ export function DrawerContent() {
   const addSession = useSessionsStore((s) => s.addSession);
   const removeSession = useSessionsStore((s) => s.removeSession);
   const storedAuth = useAuthStore((s) => s.storedAuth);
+  const getValidToken = useAuthStore((s) => s.getValidToken);
 
   const handleNewSession = React.useCallback(async () => {
     if (!storedAuth) return;
+    const token = await getValidToken();
+    if (!token) return;
     try {
       const api = createApiClient(storedAuth.serverUrl);
-      const session = await api.createSession(storedAuth.accessToken);
-      addSession(session as unknown as SessionInfo);
+      const session = await api.createSession(token);
+      const now = Date.now();
+      addSession({
+        id: session.id,
+        title: session.title,
+        createdAt: now,
+        updatedAt: now,
+        messageCount: 0,
+      });
       setActiveSessionId(session.id);
     } catch {
       Alert.alert("오류", "세션 생성에 실패했습니다.");
     }
-  }, [storedAuth, addSession, setActiveSessionId]);
+  }, [storedAuth, getValidToken, addSession, setActiveSessionId]);
 
   const handleDeleteSession = React.useCallback(
     (session: SessionInfo) => {
@@ -36,9 +46,11 @@ export function DrawerContent() {
           text: "삭제",
           style: "destructive",
           onPress: async () => {
+            const token = await getValidToken();
+            if (!token) return;
             try {
               const api = createApiClient(storedAuth.serverUrl);
-              await api.deleteSession(storedAuth.accessToken, session.id);
+              await api.deleteSession(token, session.id);
               removeSession(session.id);
               if (activeSessionId === session.id) setActiveSessionId(null);
             } catch {
@@ -48,7 +60,7 @@ export function DrawerContent() {
         },
       ]);
     },
-    [storedAuth, removeSession, activeSessionId, setActiveSessionId],
+    [storedAuth, getValidToken, removeSession, activeSessionId, setActiveSessionId],
   );
 
   const formatTime = (ts: number): string => {

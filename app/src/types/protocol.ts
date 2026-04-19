@@ -38,6 +38,10 @@ export interface WsAuthRequired {
   type: "auth_required";
 }
 
+export interface WsAuthOk {
+  type: "auth_ok";
+}
+
 export interface WsSessionSwitched {
   type: "session_switched";
   sessionId: string;
@@ -52,6 +56,7 @@ export type WsServerMessage =
   | WsResponse
   | WsError
   | WsAuthRequired
+  | WsAuthOk
   | WsSessionSwitched
   | WsPong;
 

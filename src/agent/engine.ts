@@ -77,17 +77,68 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     return buildSystemPrompt(files, { workspace: workspace.getWorkspaceDir() }, skills);
   }
 
+  async function processToolCall(
+    toolCall: { id: string; function: { name: string; arguments: string } },
+    sessionId: string,
+    chatId: number | string | undefined,
+    round: number,
+    messages: ChatMessage[],
+  ): Promise<void> {
+    let parsedArgs: Record<string, unknown>;
+    try {
+      parsedArgs = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+    } catch {
+      log.warn(
+        { sessionId, toolName: toolCall.function.name, rawArgs: toolCall.function.arguments.slice(0, 200) },
+        "tool argument parse failed, using empty args",
+      );
+      parsedArgs = {};
+    }
+
+    const toolName = toolCall.function.name;
+    log.info({ sessionId, toolName, round }, "executing tool");
+
+    let result: ToolResult;
+    if (tools.needsConfirmation(toolName) && confirmationHandler && chatId !== undefined) {
+      const confirmation = await confirmationHandler.requestConfirmation({
+        chatId,
+        toolName,
+        toolArgs: parsedArgs,
+        timeoutMs: confirmationTimeout ?? 60_000,
+      });
+
+      if (!confirmation.approved) {
+        log.info({ sessionId, toolName, round }, "tool execution denied by user");
+        result = {
+          toolCallId: toolCall.id,
+          content: `사용자가 "${toolName}" 실행을 거부했습니다.`,
+          isError: true,
+        };
+      } else {
+        result = await tools.execute({ id: toolCall.id, name: toolName, arguments: parsedArgs });
+      }
+    } else {
+      result = await tools.execute({ id: toolCall.id, name: toolName, arguments: parsedArgs });
+    }
+
+    messages.push({ role: "tool", content: result.content, tool_call_id: toolCall.id });
+
+    try {
+      memory.addMessage({ sessionId, role: "tool", content: result.content, toolCallId: toolCall.id });
+    } catch (err) {
+      log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool result");
+    }
+
+    log.info({ sessionId, toolName, isError: result.isError, round }, "tool execution completed");
+  }
+
   async function handleMessage(params: HandleMessageParams): Promise<AgentResponse> {
     const { sessionId, userMessage, onToken, signal, systemPromptOverride, chatId } = params;
     const startedAt = Date.now();
     log.info({ sessionId, messageLength: userMessage.length }, "handling message");
 
     try {
-      memory.addMessage({
-        sessionId,
-        role: "user",
-        content: userMessage,
-      });
+      memory.addMessage({ sessionId, role: "user", content: userMessage });
     } catch (err) {
       const error = err instanceof OpenFlowError
         ? err
@@ -140,11 +191,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
       if (response.type === "text") {
         try {
-          memory.addMessage({
-            sessionId,
-            role: "assistant",
-            content: response.content,
-          });
+          memory.addMessage({ sessionId, role: "assistant", content: response.content });
         } catch (err) {
           log.error({ sessionId, err }, "failed to save assistant message");
         }
@@ -154,97 +201,16 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       }
 
       const toolCalls = response.toolCalls;
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: null,
-        tool_calls: toolCalls,
-      };
-      messages.push(assistantMessage);
+      messages.push({ role: "assistant", content: null, tool_calls: toolCalls });
 
       try {
-        memory.addMessage({
-          sessionId,
-          role: "assistant",
-          content: "",
-          toolCalls,
-        });
+        memory.addMessage({ sessionId, role: "assistant", content: "", toolCalls });
       } catch (err) {
         log.error({ sessionId, err }, "failed to save assistant tool_calls");
       }
 
       for (const toolCall of toolCalls) {
-        let parsedArgs: Record<string, unknown>;
-        try {
-          parsedArgs = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
-        } catch {
-          log.warn(
-            { sessionId, toolName: toolCall.function.name, rawArgs: toolCall.function.arguments.slice(0, 200) },
-            "tool argument parse failed, using empty args",
-          );
-          parsedArgs = {};
-        }
-
-        log.info({ sessionId, toolName: toolCall.function.name, round }, "executing tool");
-
-        const toolName = toolCall.function.name;
-        let result: ToolResult;
-
-        if (
-          tools.needsConfirmation(toolName) &&
-          confirmationHandler &&
-          chatId !== undefined
-        ) {
-          const confirmation = await confirmationHandler.requestConfirmation({
-            chatId,
-            toolName,
-            toolArgs: parsedArgs,
-            timeoutMs: confirmationTimeout ?? 60_000,
-          });
-
-          if (!confirmation.approved) {
-            log.info({ sessionId, toolName, round }, "tool execution denied by user");
-            result = {
-              toolCallId: toolCall.id,
-              content: `사용자가 "${toolName}" 실행을 거부했습니다.`,
-              isError: true,
-            };
-          } else {
-            result = await tools.execute({
-              id: toolCall.id,
-              name: toolName,
-              arguments: parsedArgs,
-            });
-          }
-        } else {
-          result = await tools.execute({
-            id: toolCall.id,
-            name: toolName,
-            arguments: parsedArgs,
-          });
-        }
-
-        const toolMessage: ChatMessage = {
-          role: "tool",
-          content: result.content,
-          tool_call_id: toolCall.id,
-        };
-        messages.push(toolMessage);
-
-        try {
-          memory.addMessage({
-            sessionId,
-            role: "tool",
-            content: result.content,
-            toolCallId: toolCall.id,
-          });
-        } catch (err) {
-          log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool result");
-        }
-
-        log.info(
-          { sessionId, toolName: toolCall.function.name, isError: result.isError, round },
-          "tool execution completed",
-        );
+        await processToolCall(toolCall, sessionId, chatId, round, messages);
       }
     }
 

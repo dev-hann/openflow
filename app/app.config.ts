@@ -1,5 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
+import "react-native-reanimated";
+
 const config: ExpoConfig = {
   name: "OpenFlow",
   slug: "openflow",
@@ -36,10 +38,7 @@ const config: ExpoConfig = {
     output: "static",
     favicon: "./assets/favicon.png",
   },
-  plugins: ["expo-router"],
-  experiments: {
-    typedRoutes: true,
-  },
+  plugins: [],
   extra: {
     eas: {
       projectId: "97c51cc0-050c-4ca7-b6ee-5c9158cc7b7a",

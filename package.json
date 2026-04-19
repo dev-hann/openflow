@@ -1,7 +1,7 @@
 {
   "name": "openflow",
   "version": "0.1.0",
-  "description": "Lightweight personal AI assistant with Telegram integration",
+  "description": "Lightweight personal AI assistant with push notifications",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -25,11 +25,8 @@
   ],
   "dependencies": {
     "@clack/prompts": "^1.2.0",
-    "@grammyjs/runner": "^2.0.3",
-    "@grammyjs/transformer-throttler": "^1.2.1",
-    "grammy": "^1.36.3",
+    "expo-server-sdk": "^3.7.0",
     "pino": "^9.6.0",
-    "undici": "^8.1.0",
     "ws": "^8.20.0",
     "zod": "^3.24.4"
   },

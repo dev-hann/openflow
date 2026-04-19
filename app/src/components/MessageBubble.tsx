@@ -1,16 +1,10 @@
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  isStreaming?: boolean;
-}
+import type { ChatMessage } from "../store/chat";
 
 interface MessageBubbleProps {
-  message: Message;
+  message: ChatMessage;
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
@@ -33,7 +27,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         ]}
       >
         <Text style={[styles.text, { color: isUser ? colors.textInverse : colors.text }]}>
-          {message.content || (message.isStreaming ? "" : "")}
+          {message.content}
         </Text>
         {message.isStreaming && !message.content && (
           <View style={styles.typingDots}>
@@ -46,20 +40,27 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 }
 
 interface MessageListProps {
-  messages: Message[];
+  messages: ChatMessage[];
 }
 
 export function MessageList({ messages }: MessageListProps) {
   const colors = useTheme();
+  const listRef = useRef<FlatList>(null);
+
+  const handleContentSizeChange = useCallback(() => {
+    listRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   return (
     <FlatList
+      ref={listRef}
       data={messages}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <MessageBubble message={item} />}
       contentContainerStyle={[styles.listContent, { backgroundColor: colors.background }]}
       showsVerticalScrollIndicator={false}
       keyboardDismissMode="interactive"
+      onContentSizeChange={handleContentSizeChange}
     />
   );
 }

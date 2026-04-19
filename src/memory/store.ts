@@ -44,8 +44,6 @@ export interface MemoryStore {
   getMessages(sessionId: string, limit?: number): ChatMessage[];
   searchMessages(query: string, limit?: number): SearchResult[];
   buildContext(sessionId: string, maxSize: number): ChatMessage[];
-  trackChatId(chatId: number): void;
-  getChatIds(): number[];
   close(): void;
 }
 
@@ -68,10 +66,6 @@ const MIGRATIONS = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_messages_content ON messages(content)`,
-  `CREATE TABLE IF NOT EXISTS chat_ids (
-    chat_id INTEGER PRIMARY KEY,
-    updated_at INTEGER NOT NULL
-  )`,
 ];
 
 function generateId(): string {
@@ -144,12 +138,6 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     ),
     touchSession: db.prepare(
       "UPDATE sessions SET updated_at = ? WHERE id = ?",
-    ),
-    upsertChatId: db.prepare(
-      "INSERT INTO chat_ids (chat_id, updated_at) VALUES (?, ?) ON CONFLICT(chat_id) DO UPDATE SET updated_at = excluded.updated_at",
-    ),
-    getChatIds: db.prepare(
-      "SELECT chat_id FROM chat_ids ORDER BY updated_at DESC",
     ),
   };
 
@@ -281,16 +269,6 @@ export function createMemoryStore(dbPath: string): MemoryStore {
         const rows = stmts.getMessagesOffset.all(sessionId, maxSize, offset) as Array<Record<string, unknown>>;
         return rows.map(rowToMessage);
       });
-    },
-
-    trackChatId(chatId: number): void {
-      wrapDb("trackChatId", () => stmts.upsertChatId.run(chatId, nowMs()));
-    },
-
-    getChatIds(): number[] {
-      return wrapDb("getChatIds", () =>
-        (stmts.getChatIds.all() as Array<Record<string, unknown>>).map((row) => row.chat_id as number),
-      );
     },
 
     close(): void {

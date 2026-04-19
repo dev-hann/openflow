@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, StatusBar } from "react-native";
+import { View, StyleSheet, StatusBar, useColorScheme } from "react-native";
 import { AppNavigator } from "./navigation/index";
 import { useTheme } from "./constants/theme";
 import { useAuthStore } from "./store/auth";
@@ -8,6 +8,7 @@ import { useSettingsStore } from "./store/settings";
 
 export default function App() {
   const colors = useTheme();
+  const colorScheme = useColorScheme();
   const setStoredAuth = useAuthStore((s) => s.setStoredAuth);
   const setServerUrl = useSettingsStore((s) => s.setServerUrl);
 
@@ -23,7 +24,7 @@ export default function App() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
-        barStyle={colors.background === "#FFFFFF" ? "dark-content" : "light-content"}
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
       />
       <AppNavigator />
     </View>

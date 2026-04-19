@@ -1,5 +1,15 @@
 import type { TokenPair, SessionInfo, StoredAuth } from "../types/protocol";
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 export class ApiClient {
   private baseUrl: string;
 
@@ -66,12 +76,12 @@ export class ApiClient {
     return resp.sessions;
   }
 
-  async createSession(accessToken: string, title?: string): Promise<SessionInfo> {
+  async createSession(accessToken: string, title?: string): Promise<Pick<SessionInfo, "id" | "title">> {
     return (await this.request("/api/sessions", {
       method: "POST",
       body: { title: title ?? "New Chat" },
       accessToken,
-    })) as Promise<SessionInfo>;
+    })) as Promise<Pick<SessionInfo, "id" | "title">>;
   }
 
   async deleteSession(accessToken: string, sessionId: string): Promise<void> {
@@ -91,16 +101,6 @@ export class ApiClient {
 
   async getStatus(): Promise<{ status: string; version: string }> {
     return (await this.request("/api/status")) as Promise<{ status: string; version: string }>;
-  }
-}
-
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-  ) {
-    super(message);
   }
 }
 

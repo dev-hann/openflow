@@ -7,8 +7,7 @@ export type ErrorCode =
   | "TOOL_EXECUTION_FAILED"
   | "DB_ERROR"
   | "DB_MIGRATION_FAILED"
-  | "TELEGRAM_API_ERROR"
-  | "TELEGRAM_AUTH_FAILED"
+  | "NOTIFICATION_ERROR"
   | "PERMISSION_DENIED";
 
 export class OpenFlowError extends Error {

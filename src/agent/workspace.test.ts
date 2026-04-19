@@ -56,12 +56,12 @@ describe("createWorkspaceLoader", () => {
     const dailyDir = join(testDir, "daily");
     mkdirSync(dailyDir, { recursive: true });
     writeFileSync(join(dailyDir, "2026-04-16.md"), "Discussed project architecture.", "utf-8");
-    writeFileSync(join(dailyDir, "2026-04-17.md"), "Fixed Telegram transport.", "utf-8");
+    writeFileSync(join(dailyDir, "2026-04-17.md"), "Fixed notification push service.", "utf-8");
 
     const loader = createWorkspaceLoader({ workspaceDir: testDir, dailyMemoryDays: 2 });
     const files = loader.loadAll();
     expect(files.dailyMemory).toContain("2026-04-17");
-    expect(files.dailyMemory).toContain("Telegram");
+    expect(files.dailyMemory).toContain("notification");
   });
 
   it("should truncate long daily files", () => {

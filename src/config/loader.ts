@@ -99,9 +99,13 @@ export function initConfig(configPath?: string): void {
       apiKey: "${OPENAI_API_KEY}",
       model: "gpt-4o",
     },
-    telegram: {
-      botToken: "${TELEGRAM_BOT_TOKEN}",
-      allowedUsers: [],
+    websocket: {
+      enabled: true,
+      host: "127.0.0.1",
+      port: 9800,
+    },
+    notification: {
+      enabled: true,
     },
   };
   writeFileSync(target, JSON.stringify(example, null, 2) + "\n", "utf-8");

@@ -27,7 +27,6 @@ describe("loadConfig", () => {
         apiKey: "test-key",
         model: "test-model",
       },
-      telegram: { botToken: "test-token" },
       agent: {},
       memory: {},
     };
@@ -82,7 +81,6 @@ describe("loadConfig", () => {
         apiKey: "key",
         model: "test",
       },
-      telegram: { botToken: "tok" },
       agent: {},
       memory: {},
     };

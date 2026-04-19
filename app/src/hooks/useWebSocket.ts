@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { WsServerMessage } from "../types/protocol";
 import { useAuthStore } from "../store/auth";
 import { useChatStore } from "../store/chat";
+import { useSessionsStore } from "../store/sessions";
 
 interface UseWebSocketReturn {
   isConnected: boolean;
@@ -19,9 +20,11 @@ export function useWebSocket(): UseWebSocketReturn {
   const [connected, setConnected] = useState(false);
 
   const storedAuth = useAuthStore((s) => s.storedAuth);
+  const getValidToken = useAuthStore((s) => s.getValidToken);
   const setStoreConnected = useAuthStore((s) => s.setConnected);
   const appendToLastMessage = useChatStore((s) => s.appendToLastMessage);
   const finalizeLastMessage = useChatStore((s) => s.finalizeLastMessage);
+  const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -37,16 +40,18 @@ export function useWebSocket(): UseWebSocketReturn {
           case "error":
             finalizeLastMessage(`Error: ${msg.message}`);
             break;
-          case "pong":
+          case "session_switched":
+            setActiveSessionId(msg.sessionId);
             break;
-          default:
+          case "pong":
+          case "auth_ok":
             break;
         }
       } catch {
-        // ignore
+        // ignore malformed messages
       }
     },
-    [appendToLastMessage, finalizeLastMessage],
+    [appendToLastMessage, finalizeLastMessage, setActiveSessionId],
   );
 
   useEffect(() => {
@@ -65,16 +70,21 @@ export function useWebSocket(): UseWebSocketReturn {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
-      ws.onopen = () => {
+      ws.onopen = async () => {
+        const token = await getValidToken();
+        if (!token) {
+          ws.close(4001, "no valid token");
+          return;
+        }
         ws.send(JSON.stringify({
           type: "auth",
-          accessToken: storedAuth!.accessToken,
+          accessToken: token,
         }));
       };
 
       ws.onmessage = (event: MessageEvent) => {
         try {
-          const msg = JSON.parse(event.data as string) as Record<string, unknown>;
+          const msg = JSON.parse(event.data as string) as WsServerMessage;
           if (msg.type === "auth_ok") {
             retryCount.current = 0;
             setConnected(true);
@@ -109,7 +119,7 @@ export function useWebSocket(): UseWebSocketReturn {
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [storedAuth, handleMessage, setStoreConnected]);
+  }, [storedAuth, handleMessage, setStoreConnected, getValidToken]);
 
   const send = useCallback((data: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

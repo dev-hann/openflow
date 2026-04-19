@@ -15,17 +15,6 @@ export function ChatScreen() {
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const { sendMessage } = useChat();
 
-  const headerRight = React.useCallback(() => {
-    if (!storedAuth) return null;
-    return (
-      <View style={[styles.statusDot, { backgroundColor: isConnected ? colors.success : colors.error }]} />
-    );
-  }, [storedAuth, isConnected, colors]);
-
-  React.useLayoutEffect(() => {
-    headerRight();
-  });
-
   if (!storedAuth) {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
@@ -99,11 +88,6 @@ const styles = StyleSheet.create({
   },
   emptyHint: {
     ...TYPOGRAPHY.body,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   streamingBar: {
     flexDirection: "row",

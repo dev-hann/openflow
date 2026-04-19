@@ -8,9 +8,6 @@ describe("openFlowConfigSchema", () => {
       apiKey: "sk-test-key",
       model: "test-model",
     },
-    telegram: {
-      botToken: "123:ABC",
-    },
     agent: {},
     memory: {},
   };
@@ -19,7 +16,6 @@ describe("openFlowConfigSchema", () => {
     const result = openFlowConfigSchema.parse(validConfig);
     expect(result.llm.maxTokens).toBe(4096);
     expect(result.llm.temperature).toBe(0.7);
-    expect(result.telegram!.allowedUsers).toEqual([]);
     expect(result.agent.maxToolRounds).toBe(10);
     expect(result.agent.workspace).toBe("~/.openflow/workspace");
     expect(result.memory.contextSize).toBe(50);
@@ -31,6 +27,7 @@ describe("openFlowConfigSchema", () => {
     expect(result.tools.httpRequest.enabled).toBe(false);
     expect(result.tools.requireConfirmation).toEqual([]);
     expect(result.tools.confirmationTimeout).toBe(60_000);
+    expect(result.notification.enabled).toBe(true);
     expect(result.logging.level).toBe("info");
   });
 
@@ -42,10 +39,6 @@ describe("openFlowConfigSchema", () => {
         model: "gpt-4o",
         maxTokens: 8192,
         temperature: 0.5,
-      },
-      telegram: {
-        botToken: "tok",
-        allowedUsers: [123, 456],
       },
       agent: {
         systemPrompt: "You are helpful",
@@ -64,29 +57,33 @@ describe("openFlowConfigSchema", () => {
         requireConfirmation: ["shell", "write_file"],
         confirmationTimeout: 30_000,
       },
+      notification: {
+        enabled: false,
+        onStart: "Custom start",
+        onStop: "Custom stop",
+      },
       logging: { level: "debug" as const },
     };
     const result = openFlowConfigSchema.parse(full);
     expect(result.llm.maxTokens).toBe(8192);
     expect(result.llm.temperature).toBe(0.5);
-    expect(result.telegram!.allowedUsers).toEqual([123, 456]);
     expect(result.agent.systemPrompt).toBe("You are helpful");
     expect(result.tools.shell.enabled).toBe(false);
     expect(result.tools.httpRequest.enabled).toBe(true);
     expect(result.tools.requireConfirmation).toEqual(["shell", "write_file"]);
     expect(result.tools.confirmationTimeout).toBe(30_000);
+    expect(result.notification.enabled).toBe(false);
+    expect(result.notification.onStart).toBe("Custom start");
     expect(result.logging.level).toBe("debug");
   });
 
   describe("env var resolution", () => {
     beforeEach(() => {
       process.env.TEST_OPENFLOW_KEY = "resolved-api-key";
-      process.env.TEST_OPENFLOW_TOKEN = "resolved-bot-token";
     });
 
     afterEach(() => {
       delete process.env.TEST_OPENFLOW_KEY;
-      delete process.env.TEST_OPENFLOW_TOKEN;
     });
 
     it("should resolve ${ENV_VAR} in apiKey", () => {
@@ -96,27 +93,11 @@ describe("openFlowConfigSchema", () => {
           apiKey: "${TEST_OPENFLOW_KEY}",
           model: "test",
         },
-        telegram: { botToken: "tok" },
         agent: {},
         memory: {},
       };
       const result = openFlowConfigSchema.parse(config);
       expect(result.llm.apiKey).toBe("resolved-api-key");
-    });
-
-    it("should resolve ${ENV_VAR} in botToken", () => {
-      const config = {
-        llm: {
-          baseUrl: "https://api.example.com/v1",
-          apiKey: "key",
-          model: "test",
-        },
-        telegram: { botToken: "${TEST_OPENFLOW_TOKEN}" },
-        agent: {},
-        memory: {},
-      };
-      const result = openFlowConfigSchema.parse(config);
-      expect(result.telegram!.botToken).toBe("resolved-bot-token");
     });
 
     it("should throw for missing env var", () => {
@@ -126,7 +107,6 @@ describe("openFlowConfigSchema", () => {
           apiKey: "${NONEXISTENT_VAR_12345}",
           model: "test",
         },
-        telegram: { botToken: "tok" },
         agent: {},
         memory: {},
       };
@@ -142,13 +122,11 @@ describe("openFlowConfigSchema", () => {
           apiKey: "plain-key",
           model: "test",
         },
-        telegram: { botToken: "plain-token" },
         agent: {},
         memory: {},
       };
       const result = openFlowConfigSchema.parse(config);
       expect(result.llm.apiKey).toBe("plain-key");
-      expect(result.telegram!.botToken).toBe("plain-token");
     });
   });
 
@@ -163,7 +141,6 @@ describe("openFlowConfigSchema", () => {
         apiKey: "",
         model: "test",
       },
-      telegram: { botToken: "tok" },
     };
     expect(() => openFlowConfigSchema.parse(config)).toThrow();
   });
@@ -176,7 +153,6 @@ describe("openFlowConfigSchema", () => {
         model: "test",
         temperature: 5,
       },
-      telegram: { botToken: "tok" },
     };
     expect(() => openFlowConfigSchema.parse(config)).toThrow();
   });
@@ -188,7 +164,6 @@ describe("openFlowConfigSchema", () => {
         apiKey: "key",
         model: "test",
       },
-      telegram: { botToken: "tok" },
       logging: { level: "verbose" },
     };
     expect(() => openFlowConfigSchema.parse(config)).toThrow();

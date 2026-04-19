@@ -1,17 +1,19 @@
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+
 import { createLogger } from "../utils/logger.js";
-import type { JsonSchemaProperty } from "../llm/types.js";
-import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 import { createBrowserScreenshotTool, createBrowserExecuteTool } from "../agent/browser.js";
+import type { NotificationSender } from "../channel/types.js";
+
+import type { InternalTool, ToolDefinition } from "./types.js";
+export type { InternalTool, ToolDefinition } from "./types.js";
+import { truncate } from "./utils.js";
+import { webFetchTool, webSearchTool, httpClientTool } from "./web-tools.js";
+import { createFileReadTool, createFileWriteTool, createListDirTool, validateWorkspacePath } from "./file-tools.js";
 
 const log = createLogger("tools");
 
-export interface ChannelSender {
-  sendMessage(chatId: number | string, text: string): Promise<void>;
-  sendPhoto(chatId: number | string, photo: string | Buffer, caption?: string): Promise<void>;
-}
+export interface ChannelSender extends NotificationSender {}
 
 export interface ToolCall {
   id: string;
@@ -23,25 +25,6 @@ export interface ToolResult {
   toolCallId: string;
   content: string;
   isError: boolean;
-}
-
-export interface ToolDefinition {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: "object";
-      properties: Record<string, JsonSchemaProperty>;
-      required?: string[];
-    };
-  };
-}
-
-export interface InternalTool {
-  name: string;
-  definition: ToolDefinition;
-  execute(args: Record<string, unknown>): Promise<string>;
 }
 
 export interface ToolsConfig {
@@ -58,27 +41,6 @@ export interface ToolExecutor {
   execute(call: ToolCall): Promise<ToolResult>;
   getDefinitions(): ToolDefinition[];
   needsConfirmation(toolName: string): boolean;
-}
-
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen) return str;
-  return str.slice(0, maxLen) + `\n... (truncated, ${str.length} bytes total)`;
-}
-
-function validateWorkspacePath(p: string, workspace: string): string {
-  const resolved = resolve(p);
-  const resolvedWorkspace = realpathSync(resolve(workspace));
-  if (!existsSync(resolved)) {
-    if (!resolved.startsWith(resolvedWorkspace)) {
-      throw new Error("Path is outside workspace");
-    }
-    return resolved;
-  }
-  const realResolved = realpathSync(resolved);
-  if (!realResolved.startsWith(resolvedWorkspace)) {
-    throw new Error("Path is outside workspace");
-  }
-  return realResolved;
 }
 
 const shellTool: InternalTool = {
@@ -116,271 +78,6 @@ const shellTool: InternalTool = {
       }
       const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
       throw new Error(output || "Command failed with no output");
-    }
-  },
-};
-
-function createFileReadTool(workspace: string): InternalTool {
-  return {
-    name: "read_file",
-    definition: {
-      type: "function",
-      function: {
-        name: "read_file",
-        description: "Read the contents of a file",
-        parameters: {
-          type: "object",
-          properties: {
-            path: { type: "string", description: "Path to the file (relative to workspace)" },
-          },
-          required: ["path"],
-        },
-      },
-    },
-    async execute(args: Record<string, unknown>): Promise<string> {
-      const path = validateWorkspacePath(args.path as string, workspace);
-      if (!existsSync(path)) throw new Error(`File not found: ${path}`);
-      const content = readFileSync(path, "utf-8");
-      return truncate(content, 50_000);
-    },
-  };
-}
-
-function createFileWriteTool(workspace: string): InternalTool {
-  return {
-    name: "write_file",
-    definition: {
-      type: "function",
-      function: {
-        name: "write_file",
-        description: "Write content to a file",
-        parameters: {
-          type: "object",
-          properties: {
-            path: { type: "string", description: "Path to the file (relative to workspace)" },
-            content: { type: "string", description: "Content to write" },
-          },
-          required: ["path", "content"],
-        },
-      },
-    },
-    async execute(args: Record<string, unknown>): Promise<string> {
-      const path = validateWorkspacePath(args.path as string, workspace);
-      const content = args.content as string;
-      const dir = dirname(path);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(path, content, "utf-8");
-      return "OK";
-    },
-  };
-}
-
-function createListDirTool(workspace: string): InternalTool {
-  return {
-    name: "list_directory",
-    definition: {
-      type: "function",
-      function: {
-        name: "list_directory",
-        description: "List files and directories",
-        parameters: {
-          type: "object",
-          properties: {
-            path: { type: "string", description: "Directory path (relative to workspace)" },
-          },
-          required: ["path"],
-        },
-      },
-    },
-    async execute(args: Record<string, unknown>): Promise<string> {
-      const path = validateWorkspacePath(args.path as string, workspace);
-      if (!existsSync(path)) throw new Error(`Directory not found: ${path}`);
-      const entries = readdirSync(path).map((name) => {
-        const full = join(path, name);
-        try {
-          const s = statSync(full);
-          return s.isDirectory() ? `${name}/` : name;
-        } catch {
-          return name;
-        }
-      });
-      return entries.join("\n") || "(empty directory)";
-    },
-  };
-}
-
-function validateUrl(url: string): void {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new Error(`Invalid URL: ${url}`);
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error(`Unsupported protocol: ${parsed.protocol}`);
-  }
-  const hostname = parsed.hostname.toLowerCase();
-  if (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0" ||
-    hostname === "::1" ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".internal") ||
-    hostname.startsWith("10.") ||
-    hostname.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
-    hostname.startsWith("169.254.") ||
-    hostname.startsWith("fc") ||
-    hostname.startsWith("fe80")
-  ) {
-    throw new Error(`Requests to private/internal networks are blocked`);
-  }
-}
-
-const webFetchTool: InternalTool = {
-  name: "web_fetch",
-  definition: {
-    type: "function",
-    function: {
-      name: "web_fetch",
-      description: "Fetch a web page and extract text content",
-      parameters: {
-        type: "object",
-        properties: {
-          url: { type: "string", description: "URL to fetch" },
-          maxLength: { type: "number", description: "Max characters to return (default 10000)" },
-        },
-        required: ["url"],
-      },
-    },
-  },
-  async execute(args: Record<string, unknown>): Promise<string> {
-    const url = args.url as string;
-    const maxLen = (args.maxLength as number) || 10_000;
-    validateUrl(url);
-    try {
-      const html = await withRetry(
-        async () => {
-          const resp = await fetch(url, { redirect: "follow" } as never);
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          return await resp.text();
-        },
-        { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
-      );
-      const text = html
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&nbsp;/g, " ")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&#\d+;/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-      return truncate(text, maxLen);
-    } catch (err) {
-      throw new Error(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  },
-};
-
-const webSearchTool: InternalTool = {
-  name: "web_search",
-  definition: {
-    type: "function",
-    function: {
-      name: "web_search",
-      description: "Search the web using DuckDuckGo",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "Search query" },
-          maxResults: { type: "number", description: "Max results (default 5)" },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  async execute(args: Record<string, unknown>): Promise<string> {
-    const query = args.query as string;
-    const maxResults = (args.maxResults as number) || 5;
-    try {
-      const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-      const html = await withRetry(
-        async () => {
-          const resp = await fetch(url);
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          return await resp.text();
-        },
-        { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
-      );
-      const results: Array<{ title: string; snippet: string; href: string }> = [];
-      const resultRegex = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-      let match: RegExpExecArray | null;
-      while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
-        results.push({
-          href: match[1]!,
-          title: match[2]!.replace(/<[^>]+>/g, "").trim(),
-          snippet: match[3]!.replace(/<[^>]+>/g, "").trim(),
-        });
-      }
-      if (results.length === 0) return "No results found.";
-      return results.map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.href}`).join("\n\n");
-    } catch (err) {
-      throw new Error(`Search failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  },
-};
-
-const httpClientTool: InternalTool = {
-  name: "http_request",
-  definition: {
-    type: "function",
-    function: {
-      name: "http_request",
-      description: "Make an HTTP request",
-      parameters: {
-        type: "object",
-        properties: {
-          url: { type: "string", description: "Request URL" },
-          method: { type: "string", description: "HTTP method (GET, POST, PUT, DELETE)" },
-          headers: { type: "string", description: "JSON string of headers" },
-          body: { type: "string", description: "Request body" },
-        },
-        required: ["url", "method"],
-      },
-    },
-  },
-  async execute(args: Record<string, unknown>): Promise<string> {
-    const url = args.url as string;
-    const method = (args.method as string).toUpperCase();
-    const headersRaw = args.headers as string | undefined;
-    const body = args.body as string | undefined;
-    validateUrl(url);
-
-    let headers: Record<string, string> = {};
-    if (headersRaw) {
-      try {
-        headers = JSON.parse(headersRaw) as Record<string, string>;
-      } catch {
-        throw new Error("Invalid headers JSON");
-      }
-    }
-
-    try {
-      const text = await withRetry(
-        async () => {
-          const resp = await fetch(url, { method, headers, body, redirect: "follow" } as never);
-          const respText = await resp.text();
-          return `Status: ${resp.status}\n${truncate(respText, 10_000)}`;
-        },
-        { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
-      );
-      return text;
-    } catch (err) {
-      throw new Error(`HTTP request failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   },
 };

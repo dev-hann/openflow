@@ -30,26 +30,11 @@ export const openFlowConfigSchema = z.object({
       apiKey: envString.optional(),
     })).optional(),
   }),
-  telegram: z.object({
-    botToken: envString,
-    allowedUsers: z.array(z.coerce.number()).default([]),
-    streamingMode: z.enum(["partial", "block", "progress", "off"]).default("partial"),
-    errorPolicy: z.enum(["always", "once", "silent"]).default("once"),
-    groupEnabled: z.boolean().default(false),
-    proxy: envString.optional(),
-    webhook: z.object({
-      enabled: z.boolean().default(false),
-      url: envString.optional(),
-      host: z.string().default("127.0.0.1"),
-      port: z.coerce.number().int().default(8787),
-      secret: envString.optional(),
-    }).default({}),
-    notify: z.object({
-      enabled: z.boolean().default(true),
-      onStart: z.string().default("🟢 OpenFlow가 시작되었습니다."),
-      onStop: z.string().default("🔴 OpenFlow가 종료됩니다."),
-    }).default({}),
-  }).optional(),
+  notification: z.object({
+    enabled: z.boolean().default(true),
+    onStart: z.string().default("🟢 OpenFlow가 시작되었습니다."),
+    onStop: z.string().default("🔴 OpenFlow가 종료됩니다."),
+  }).default({}),
   agent: z.object({
     systemPrompt: z.string().default(""),
     maxToolRounds: z.coerce.number().int().positive().default(10),

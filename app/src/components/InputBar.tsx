@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   TextInput,
@@ -20,7 +20,6 @@ interface InputBarProps {
 export function InputBar({ onSend, disabled }: InputBarProps) {
   const colors = useTheme();
   const [text, setText] = useState("");
-  const inputRef = useRef<TextInput>(null);
 
   function handleSend(): void {
     const trimmed = text.trim();
@@ -29,7 +28,7 @@ export function InputBar({ onSend, disabled }: InputBarProps) {
     setText("");
   }
 
-  function handleSubmit(e: NativeSyntheticEvent<TextInputSubmitEditingEventData>): void {
+  function handleSubmit(_e: NativeSyntheticEvent<TextInputSubmitEditingEventData>): void {
     handleSend();
   }
 
@@ -38,7 +37,6 @@ export function InputBar({ onSend, disabled }: InputBarProps) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
       <TextInput
-        ref={inputRef}
         style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text }]}
         value={text}
         onChangeText={setText}
