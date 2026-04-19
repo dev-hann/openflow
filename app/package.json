@@ -16,7 +16,6 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@react-navigation/bottom-tabs": "^7.15.5",
-    "@react-navigation/drawer": "^7.9.8",
     "@react-navigation/native": "^7.1.33",
     "@react-navigation/stack": "^7.8.10",
     "expo": "~54.0.33",
@@ -25,8 +24,6 @@
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-gesture-handler": "^2.31.1",
-    "react-native-reanimated": "^4.3.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "zustand": "^5.0.12"

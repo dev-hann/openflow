@@ -1,12 +1,25 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  Modal,
+} from "react-native";
 import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
 import { useSessionsStore } from "../store/sessions";
 import { useAuthStore } from "../store/auth";
 import { createApiClient } from "../services/api";
 import type { SessionInfo } from "../types/protocol";
 
-export function DrawerContent() {
+interface SessionModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export function SessionModal({ visible, onClose }: SessionModalProps) {
   const colors = useTheme();
   const sessions = useSessionsStore((s) => s.sessions);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
@@ -73,64 +86,87 @@ export function DrawerContent() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <TouchableOpacity
-        style={[styles.newButton, { backgroundColor: colors.primary }]}
-        onPress={handleNewSession}
-      >
-        <Text style={[styles.newButtonText, { color: colors.textInverse }]}>+ 새 세션</Text>
-      </TouchableOpacity>
-
-      <FlatList
-        data={sessions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.sessionItem,
-              item.id === activeSessionId && { backgroundColor: colors.surfaceAlt },
-            ]}
-            onPress={() => setActiveSessionId(item.id)}
-            onLongPress={() => handleDeleteSession(item)}
-          >
-            <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
-              {item.title}
-            </Text>
-            <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
-              {formatTime(item.updatedAt)} · {item.messageCount}개
-            </Text>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Text style={[styles.closeText, { color: colors.primary }]}>닫기</Text>
           </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            세션이 없습니다
-          </Text>
-        }
-      />
-    </View>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>세션</Text>
+          <TouchableOpacity onPress={handleNewSession} style={styles.addButton}>
+            <Text style={[styles.addButtonText, { color: colors.primary }]}>+ 새 세션</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={sessions}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.sessionItem,
+                {
+                  backgroundColor: item.id === activeSessionId ? colors.surfaceAlt : "transparent",
+                },
+              ]}
+              onPress={() => {
+                setActiveSessionId(item.id);
+                onClose();
+              }}
+              onLongPress={() => handleDeleteSession(item)}
+            >
+              <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
+                {formatTime(item.updatedAt)} · {item.messageCount}개
+              </Text>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              세션이 없습니다
+            </Text>
+          }
+        />
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: SPACING.lg,
   },
-  newButton: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    borderRadius: 10,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
   },
-  newButtonText: {
+  headerTitle: {
     ...TYPOGRAPHY.subtitle,
     fontWeight: "600",
   },
+  closeButton: {
+    padding: SPACING.xs,
+  },
+  closeText: {
+    ...TYPOGRAPHY.body,
+  },
+  addButton: {
+    padding: SPACING.xs,
+  },
+  addButtonText: {
+    ...TYPOGRAPHY.body,
+    fontWeight: "600",
+  },
   listContent: {
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   sessionItem: {
     paddingHorizontal: SPACING.md,

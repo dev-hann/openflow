@@ -1,7 +1,5 @@
 import type { ExpoConfig } from "expo/config";
 
-import "react-native-reanimated";
-
 const config: ExpoConfig = {
   name: "OpenFlow",
   slug: "openflow",
