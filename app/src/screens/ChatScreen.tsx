@@ -16,10 +16,8 @@ import {
 } from "react-native";
 import {
   Text,
-  Button,
   useTheme,
   Icon,
-  Chip,
   IconButton,
 } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
@@ -27,20 +25,12 @@ import { MessageList } from "../components/message-list";
 import { InputBar } from "../components/InputBar";
 import { KeyboardSafeView } from "../components/KeyboardSafeView";
 import { SessionModal } from "../components/session-modal";
+import { ChatEmptyState } from "../components/chat-empty-state";
 import { useChatStore } from "../store/chat";
 import { useAuthStore } from "../store/auth";
 import { useSessionsStore } from "../store/sessions";
 import { useChat } from "../hooks/useChat";
-import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
-
-const SUGGESTIONS = [
-  "오늘 할 일 정리해줘",
-  "코딩 문제 도와줘",
-  "번역해줘",
-  "요리 레시피 추천해줘",
-  "재미있는 이야기 해줘",
-  "최신 기술 트렌드 알려줘",
-];
+import { SPACING, SHADOWS } from "../constants/theme";
 
 export function ChatScreen() {
   const theme = useTheme();
@@ -107,67 +97,23 @@ export function ChatScreen() {
 
   if (!storedAuth) {
     return (
-      <View
-        style={[
-          styles.emptyContainer,
-          { backgroundColor: theme.colors.background },
-        ]}
-      >
-        <View
-          style={[
-            styles.emptyIconWrap,
-            { backgroundColor: theme.colors.primaryContainer },
-          ]}
-        >
-          <Icon
-            source="link-variant-off"
-            size={32}
-            color={theme.colors.primary}
-          />
-        </View>
-        <Text variant="titleMedium" style={styles.disconnectedTitle}>
-          서버에 연결되지 않았습니다
-        </Text>
-        <Text
-          variant="bodyMedium"
-          style={[
-            styles.disconnectedSubtitle,
-            { color: theme.colors.onSurfaceVariant },
-          ]}
-        >
-          설정 탭에서 서버에 연결하세요
-        </Text>
-      </View>
+      <ChatEmptyState
+        variant="disconnected"
+        isSending={false}
+        onSuggestion={handleSuggestion}
+        onReconnect={reconnect}
+      />
     );
   }
 
   if (!isConnected) {
     return (
-      <View
-        style={[
-          styles.emptyContainer,
-          { backgroundColor: theme.colors.background },
-        ]}
-      >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text
-          variant="bodyMedium"
-          style={[
-            styles.connectingText,
-            { color: theme.colors.onSurfaceVariant },
-          ]}
-        >
-          서버에 연결 중...
-        </Text>
-        <Button
-          mode="outlined"
-          onPress={reconnect}
-          style={styles.reconnectButton}
-          icon="refresh"
-        >
-          다시 연결
-        </Button>
-      </View>
+      <ChatEmptyState
+        variant="connecting"
+        isSending={false}
+        onSuggestion={handleSuggestion}
+        onReconnect={reconnect}
+      />
     );
   }
 
@@ -177,52 +123,12 @@ export function ChatScreen() {
       offset={Platform.OS === "ios" ? 56 : 0}
     >
       {messages.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View
-            style={[
-              styles.emptyIconWrap,
-              { backgroundColor: theme.colors.primaryContainer },
-            ]}
-          >
-            <Icon
-              source="robot-happy-outline"
-              size={40}
-              color={theme.colors.primary}
-            />
-          </View>
-          <Text variant="headlineSmall" style={styles.emptyHeadline}>
-            무엇이든 물어보세요
-          </Text>
-          <Text
-            variant="bodyMedium"
-            style={[
-              styles.emptySubtitle,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
-          >
-            아래의 추천 질문을 선택하거나{"\n"}직접 메시지를 입력하세요
-          </Text>
-          <View style={styles.suggestionGrid}>
-            {SUGGESTIONS.map((s) => (
-              <Chip
-                key={s}
-                mode="outlined"
-                onPress={() => handleSuggestion(s)}
-                disabled={isSending}
-                style={[
-                  styles.suggestionChip,
-                  { borderColor: theme.colors.outline },
-                ]}
-                textStyle={[
-                  styles.suggestionChipText,
-                  { color: theme.colors.onSurface },
-                ]}
-              >
-                {s}
-              </Chip>
-            ))}
-          </View>
-        </View>
+        <ChatEmptyState
+          variant="empty"
+          isSending={isSending}
+          onSuggestion={handleSuggestion}
+          onReconnect={reconnect}
+        />
       ) : (
         <View style={styles.messageContainer}>
           <MessageList
@@ -274,37 +180,8 @@ export function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: SPACING.xl,
-  },
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   headerTitle: { flexDirection: "row", alignItems: "center", gap: 2 },
   headerTitleText: { fontWeight: "600", maxWidth: 200 },
-  disconnectedTitle: { marginTop: SPACING.lg },
-  disconnectedSubtitle: { marginTop: SPACING.xs, textAlign: "center" },
-  connectingText: { marginTop: SPACING.md },
-  reconnectButton: { marginTop: SPACING.md },
-  emptyHeadline: { marginTop: SPACING.lg, fontWeight: "600" },
-  emptySubtitle: { marginTop: SPACING.xs, textAlign: "center" },
-  suggestionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    marginTop: SPACING.xl,
-    paddingHorizontal: SPACING.md,
-  },
-  suggestionChip: { borderRadius: BORDER_RADIUS.xl },
-  suggestionChipText: { fontSize: 13 },
   messageContainer: { flex: 1 },
   streamingBar: {
     flexDirection: "row",
