@@ -1,5 +1,6 @@
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
+import { sleep } from "../utils/retry.js";
 import type { ChatParams, CompleteParams, LlmResponse, ToolCall } from "./types.js";
 import { parseSseStream } from "./sse-parser.js";
 
@@ -27,10 +28,6 @@ export interface LlmClient {
 }
 
 const RETRY_DELAYS = [1000, 2000, 4000];
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function buildUrl(baseUrl: string, path: string): string {
   const base = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
