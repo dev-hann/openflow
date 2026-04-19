@@ -76,6 +76,15 @@ function nowMs(): number {
   return Date.now();
 }
 
+function rowToSession(row: Record<string, unknown>): Session {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    createdAt: row.created_at as number,
+    updatedAt: row.updated_at as number,
+  };
+}
+
 function rowToMessage(row: Record<string, unknown>): ChatMessage {
   const role = row.role as string;
   const content = row.content as string;
@@ -191,12 +200,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
 
     listSessions(): Session[] {
       return wrapDb("listSessions", () =>
-        stmts.listSessions.all().map((row) => ({
-          id: (row as Record<string, unknown>).id as string,
-          title: (row as Record<string, unknown>).title as string,
-          createdAt: (row as Record<string, unknown>).created_at as number,
-          updatedAt: (row as Record<string, unknown>).updated_at as number,
-        })),
+        (stmts.listSessions.all() as Array<Record<string, unknown>>).map(rowToSession),
       );
     },
 
@@ -204,12 +208,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       return wrapDb("getSession", () => {
         const row = stmts.getSession.get(id) as Record<string, unknown> | undefined;
         if (!row) return null;
-        return {
-          id: row.id as string,
-          title: row.title as string,
-          createdAt: row.created_at as number,
-          updatedAt: row.updated_at as number,
-        };
+        return rowToSession(row);
       });
     },
 
