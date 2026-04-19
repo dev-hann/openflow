@@ -1,16 +1,28 @@
 import React from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
-import { Text, Button, useTheme, Icon, Chip } from "react-native-paper";
-import { SPACING, BORDER_RADIUS } from "../constants/theme";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  type DimensionValue,
+} from "react-native";
+import {
+  Text,
+  Button,
+  useTheme,
+  Icon,
+  TouchableRipple,
+  Surface,
+} from "react-native-paper";
+import { SPACING, BORDER_RADIUS, SHADOWS } from "../constants/theme";
 
 const SUGGESTIONS = [
-  "오늘 할 일 정리해줘",
-  "코딩 문제 도와줘",
-  "번역해줘",
-  "요리 레시피 추천해줘",
-  "재미있는 이야기 해줘",
-  "최신 기술 트렌드 알려줘",
-];
+  { icon: "lightbulb-outline", text: "오늘 할 일 정리해줘", label: "할 일" },
+  { icon: "code-tags", text: "코드 작성 도와줘", label: "코딩" },
+  { icon: "translate", text: "번역해줘", label: "번역" },
+  { icon: "magnify", text: "검색해줘", label: "검색" },
+  { icon: "chart-line", text: "데이터 분석해줘", label: "분석" },
+  { icon: "pencil-outline", text: "글 작성해줘", label: "작성" },
+] as const;
 
 type EmptyStateVariant = "disconnected" | "connecting" | "empty";
 
@@ -21,6 +33,12 @@ interface ChatEmptyStateProps {
   onReconnect: () => void;
 }
 
+const STATUS_MESSAGES: Record<EmptyStateVariant, string> = {
+  empty: "무엇이든 물어보세요",
+  connecting: "연결 중...",
+  disconnected: "서버에 연결해주세요",
+};
+
 export function ChatEmptyState({
   variant,
   isSending,
@@ -28,6 +46,8 @@ export function ChatEmptyState({
   onReconnect,
 }: ChatEmptyStateProps) {
   const theme = useTheme();
+  const isConnected = variant === "empty";
+  const showReconnect = variant === "connecting" || variant === "disconnected";
 
   return (
     <View
@@ -39,95 +59,90 @@ export function ChatEmptyState({
           { backgroundColor: theme.colors.primaryContainer },
         ]}
       >
-        {variant === "disconnected" ? (
-          <Icon
-            source="link-variant-off"
-            size={32}
-            color={theme.colors.primary}
-          />
-        ) : variant === "connecting" ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        ) : (
-          <Icon
-            source="robot-happy-outline"
-            size={40}
-            color={theme.colors.primary}
-          />
-        )}
+        <Icon
+          source="robot-happy-outline"
+          size={40}
+          color={theme.colors.primary}
+        />
       </View>
 
-      {variant === "disconnected" && (
-        <>
-          <Text variant="titleMedium" style={styles.disconnectedTitle}>
-            서버에 연결되지 않았습니다
-          </Text>
-          <Text
-            variant="bodyMedium"
-            style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
-          >
-            설정 탭에서 서버에 연결하세요
-          </Text>
-        </>
-      )}
+      <Text
+        variant="headlineSmall"
+        style={[styles.headline, { color: theme.colors.onSurface }]}
+      >
+        OpenFlow에 오신 것을{"\n"}환영합니다
+      </Text>
 
-      {variant === "connecting" && (
-        <>
-          <Text
-            variant="bodyMedium"
-            style={[
-              styles.connectingText,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
-          >
-            서버에 연결 중...
-          </Text>
-          <Button
-            mode="outlined"
-            onPress={onReconnect}
-            style={styles.reconnectButton}
-            icon="refresh"
-          >
-            다시 연결
-          </Button>
-        </>
-      )}
+      <Text
+        variant="bodyMedium"
+        style={[
+          styles.statusMessage,
+          {
+            color: isConnected
+              ? theme.colors.onSurfaceVariant
+              : theme.colors.error,
+          },
+        ]}
+      >
+        {STATUS_MESSAGES[variant]}
+      </Text>
 
-      {variant === "empty" && (
-        <>
-          <Text variant="headlineSmall" style={styles.headline}>
-            무엇이든 물어보세요
-          </Text>
-          <Text
-            variant="bodyMedium"
-            style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
-          >
-            아래의 추천 질문을 선택하거나{"\n"}직접 메시지를 입력하세요
-          </Text>
-          <View style={styles.suggestionGrid}>
-            {SUGGESTIONS.map((s) => (
-              <Chip
-                key={s}
-                mode="outlined"
-                onPress={() => onSuggestion(s)}
-                disabled={isSending}
+      {isConnected && (
+        <View style={styles.grid}>
+          {SUGGESTIONS.map((s) => (
+            <TouchableRipple
+              key={s.label}
+              onPress={() => onSuggestion(s.text)}
+              disabled={isSending}
+              style={styles.cardRipple}
+            >
+              <Surface
                 style={[
-                  styles.suggestionChip,
-                  { borderColor: theme.colors.outline },
+                  styles.card,
+                  SHADOWS.sm,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.outlineVariant,
+                  },
                 ]}
-                textStyle={[
-                  styles.suggestionChipText,
-                  { color: theme.colors.onSurface },
-                ]}
+                elevation={1}
               >
-                {s}
-              </Chip>
-            ))}
-          </View>
-        </>
+                <Icon
+                  source={s.icon}
+                  size={24}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  variant="labelLarge"
+                  style={[
+                    styles.cardLabel,
+                    { color: theme.colors.onSurface },
+                  ]}
+                >
+                  {s.label}
+                </Text>
+              </Surface>
+            </TouchableRipple>
+          ))}
+        </View>
+      )}
+
+      {showReconnect && (
+        <Button
+          mode="contained"
+          onPress={onReconnect}
+          style={styles.reconnectButton}
+          icon="refresh"
+          loading={variant === "connecting"}
+        >
+          {variant === "connecting" ? "연결 중..." : "재연결"}
+        </Button>
       )}
     </View>
   );
 }
+
+const CARD_WIDTH: DimensionValue = "45%";
 
 const styles = StyleSheet.create({
   container: {
@@ -135,6 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.xl,
   },
   iconWrap: {
     width: 72,
@@ -143,19 +159,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  disconnectedTitle: { marginTop: SPACING.lg },
-  subtitle: { marginTop: SPACING.xs, textAlign: "center" },
-  connectingText: { marginTop: SPACING.md },
-  reconnectButton: { marginTop: SPACING.md },
-  headline: { marginTop: SPACING.lg, fontWeight: "600" },
-  suggestionGrid: {
+  headline: {
+    marginTop: SPACING.lg,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  statusMessage: {
+    marginTop: SPACING.sm,
+    textAlign: "center",
+  },
+  grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
     gap: SPACING.sm,
     marginTop: SPACING.xl,
-    paddingHorizontal: SPACING.md,
+    width: "100%",
   },
-  suggestionChip: { borderRadius: BORDER_RADIUS.xl },
-  suggestionChipText: { fontSize: 13 },
+  cardRipple: {
+    width: CARD_WIDTH,
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  card: {
+    width: "100%",
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    gap: SPACING.xs,
+  },
+  cardLabel: {
+    marginTop: SPACING.xs,
+  },
+  reconnectButton: {
+    marginTop: SPACING.xl,
+  },
 });
