@@ -12,7 +12,6 @@ import {
   Text,
   Button,
   useTheme,
-  Divider,
   Chip,
   IconButton,
   TouchableRipple,
@@ -22,10 +21,7 @@ import { useApiClient } from "../hooks/use-api-client";
 import { useProvidersStore } from "../store/providers";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
-
-function ItemSeparator(): React.ReactElement {
-  return <Divider />;
-}
+import { ItemSeparator } from "./item-separator";
 
 interface ProviderSheetProps {
   visible: boolean;

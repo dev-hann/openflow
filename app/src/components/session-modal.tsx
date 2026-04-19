@@ -1,16 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { View, StyleSheet, FlatList, Alert, Modal, ActivityIndicator } from "react-native";
-import { Text, List, Button, Appbar, useTheme, Divider, TouchableRipple, Icon } from "react-native-paper";
+import { Text, List, Button, Appbar, useTheme, TouchableRipple, Icon } from "react-native-paper";
 import { useSessionsStore } from "../store/sessions";
 import { useApiClient } from "../hooks/use-api-client";
 import type { SessionInfo } from "../types/protocol";
 import { SPACING } from "../constants/theme";
 import { formatRelativeTime } from "../utils/format-time";
 import { buildSessionInfo } from "../utils/session";
-
-function ItemSeparator(): React.ReactElement {
-  return <Divider />;
-}
+import { ItemSeparator } from "./item-separator";
 
 interface SessionModalProps {
   visible: boolean;

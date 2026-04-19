@@ -2,7 +2,7 @@ import React, { useState, useCallback, useLayoutEffect, useRef, useMemo } from "
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform, FlatList } from "react-native";
 import { Text, Button, useTheme, Icon, Chip, IconButton } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
-import { MessageList } from "../components/MessageBubble";
+import { MessageList } from "../components/message-list";
 import { InputBar } from "../components/InputBar";
 import { KeyboardSafeView } from "../components/KeyboardSafeView";
 import { SessionModal } from "../components/session-modal";
