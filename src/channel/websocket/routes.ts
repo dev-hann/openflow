@@ -171,6 +171,36 @@ export function createRoutes(deps: RoutesDeps) {
     sendJson(res, 200, { status: "ok" });
   }
 
+  type RouteHandler = (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => Promise<void> | void;
+
+  const routes: Array<{ match: (path: string, method: string) => boolean; handler: RouteHandler }> = [
+    { match: (p, m) => p === "/api/auth/pair/init" && m === "POST", handler: (_req, res, ctx) => handlePairInit(_req, res, ctx.clientIp) },
+    { match: (p, m) => p === "/api/auth/pair/verify" && m === "POST", handler: (_req, res, ctx) => handlePairVerify(_req, res, ctx.clientIp) },
+    { match: (p, m) => p === "/api/auth/refresh" && m === "POST", handler: (_req, res, ctx) => handleRefresh(_req, res, ctx.clientIp) },
+    { match: (p, m) => p === "/api/auth/unpair" && m === "DELETE", handler: (req, res) => handleUnpair(req, res) },
+    { match: (p, m) => p === "/api/sessions" && m === "GET", handler: (req, res) => handleSessionsList(req, res) },
+    { match: (p, m) => p === "/api/sessions" && m === "POST", handler: (req, res) => handleSessionCreate(req, res) },
+    { match: (p, m) => p.startsWith("/api/sessions/") && m === "DELETE", handler: (req, res, ctx) => handleSessionDelete(req, res, ctx.path) },
+    { match: (p, m) => p === "/api/models" && m === "GET", handler: (req, res) => handleModelsList(req, res) },
+    { match: (p, m) => p === "/api/models/current" && m === "PUT", handler: (req, res) => handleModelUpdate(req, res) },
+    { match: (p, m) => p === "/api/status" && m === "GET", handler: (req, res) => handleStatus(req, res) },
+  ];
+
+  async function dispatchRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    const path = url.pathname;
+    const method = req.method ?? "GET";
+    const clientIp = req.socket.remoteAddress ?? "unknown";
+
+    for (const route of routes) {
+      if (route.match(path, method)) {
+        await route.handler(req, res, { path, clientIp });
+        return;
+      }
+    }
+    sendJson(res, 404, { error: "not_found" });
+  }
+
   return async function handleRequest(
     req: IncomingMessage,
     res: ServerResponse,
@@ -178,69 +208,15 @@ export function createRoutes(deps: RoutesDeps) {
     setCorsHeaders(res, corsEnabled);
     if (handleOptions(req, res, corsEnabled)) return;
 
-    const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
-    const path = url.pathname;
-    const method = req.method ?? "GET";
-    const clientIp = req.socket.remoteAddress ?? "unknown";
-
     try {
-      if (path === "/api/auth/pair/init" && method === "POST") {
-        await handlePairInit(req, res, clientIp);
-        return;
-      }
-
-      if (path === "/api/auth/pair/verify" && method === "POST") {
-        await handlePairVerify(req, res, clientIp);
-        return;
-      }
-
-      if (path === "/api/auth/refresh" && method === "POST") {
-        await handleRefresh(req, res, clientIp);
-        return;
-      }
-
-      if (path === "/api/auth/unpair" && method === "DELETE") {
-        handleUnpair(req, res);
-        return;
-      }
-
-      if (path === "/api/sessions" && method === "GET") {
-        handleSessionsList(req, res);
-        return;
-      }
-
-      if (path === "/api/sessions" && method === "POST") {
-        await handleSessionCreate(req, res);
-        return;
-      }
-
-      if (path.startsWith("/api/sessions/") && method === "DELETE") {
-        handleSessionDelete(req, res, path);
-        return;
-      }
-
-      if (path === "/api/models" && method === "GET") {
-        handleModelsList(req, res);
-        return;
-      }
-
-      if (path === "/api/models/current" && method === "PUT") {
-        await handleModelUpdate(req, res);
-        return;
-      }
-
-      if (path === "/api/status" && method === "GET") {
-        handleStatus(req, res);
-        return;
-      }
-
-      sendJson(res, 404, { error: "not_found" });
+      await dispatchRequest(req, res);
     } catch (err) {
       if (err instanceof Error && err.message === "request body too large") {
         sendJson(res, 413, { error: "payload_too_large" });
         return;
       }
-      log.error({ err, path, method }, "route handler error");
+      const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+      log.error({ err, path: url.pathname, method: req.method }, "route handler error");
       sendJson(res, 500, { error: "internal_error" });
     }
   };
