@@ -164,7 +164,7 @@ export async function detectZaiEndpoint(
           stream: false,
         }),
         signal: AbortSignal.timeout(5_000),
-      } as never);
+      });
       if (resp.ok) {
         return { baseUrl: c.baseUrl, model: c.model, note: `Detected: ${c.label}` };
       }
@@ -189,7 +189,7 @@ export async function fetchModels(
       method: "GET",
       headers,
       signal: AbortSignal.timeout(10_000),
-    } as never);
+    });
     if (!resp.ok) return [];
     const body = (await resp.json()) as Record<string, unknown>;
     if (Array.isArray(body.data)) {
@@ -238,7 +238,7 @@ export async function verifyLlmEndpoint(
         max_tokens: 16,
       }),
       signal: AbortSignal.timeout(15_000),
-    } as never);
+    });
     if (resp.ok) {
       return { ok: true };
     }
