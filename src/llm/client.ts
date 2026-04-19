@@ -109,6 +109,65 @@ function createRequestContext(config: LlmConfig): RequestContext {
   return { allKeys, config, getActiveConfig, rotateKey, tryFallback };
 }
 
+type RetryAction = "retry" | "fallback";
+
+async function handleHttpError(
+  ctx: RequestContext,
+  status: number,
+  text: string,
+  headers: Record<string, string>,
+  attempt: number,
+): Promise<RetryAction> {
+  if (isAuthError(status) && ctx.allKeys.length > 1 && ctx.rotateKey()) {
+    headers.Authorization = `Bearer ${ctx.getActiveConfig().apiKey}`;
+    return "retry";
+  }
+  if (isAuthError(status) && ctx.tryFallback()) return "fallback";
+  if (status >= 500 && attempt < RETRY_DELAYS.length) {
+    log.warn({ status, attempt }, "server error, retrying");
+    await sleep(RETRY_DELAYS[attempt]!);
+    return "retry";
+  }
+  const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
+  throw new OpenFlowError(`LLM API error ${status}: ${safeText}`, "LLM_REQUEST_FAILED");
+}
+
+async function handleFetchError(
+  ctx: RequestContext,
+  err: unknown,
+  attempt: number,
+): Promise<RetryAction> {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("abort")) {
+    throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
+  }
+  if (attempt < RETRY_DELAYS.length) {
+    log.warn({ err: msg, attempt }, "request failed, retrying");
+    await sleep(RETRY_DELAYS[attempt]!);
+    return "retry";
+  }
+  if (ctx.tryFallback()) return "fallback";
+  throw new OpenFlowError(`LLM request failed: ${msg}`, "LLM_REQUEST_FAILED", err);
+}
+
+async function parseLlmResponse(
+  response: Response,
+  active: ActiveConfig,
+  startedAt: number,
+  onToken?: (token: string) => void,
+): Promise<unknown> {
+  if (onToken && response.body) {
+    const result = await parseSseStream(response.body, onToken);
+    const duration = Date.now() - startedAt;
+    log.info({ model: active.model, duration, streamed: true }, "LLM request completed");
+    return result;
+  }
+  const json = (await response.json()) as unknown;
+  const duration = Date.now() - startedAt;
+  log.info({ model: active.model, duration, streamed: false }, "LLM request completed");
+  return json;
+}
+
 async function sendRequest(
   ctx: RequestContext,
   body: Record<string, unknown>,
@@ -138,9 +197,7 @@ async function sendRequest(
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
-    if (signal) {
-      signal.addEventListener("abort", () => controller.abort());
-    }
+    if (signal) signal.addEventListener("abort", () => controller.abort());
 
     try {
       const response = await fetch(url, {
@@ -152,59 +209,23 @@ async function sendRequest(
 
       if (!response.ok) {
         const text = await response.text();
-        if (isAuthError(response.status) && ctx.allKeys.length > 1 && ctx.rotateKey()) {
-          headers.Authorization = `Bearer ${ctx.getActiveConfig().apiKey}`;
-          continue;
-        }
-        if (isAuthError(response.status) && ctx.tryFallback()) {
-          return sendRequest(ctx, body, onToken, signal);
-        }
-        if (response.status >= 500 && attempt < RETRY_DELAYS.length) {
-          log.warn({ status: response.status, attempt }, "server error, retrying");
-          await sleep(RETRY_DELAYS[attempt]!);
-          continue;
-        }
-        const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
-        throw new OpenFlowError(
-          `LLM API error ${response.status}: ${safeText}`,
-          "LLM_REQUEST_FAILED",
-        );
-      }
-
-      if (onToken && response.body) {
-        const result = await parseSseStream(response.body, onToken);
-        const duration = Date.now() - startedAt;
-        log.info({ model: active.model, duration, streamed: true }, "LLM request completed");
-        return result;
-      }
-
-      const json = (await response.json()) as unknown;
-      const duration = Date.now() - startedAt;
-      log.info({ model: active.model, duration, streamed: false }, "LLM request completed");
-      return json;
-    } catch (err) {
-      if (err instanceof OpenFlowError) throw err;
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("abort")) {
-        throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
-      }
-      if (attempt < RETRY_DELAYS.length) {
-        log.warn({ err: msg, attempt }, "request failed, retrying");
-        await sleep(RETRY_DELAYS[attempt]!);
+        const action = await handleHttpError(ctx, response.status, text, headers, attempt);
+        if (action === "fallback") return sendRequest(ctx, body, onToken, signal);
         continue;
       }
-      if (ctx.tryFallback()) {
-        return sendRequest(ctx, body, onToken, signal);
-      }
-      throw new OpenFlowError(`LLM request failed: ${msg}`, "LLM_REQUEST_FAILED", err);
+
+      return parseLlmResponse(response, active, startedAt, onToken);
+    } catch (err) {
+      if (err instanceof OpenFlowError) throw err;
+      const action = await handleFetchError(ctx, err, attempt);
+      if (action === "fallback") return sendRequest(ctx, body, onToken, signal);
+      continue;
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  if (ctx.tryFallback()) {
-    return sendRequest(ctx, body, onToken, signal);
-  }
+  if (ctx.tryFallback()) return sendRequest(ctx, body, onToken, signal);
   throw new OpenFlowError("Max retries exceeded", "LLM_REQUEST_FAILED");
 }
 
