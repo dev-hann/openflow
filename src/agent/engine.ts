@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
-import type { LlmClient, ChatMessage, ToolCall } from "../llm/index.js";
+import type { LlmClient, ChatMessage, ToolCall, LlmResponse, ToolDefinition } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { ToolExecutor, ToolResult } from "../tools/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
@@ -81,9 +81,79 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
   function resolveSystemPrompt(): string {
     if (config.systemPrompt) return config.systemPrompt;
-
     const files = workspace.loadAll();
     return buildSystemPrompt(files, { workspace: workspace.getWorkspaceDir() }, skills);
+  }
+
+  function saveUserMessage(sessionId: string, content: string): OpenFlowError | null {
+    try {
+      memory.addMessage({ sessionId, role: "user", content });
+      return null;
+    } catch (err) {
+      const error = err instanceof OpenFlowError
+        ? err
+        : new OpenFlowError("Failed to save user message", "DB_ERROR", err);
+      log.error({ sessionId, err: error.message }, "failed to save user message");
+      return error;
+    }
+  }
+
+  async function buildConversationContext(sessionId: string, systemPromptOverride?: string): Promise<ChatMessage[]> {
+    const systemPrompt = systemPromptOverride || resolveSystemPrompt();
+    try {
+      const rawContext = memory.buildContext(sessionId, 50);
+      const contextMessages = await compaction.compactIfNeeded(sessionId, rawContext);
+      return [{ role: "system", content: systemPrompt }, ...contextMessages];
+    } catch (err) {
+      const error = err instanceof OpenFlowError
+        ? err
+        : new OpenFlowError("Failed to build context", "DB_ERROR", err);
+      log.error({ sessionId, err: error.message }, "failed to build context");
+      throw error;
+    }
+  }
+
+  async function callLlmOnce(
+    messages: ChatMessage[],
+    toolDefinitions: ToolDefinition[],
+    onToken?: (token: string) => void,
+    signal?: AbortSignal,
+    round?: number,
+  ): Promise<LlmResponse> {
+    try {
+      return await llm.chat({
+        messages,
+        toolDefinitions: toolDefinitions.length > 0 ? toolDefinitions : undefined,
+        onToken: round === 0 ? onToken : undefined,
+        signal,
+      });
+    } catch (err) {
+      const error = err instanceof OpenFlowError
+        ? err
+        : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
+      log.error({ round, err: error.message, code: error.code }, "LLM request failed");
+      throw error;
+    }
+  }
+
+  async function executeWithConfirmation(
+    toolCallId: string,
+    toolName: string,
+    parsedArgs: Record<string, unknown>,
+    chatId: number | string | undefined,
+  ): Promise<ToolResult> {
+    if (tools.needsConfirmation(toolName) && confirmationHandler && chatId !== undefined) {
+      const confirmation = await confirmationHandler.requestConfirmation({
+        chatId,
+        toolName,
+        toolArgs: parsedArgs,
+        timeoutMs: confirmationTimeout ?? 60_000,
+      });
+      if (!confirmation.approved) {
+        return { toolCallId, content: `사용자가 "${toolName}" 실행을 거부했습니다.`, isError: true };
+      }
+    }
+    return tools.execute({ id: toolCallId, name: toolName, arguments: parsedArgs });
   }
 
   async function processToolCall(
@@ -107,27 +177,9 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     const toolName = toolCall.function.name;
     log.info({ sessionId, toolName, round }, "executing tool");
 
-    let result: ToolResult;
-    if (tools.needsConfirmation(toolName) && confirmationHandler && chatId !== undefined) {
-      const confirmation = await confirmationHandler.requestConfirmation({
-        chatId,
-        toolName,
-        toolArgs: parsedArgs,
-        timeoutMs: confirmationTimeout ?? 60_000,
-      });
-
-      if (!confirmation.approved) {
-        log.info({ sessionId, toolName, round }, "tool execution denied by user");
-        result = {
-          toolCallId: toolCall.id,
-          content: `사용자가 "${toolName}" 실행을 거부했습니다.`,
-          isError: true,
-        };
-      } else {
-        result = await tools.execute({ id: toolCall.id, name: toolName, arguments: parsedArgs });
-      }
-    } else {
-      result = await tools.execute({ id: toolCall.id, name: toolName, arguments: parsedArgs });
+    const result = await executeWithConfirmation(toolCall.id, toolName, parsedArgs, chatId);
+    if (result.isError && tools.needsConfirmation(toolName)) {
+      log.info({ sessionId, toolName, round }, "tool execution denied by user");
     }
 
     messages.push({ role: "tool", content: result.content, tool_call_id: toolCall.id });
@@ -146,34 +198,15 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     const startedAt = Date.now();
     log.info({ sessionId, messageLength: userMessage.length }, "handling message");
 
+    const saveErr = saveUserMessage(sessionId, userMessage);
+    if (saveErr) return { type: "error", error: saveErr };
+
+    let messages: ChatMessage[];
     try {
-      memory.addMessage({ sessionId, role: "user", content: userMessage });
+      messages = await buildConversationContext(sessionId, systemPromptOverride);
     } catch (err) {
-      const error = err instanceof OpenFlowError
-        ? err
-        : new OpenFlowError("Failed to save user message", "DB_ERROR", err);
-      log.error({ sessionId, err: error.message }, "failed to save user message");
-      return { type: "error", error };
+      return { type: "error", error: err as OpenFlowError };
     }
-
-    const systemPrompt = systemPromptOverride || resolveSystemPrompt();
-
-    let contextMessages: ChatMessage[];
-    try {
-      const rawContext = memory.buildContext(sessionId, 50);
-      contextMessages = await compaction.compactIfNeeded(sessionId, rawContext);
-    } catch (err) {
-      const error = err instanceof OpenFlowError
-        ? err
-        : new OpenFlowError("Failed to build context", "DB_ERROR", err);
-      log.error({ sessionId, err: error.message }, "failed to build context");
-      return { type: "error", error };
-    }
-
-    const messages: ChatMessage[] = [
-      { role: "system", content: systemPrompt },
-      ...contextMessages,
-    ];
 
     const toolDefinitions = tools.getDefinitions();
 
@@ -184,18 +217,9 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
       let response;
       try {
-        response = await llm.chat({
-          messages,
-          toolDefinitions: toolDefinitions.length > 0 ? toolDefinitions : undefined,
-          onToken: round === 0 ? onToken : undefined,
-          signal,
-        });
+        response = await callLlmOnce(messages, toolDefinitions, onToken, signal, round);
       } catch (err) {
-        const error = err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
-        log.error({ sessionId, round, err: error.message, code: error.code }, "LLM request failed");
-        return { type: "error", error };
+        return { type: "error", error: err as OpenFlowError };
       }
 
       if (response.type === "text") {
@@ -205,20 +229,16 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         return { type: "text", content: response.content };
       }
 
-      const toolCalls = response.toolCalls;
-      messages.push({ role: "assistant", content: null, tool_calls: toolCalls });
-
-      persistMessage(sessionId, { role: "assistant", content: "", toolCalls });
-
-      for (const toolCall of toolCalls) {
+      messages.push({ role: "assistant", content: null, tool_calls: response.toolCalls });
+      persistMessage(sessionId, { role: "assistant", content: "", toolCalls: response.toolCalls });
+      for (const toolCall of response.toolCalls) {
         await processToolCall(toolCall, sessionId, chatId, round, messages);
       }
     }
 
     const overflowMsg = "Maximum tool call rounds reached. Please continue the conversation.";
     persistMessage(sessionId, { role: "assistant", content: overflowMsg });
-    const duration = Date.now() - startedAt;
-    log.info({ sessionId, duration, rounds: config.maxToolRounds }, "message handled (max rounds reached)");
+    log.info({ sessionId, duration: Date.now() - startedAt, rounds: config.maxToolRounds }, "message handled (max rounds reached)");
     return { type: "text", content: overflowMsg };
   }
 
