@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -114,6 +114,56 @@ export function SessionModal({
     ],
   );
 
+  const renderSessionItem = useCallback(
+    ({ item }: { item: SessionInfo }) => {
+      const isActive = item.id === activeSessionId;
+      return (
+        <TouchableRipple
+          onPress={() => {
+            if (!isActive) onSwitchSession(item.id);
+            onClose();
+          }}
+          style={isActive ? themedStyles.activeBg : undefined}
+        >
+          <List.Item
+            title={item.title}
+            titleStyle={
+              isActive ? styles.activeItemTitle : styles.inactiveItemTitle
+            }
+            description={`${formatRelativeTime(item.updatedAt)} · ${item.messageCount}개`}
+            left={(props) => (
+              <List.Icon
+                {...props}
+                icon={isActive ? "chat" : "chat-outline"}
+                color={
+                  isActive
+                    ? theme.colors.primary
+                    : theme.colors.onSurfaceVariant
+                }
+              />
+            )}
+            right={() => (
+              <View style={styles.deleteButtonContainer}>
+                <TouchableRipple
+                  onPress={() => handleDelete(item)}
+                  style={styles.deleteButton}
+                  accessibilityLabel={`${item.title} 세션 삭제`}
+                >
+                  <Icon
+                    source="delete-outline"
+                    size={18}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                </TouchableRipple>
+              </View>
+            )}
+          />
+        </TouchableRipple>
+      );
+    },
+    [activeSessionId, onSwitchSession, onClose, themedStyles.activeBg, theme.colors, handleDelete],
+  );
+
   return (
     <Modal
       visible={visible}
@@ -145,52 +195,7 @@ export function SessionModal({
         <FlatList
           data={sessions}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const isActive = item.id === activeSessionId;
-            return (
-              <TouchableRipple
-                onPress={() => {
-                  if (!isActive) onSwitchSession(item.id);
-                  onClose();
-                }}
-                style={isActive ? themedStyles.activeBg : undefined}
-              >
-                <List.Item
-                  title={item.title}
-                  titleStyle={
-                    isActive ? styles.activeItemTitle : styles.inactiveItemTitle
-                  }
-                  description={`${formatRelativeTime(item.updatedAt)} · ${item.messageCount}개`}
-                  left={(props) => (
-                    <List.Icon
-                      {...props}
-                      icon={isActive ? "chat" : "chat-outline"}
-                      color={
-                        isActive
-                          ? theme.colors.primary
-                          : theme.colors.onSurfaceVariant
-                      }
-                    />
-                  )}
-                  right={() => (
-                    <View style={styles.deleteButtonContainer}>
-                      <TouchableRipple
-                        onPress={() => handleDelete(item)}
-                        style={styles.deleteButton}
-                        accessibilityLabel={`${item.title} 세션 삭제`}
-                      >
-                        <Icon
-                          source="delete-outline"
-                          size={18}
-                          color={theme.colors.onSurfaceVariant}
-                        />
-                      </TouchableRipple>
-                    </View>
-                  )}
-                />
-              </TouchableRipple>
-            );
-          }}
+          renderItem={renderSessionItem}
           ItemSeparatorComponent={ItemSeparator}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={

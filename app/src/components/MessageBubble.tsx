@@ -35,6 +35,17 @@ export const MessageBubble = React.memo(function MessageBubble({
   const isUser = message.role === "user";
   const accessibilityContent = truncateForAccessibility(message.content);
 
+  const codeBlockStyle = useMemo(
+    () => ({
+      backgroundColor: theme.colors.surfaceVariant,
+      color: theme.colors.onSurface,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 13,
+    }),
+    [theme.colors],
+  );
+
   const mdStyles = useMemo(
     () => ({
       body: { color: theme.colors.onSurface, fontSize: 15, lineHeight: 22 },
@@ -68,20 +79,8 @@ export const MessageBubble = React.memo(function MessageBubble({
         paddingHorizontal: 5,
         paddingVertical: 1,
       },
-      code_block: {
-        backgroundColor: theme.colors.surfaceVariant,
-        color: theme.colors.onSurface,
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 13,
-      },
-      fence: {
-        backgroundColor: theme.colors.surfaceVariant,
-        color: theme.colors.onSurface,
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 13,
-      },
+      code_block: codeBlockStyle,
+      fence: codeBlockStyle,
       bullet_list: { marginVertical: 2 },
       ordered_list: { marginVertical: 2 },
       blockquote: {
@@ -94,7 +93,7 @@ export const MessageBubble = React.memo(function MessageBubble({
       strong: { fontWeight: "bold" as const },
       em: { fontStyle: "italic" as const },
     }),
-    [theme.colors],
+    [theme.colors, codeBlockStyle],
   );
 
   const textStyles = useMemo(

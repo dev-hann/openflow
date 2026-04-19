@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { Text, Button, Chip, useTheme } from "react-native-paper";
 import { SPACING } from "../constants/theme";
@@ -42,6 +42,18 @@ export function VerifySection({
   const isOk = verifyResult?.ok ?? false;
   const colors = isOk ? resultStyles.ok : resultStyles.fail;
 
+  const models = useMemo(
+    () => verifyResult?.ok ? (verifyResult.models ?? []).slice(0, 10) : [],
+    [verifyResult],
+  );
+
+  const modelCount = verifyResult?.ok ? (verifyResult.models?.length ?? 0) : 0;
+
+  const handleModelSelect = useCallback(
+    (m: string) => () => onSelectModel(m),
+    [onSelectModel],
+  );
+
   return (
     <>
       <Button
@@ -58,22 +70,22 @@ export function VerifySection({
         <View style={[styles.verifyResult, { backgroundColor: colors.bg }]}>
           <Text variant="labelLarge" style={{ color: colors.text }}>
             {verifyResult.ok
-              ? `연결 성공 (${verifyResult.models?.length ?? 0}개 모델)`
+              ? `연결 성공 (${modelCount}개 모델)`
               : `연결 실패: ${verifyResult.error}`}
           </Text>
         </View>
       )}
-      {verifyResult?.ok && (verifyResult.models?.length ?? 0) > 0 && (
+      {models.length > 0 && (
         <View style={styles.modelSection}>
           <Text variant="labelLarge" style={styles.modelLabel}>
             기본 모델
           </Text>
           <View style={styles.modelList}>
-            {(verifyResult.models ?? []).slice(0, 10).map((m) => (
+            {models.map((m) => (
               <Chip
                 key={m}
                 selected={m === selectedModel}
-                onPress={() => onSelectModel(m)}
+                onPress={handleModelSelect(m)}
                 style={styles.modelChip}
                 textStyle={styles.modelChipText}
                 compact

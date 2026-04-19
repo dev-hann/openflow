@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { normalizeUrl } from "../utils/normalize-url";
 
+const VERIFY_TIMEOUT_MS = 10_000;
+
 export interface VerifyResult {
   ok: boolean;
   models?: string[];
@@ -17,7 +19,7 @@ export function useProviderVerify(baseUrl: string, apiKey: string) {
 
   useEffect(() => {
     setVerifyResult(null);
-  }, [baseUrl]);
+  }, [baseUrl, apiKey]);
 
   const handleVerify = useCallback(async (): Promise<VerifyOutcome | null> => {
     const trimmedUrl = normalizeUrl(baseUrl);
@@ -28,7 +30,7 @@ export function useProviderVerify(baseUrl: string, apiKey: string) {
       const headers: Record<string, string> = {};
       if (apiKey.trim()) headers.Authorization = `Bearer ${apiKey.trim()}`;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+      const timeoutId = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
       const resp = await fetch(`${trimmedUrl}/models`, {
         headers,
         signal: controller.signal,

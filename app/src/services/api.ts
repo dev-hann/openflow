@@ -53,13 +53,21 @@ export class ApiClient {
         signal: controller.signal,
       });
 
-      const json = (await resp.json()) as Record<string, unknown>;
+      const text = await resp.text();
+      let json: Record<string, unknown> = {};
+      if (text) {
+        try {
+          json = JSON.parse(text) as Record<string, unknown>;
+        } catch {
+          throw new ApiError(resp.status, "INVALID_RESPONSE", "서버 응답을 파싱할 수 없습니다");
+        }
+      }
       if (!resp.ok) {
         const error = (json.error as string) ?? "unknown_error";
         const message = (json.message as string) ?? error;
         throw new ApiError(resp.status, error, message);
       }
-      return json;
+      return text ? json : {};
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
         throw new ApiError(0, "TIMEOUT", "요청 시간이 초과되었습니다");
