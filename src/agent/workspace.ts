@@ -65,7 +65,7 @@ function safeWrite(filePath: string, content: string): void {
     try {
       writeFileSync(filePath, content, "utf-8");
       return;
-    } catch (err) {
+    } catch (err: unknown) {
       if (attempt < delays.length) {
         const end = Date.now() + delays[attempt]!;
         while (Date.now() < end) { /* busy wait */ }
@@ -124,7 +124,7 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
       const combined = existing ? `${existing}\n\n${content}` : content;
       safeWrite(filePath, combined);
       log.info({ file: filePath }, "daily memory written");
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, "failed to write daily memory");
     }
   }
@@ -141,7 +141,7 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
     try {
       safeWrite(join(dir, "PERSONA.md"), content);
       log.info("PERSONA.md written");
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, "failed to write PERSONA.md");
     }
   }
@@ -150,7 +150,7 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
     try {
       safeWrite(join(dir, "USER.md"), content);
       log.info("USER.md written");
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, "failed to write USER.md");
     }
   }
