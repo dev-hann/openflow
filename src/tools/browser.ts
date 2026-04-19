@@ -16,7 +16,6 @@ export interface BrowserConfig {
 }
 
 const SCREENSHOT_DIR = ".browser";
-let browserInstalled = false;
 
 function getBrowsersPath(): string {
   return process.env.PLAYWRIGHT_BROWSERS_PATH ?? join(homedir(), ".cache/ms-playwright");
@@ -32,17 +31,7 @@ function isChromiumInstalled(): boolean {
   }
 }
 
-export function resetBrowserInstalled(): void {
-  browserInstalled = false;
-}
-
-function ensureBrowserInstalled(timeout: number): void {
-  if (browserInstalled) return;
-  if (isChromiumInstalled()) {
-    browserInstalled = true;
-    return;
-  }
-
+function installChromium(timeout: number): void {
   log.info("Chromium not found, auto-installing Playwright browser...");
   try {
     execSync("npx -y playwright install chromium", {
@@ -52,7 +41,6 @@ function ensureBrowserInstalled(timeout: number): void {
       shell: "/bin/bash",
       stdio: "pipe",
     });
-    browserInstalled = true;
     log.info("Playwright Chromium installed successfully");
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string };
@@ -94,8 +82,26 @@ function runPlaywrightScript(script: string, timeout: number): string {
   }
 }
 
-export function createBrowserScreenshotTool(workspace: string, config: BrowserConfig): InternalTool {
-  return {
+export interface BrowserTools {
+  screenshot: InternalTool;
+  execute: InternalTool;
+  resetInstalled(): void;
+}
+
+export function createBrowserTools(workspace: string, config: BrowserConfig): BrowserTools {
+  let installed = false;
+
+  function ensureInstalled(): void {
+    if (installed) return;
+    if (isChromiumInstalled()) {
+      installed = true;
+      return;
+    }
+    installChromium(config.timeout);
+    installed = true;
+  }
+
+  const screenshot: InternalTool = {
     name: "browser_screenshot",
     definition: {
       type: "function",
@@ -120,7 +126,7 @@ export function createBrowserScreenshotTool(workspace: string, config: BrowserCo
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      ensureBrowserInstalled(config.timeout);
+      ensureInstalled();
 
       const url = args.url as string;
       const fullPage = (args.fullPage as boolean) ?? true;
@@ -153,10 +159,8 @@ import { chromium } from 'playwright';
       return `Screenshot saved: ${outputPath}\n${result}`;
     },
   };
-}
 
-export function createBrowserExecuteTool(workspace: string, config: BrowserConfig): InternalTool {
-  return {
+  const execute: InternalTool = {
     name: "browser_execute",
     definition: {
       type: "function",
@@ -185,7 +189,7 @@ export function createBrowserExecuteTool(workspace: string, config: BrowserConfi
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      ensureBrowserInstalled(config.timeout);
+      ensureInstalled();
 
       const script = (args.script as string)
         .replace(/\{WORKSPACE\}/g, JSON.stringify(workspace).slice(1, -1));
@@ -193,6 +197,14 @@ export function createBrowserExecuteTool(workspace: string, config: BrowserConfi
       const result = runPlaywrightScript(script, config.timeout);
       log.info("browser script executed");
       return result;
+    },
+  };
+
+  return {
+    screenshot,
+    execute,
+    resetInstalled(): void {
+      installed = false;
     },
   };
 }

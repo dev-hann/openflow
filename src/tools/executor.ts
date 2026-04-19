@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
-import { createBrowserScreenshotTool, createBrowserExecuteTool } from "./browser.js";
+import { createBrowserTools } from "./browser.js";
 import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 export type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 import { truncate } from "./utils.js";
@@ -105,8 +105,9 @@ export function createToolExecutor(
   if (config.webSearch.enabled) register(webSearchTool);
   if (config.httpRequest.enabled) register(httpClientTool);
   if (config.browser.enabled) {
-    register(createBrowserScreenshotTool(workspace, config.browser));
-    register(createBrowserExecuteTool(workspace, config.browser));
+    const browserTools = createBrowserTools(workspace, config.browser);
+    register(browserTools.screenshot);
+    register(browserTools.execute);
   }
 
   if (sender) {
