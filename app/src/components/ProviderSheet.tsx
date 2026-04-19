@@ -7,6 +7,7 @@ import {
   FlatList,
   useWindowDimensions,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import {
   Text,
@@ -87,7 +88,7 @@ export function ProviderSheet({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.sheetBackdrop}>
+      <Pressable style={styles.sheetBackdrop} onPress={onClose}>
         <View
           style={[
             styles.sheetContainer,
@@ -233,7 +234,7 @@ export function ProviderSheet({
             }
           />
         </View>
-      </View>
+      </Pressable>
     </Modal>
   );
 }

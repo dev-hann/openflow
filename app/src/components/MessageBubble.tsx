@@ -172,6 +172,10 @@ export const MessageBubble = React.memo(function MessageBubble({
                 <Text style={textStyles.userText} selectable>
                   {message.content}
                 </Text>
+              ) : message.isStreaming ? (
+                <Text style={mdStyles.body} selectable>
+                  {message.content}
+                </Text>
               ) : (
                 <Markdown style={mdStyles}>{message.content}</Markdown>
               )}

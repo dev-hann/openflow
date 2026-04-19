@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect, useRef, useMemo } from "react";
+import React, { useState, useCallback, useLayoutEffect, useRef, useMemo, useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator, TouchableOpacity, Platform, FlatList } from "react-native";
 import { Text, Button, useTheme, Icon, Chip, IconButton } from "react-native-paper";
 import { useNavigation } from "@react-navigation/native";
@@ -37,6 +37,8 @@ export function ChatScreen() {
 
   const activeSession = useMemo(() => sessions.find((s) => s.id === activeSessionId), [sessions, activeSessionId]);
   const sessionTitle = activeSession?.title ?? "새 대화";
+
+  useEffect(() => { setScrolledUp(false); }, [activeSessionId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

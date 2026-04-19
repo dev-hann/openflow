@@ -105,7 +105,10 @@ export function useChat() {
 
   const retryLastMessage = useCallback(() => {
     const { messages } = useChatStore.getState();
-    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    let lastUser: typeof messages[number] | undefined;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") { lastUser = messages[i]; break; }
+    }
     if (!lastUser) return;
     removeFailedPair();
     sendMessage(lastUser.content);
