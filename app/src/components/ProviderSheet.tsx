@@ -1,6 +1,23 @@
 import React from "react";
-import { View, StyleSheet, Alert, Modal, FlatList, useWindowDimensions, ActivityIndicator } from "react-native";
-import { Text, Button, useTheme, Divider, Chip, IconButton, TouchableRipple, Icon } from "react-native-paper";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  Modal,
+  FlatList,
+  useWindowDimensions,
+  ActivityIndicator,
+} from "react-native";
+import {
+  Text,
+  Button,
+  useTheme,
+  Divider,
+  Chip,
+  IconButton,
+  TouchableRipple,
+  Icon,
+} from "react-native-paper";
 import { useApiClient } from "../hooks/use-api-client";
 import { useProvidersStore } from "../store/providers";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
@@ -18,31 +35,47 @@ interface ProviderSheetProps {
   onAdd: () => void;
 }
 
-export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: ProviderSheetProps) {
+export function ProviderSheet({
+  visible,
+  onClose,
+  onEdit,
+  onDelete,
+  onAdd,
+}: ProviderSheetProps) {
   const theme = useTheme();
   const sheetHeight = useWindowDimensions().height * 0.65;
   const providers = useProvidersStore((s) => s.providers);
   const activeProviderId = useProvidersStore((s) => s.activeProviderId);
   const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
   const getApi = useApiClient();
+  const switchingIdRef = React.useRef<string | null>(null);
   const [switchingId, setSwitchingId] = React.useState<string | null>(null);
 
-  async function handleSwitch(id: string): Promise<boolean> {
-    if (switchingId) return false;
-    setSwitchingId(id);
-    const client = await getApi();
-    if (!client) { setSwitchingId(null); return false; }
-    try {
-      await client.api.switchProvider(client.token, id);
-      setActiveProviderId(id);
-      return true;
-    } catch {
-      Alert.alert("오류", "Provider 전환에 실패했습니다.");
-      return false;
-    } finally {
-      setSwitchingId(null);
-    }
-  }
+  const handleSwitch = React.useCallback(
+    async (id: string): Promise<boolean> => {
+      if (switchingIdRef.current) return false;
+      switchingIdRef.current = id;
+      setSwitchingId(id);
+      const client = await getApi();
+      if (!client) {
+        switchingIdRef.current = null;
+        setSwitchingId(null);
+        return false;
+      }
+      try {
+        await client.api.switchProvider(client.token, id);
+        setActiveProviderId(id);
+        return true;
+      } catch {
+        Alert.alert("오류", "Provider 전환에 실패했습니다.");
+        return false;
+      } finally {
+        switchingIdRef.current = null;
+        setSwitchingId(null);
+      }
+    },
+    [getApi, setActiveProviderId],
+  );
 
   function handleDelete(p: ProviderInfo): void {
     Alert.alert("삭제", `"${p.name}" 삭제하시겠습니까?`, [
@@ -52,13 +85,32 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.sheetBackdrop}>
-        <View style={[styles.sheetContainer, { maxHeight: sheetHeight, backgroundColor: theme.colors.surface }]}>
-          <View style={[styles.sheetHandle, { backgroundColor: theme.colors.outline }]} />
+        <View
+          style={[
+            styles.sheetContainer,
+            { maxHeight: sheetHeight, backgroundColor: theme.colors.surface },
+          ]}
+        >
+          <View
+            style={[
+              styles.sheetHandle,
+              { backgroundColor: theme.colors.outline },
+            ]}
+          />
           <View style={styles.sheetHeader}>
-            <Text variant="titleMedium" style={styles.sheetTitle}>Provider 선택</Text>
-            <Button mode="text" onPress={onAdd} icon="plus" compact>추가</Button>
+            <Text variant="titleMedium" style={styles.sheetTitle}>
+              Provider 선택
+            </Text>
+            <Button mode="text" onPress={onAdd} icon="plus" compact>
+              추가
+            </Button>
           </View>
           <FlatList
             data={providers}
@@ -67,25 +119,87 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
               const isActive = item.id === activeProviderId;
               return (
                 <TouchableRipple
-                  onPress={async () => { const ok = await handleSwitch(item.id); if (ok) onClose(); }}
-                  style={isActive ? { backgroundColor: theme.colors.primaryContainer } : undefined}
+                  onPress={async () => {
+                    const ok = await handleSwitch(item.id);
+                    if (ok) onClose();
+                  }}
+                  style={
+                    isActive
+                      ? { backgroundColor: theme.colors.primaryContainer }
+                      : undefined
+                  }
                 >
                   <View style={styles.sheetItem}>
-                    <View style={[styles.sheetItemIcon, { backgroundColor: isActive ? theme.colors.primary : theme.colors.surfaceVariant }]}>
-                      <Icon source="cloud-outline" size={18} color={isActive ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} />
+                    <View
+                      style={[
+                        styles.sheetItemIcon,
+                        {
+                          backgroundColor: isActive
+                            ? theme.colors.primary
+                            : theme.colors.surfaceVariant,
+                        },
+                      ]}
+                    >
+                      <Icon
+                        source="cloud-outline"
+                        size={18}
+                        color={
+                          isActive
+                            ? theme.colors.onPrimary
+                            : theme.colors.onSurfaceVariant
+                        }
+                      />
                     </View>
                     <View style={styles.sheetItemInfo}>
-                      <Text variant="bodyLarge" style={isActive ? styles.sheetItemNameActive : styles.sheetItemName}>
+                      <Text
+                        variant="bodyLarge"
+                        style={
+                          isActive
+                            ? styles.sheetItemNameActive
+                            : styles.sheetItemName
+                        }
+                      >
                         {item.name}
                       </Text>
-                      <Text variant="bodySmall" style={[styles.sheetItemModel, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
+                      <Text
+                        variant="bodySmall"
+                        style={[
+                          styles.sheetItemModel,
+                          { color: theme.colors.onSurfaceVariant },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {item.model}
                       </Text>
                     </View>
-                    {switchingId === item.id && <ActivityIndicator size="small" color={theme.colors.primary} style={styles.switchLoader} />}
-                    {isActive && !switchingId && <Chip compact selected textStyle={styles.activeChipText}>활성</Chip>}
-                    <IconButton icon="pencil-outline" size={16} onPress={() => { onEdit(item); onClose(); }} accessibilityLabel={`${item.name} 편집`} />
-                    <IconButton icon="delete-outline" size={16} iconColor={theme.colors.error} onPress={() => handleDelete(item)} accessibilityLabel={`${item.name} 삭제`} />
+                    {switchingId === item.id && (
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.colors.primary}
+                        style={styles.switchLoader}
+                      />
+                    )}
+                    {isActive && !switchingId && (
+                      <Chip compact selected textStyle={styles.activeChipText}>
+                        활성
+                      </Chip>
+                    )}
+                    <IconButton
+                      icon="pencil-outline"
+                      size={16}
+                      onPress={() => {
+                        onEdit(item);
+                        onClose();
+                      }}
+                      accessibilityLabel={`${item.name} 편집`}
+                    />
+                    <IconButton
+                      icon="delete-outline"
+                      size={16}
+                      iconColor={theme.colors.error}
+                      onPress={() => handleDelete(item)}
+                      accessibilityLabel={`${item.name} 삭제`}
+                    />
                   </View>
                 </TouchableRipple>
               );
@@ -94,11 +208,29 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Icon source="cloud-off-outline" size={40} color={theme.colors.onSurfaceVariant} />
-                <Text variant="bodyMedium" style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>
+                <Icon
+                  source="cloud-off-outline"
+                  size={40}
+                  color={theme.colors.onSurfaceVariant}
+                />
+                <Text
+                  variant="bodyMedium"
+                  style={[
+                    styles.emptyText,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
+                >
                   Provider가 없습니다
                 </Text>
-                <Button mode="outlined" onPress={() => { onAdd(); onClose(); }} icon="plus" style={styles.emptyAddButton}>
+                <Button
+                  mode="outlined"
+                  onPress={() => {
+                    onAdd();
+                    onClose();
+                  }}
+                  icon="plus"
+                  style={styles.emptyAddButton}
+                >
                   추가하기
                 </Button>
               </View>
@@ -111,12 +243,44 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
 }
 
 const styles = StyleSheet.create({
-  sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.4)" },
-  sheetContainer: { borderTopLeftRadius: BORDER_RADIUS.xxl, borderTopRightRadius: BORDER_RADIUS.xxl, paddingBottom: 20 },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginTop: SPACING.sm, marginBottom: SPACING.xs },
-  sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
-  sheetItem: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
-  sheetItemIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
+  sheetBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  sheetContainer: {
+    borderTopLeftRadius: BORDER_RADIUS.xxl,
+    borderTopRightRadius: BORDER_RADIUS.xxl,
+    paddingBottom: 20,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  sheetItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  sheetItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   sheetTitle: { fontWeight: "600" },
   sheetItemInfo: { flex: 1, marginLeft: SPACING.sm },
   sheetItemNameActive: { fontWeight: "600" },
