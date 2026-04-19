@@ -17,6 +17,7 @@ interface ChatState {
   appendToLastMessage: (content: string) => void;
   finalizeLastMessage: (content: string) => void;
   markLastMessageFailed: () => void;
+  removeFailedPair: () => void;
   clearMessages: () => void;
   setSending: (sending: boolean) => void;
 }
@@ -65,6 +66,18 @@ export const useChatStore = create<ChatState>((set) => ({
       }),
       isSending: false,
     })),
+
+  removeFailedPair: () =>
+    set((state) => {
+      const msgs = state.messages;
+      const last = msgs[msgs.length - 1];
+      if (last?.role !== "assistant" || !last.isFailed) return state;
+      const prev = msgs[msgs.length - 2];
+      if (prev?.role === "user") {
+        return { messages: msgs.slice(0, -2) };
+      }
+      return { messages: msgs.slice(0, -1) };
+    }),
 
   clearMessages: () => set({ messages: [] }),
   setSending: (sending) => set({ isSending: sending }),

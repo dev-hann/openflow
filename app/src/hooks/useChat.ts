@@ -7,6 +7,8 @@ import { buildSessionInfo } from "../utils/session";
 
 const SEND_TIMEOUT_MS = 60_000;
 
+let messageSeq = 0;
+
 export function useChat() {
   const sendingRef = useRef(false);
   const sendTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -16,6 +18,7 @@ export function useChat() {
   const setSending = useChatStore((s) => s.setSending);
   const clearMessages = useChatStore((s) => s.clearMessages);
   const markLastMessageFailed = useChatStore((s) => s.markLastMessageFailed);
+  const removeFailedPair = useChatStore((s) => s.removeFailedPair);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const addSession = useSessionsStore((s) => s.addSession);
@@ -47,14 +50,14 @@ export function useChat() {
 
       const now = Date.now();
       addMessage({
-        id: `user-${now}`,
+        id: `user-${++messageSeq}`,
         role: "user",
         content: content.trim(),
         timestamp: now,
       });
 
       addMessage({
-        id: `assistant-${now}`,
+        id: `assistant-${++messageSeq}`,
         role: "assistant",
         content: "",
         isStreaming: true,
@@ -101,5 +104,13 @@ export function useChat() {
     [clearMessages, setActiveSessionId, send],
   );
 
-  return { sendMessage, switchSession, reconnect: wsReconnect };
+  const retryLastMessage = useCallback(() => {
+    const { messages } = useChatStore.getState();
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    removeFailedPair();
+    sendMessage(lastUser.content);
+  }, [removeFailedPair, sendMessage]);
+
+  return { sendMessage, switchSession, reconnect: wsReconnect, retryLastMessage };
 }

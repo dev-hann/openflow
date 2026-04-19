@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, StatusBar } from "react-native";
+import { View, StyleSheet, StatusBar, ActivityIndicator } from "react-native";
 import { PaperProvider } from "react-native-paper";
 import { AppNavigator } from "./navigation/index";
 import { OnboardingScreen } from "./screens/OnboardingScreen";
@@ -41,7 +41,11 @@ export default function App() {
 
   let content: React.ReactNode = null;
   if (!initialized) {
-    content = null;
+    content = (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
   } else if (!onboardingDone) {
     content = <OnboardingScreen onComplete={() => setOnboardingDone(true)} />;
   } else {
@@ -62,4 +66,5 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

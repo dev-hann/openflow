@@ -33,7 +33,7 @@ export function ChatScreen() {
   const storedAuth = useAuthStore((s) => s.storedAuth);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const sessions = useSessionsStore((s) => s.sessions);
-  const { sendMessage, switchSession, reconnect } = useChat();
+  const { sendMessage, switchSession, reconnect, retryLastMessage } = useChat();
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const sessionTitle = activeSession?.title ?? "새 대화";
@@ -117,6 +117,7 @@ export function ChatScreen() {
                 key={s}
                 mode="outlined"
                 onPress={() => handleSuggestion(s)}
+                disabled={isSending}
                 style={[styles.suggestionChip, { borderColor: theme.colors.outline }]}
                 textStyle={[styles.suggestionChipText, { color: theme.colors.onSurface }]}
               >
@@ -127,7 +128,7 @@ export function ChatScreen() {
         </View>
       ) : (
         <View style={styles.messageContainer}>
-          <MessageList ref={listRef} messages={messages} onScrollStateChange={setScrolledUp} onRetry={sendMessage} />
+          <MessageList ref={listRef} messages={messages} onScrollStateChange={setScrolledUp} onRetry={retryLastMessage} />
           {scrolledUp && (
             <IconButton
               icon="chevron-double-down"
