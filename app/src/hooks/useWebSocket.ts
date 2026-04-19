@@ -59,10 +59,6 @@ export function useWebSocket(): UseWebSocketReturn {
       case "session_switched":
         setActiveSessionId(msg.sessionId);
         break;
-      case "auth_required":
-      case "pong":
-      case "auth_ok":
-        break;
     }
   };
 
