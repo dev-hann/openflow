@@ -1,12 +1,10 @@
 import React from "react";
-import { View, StyleSheet, Alert, Modal, FlatList, Dimensions } from "react-native";
+import { View, StyleSheet, Alert, Modal, FlatList, useWindowDimensions } from "react-native";
 import { Text, Button, useTheme, Divider, Chip, IconButton, TouchableRipple, Icon } from "react-native-paper";
 import { useApiClient } from "../hooks/use-api-client";
 import { useProvidersStore } from "../store/providers";
 import { SPACING, BORDER_RADIUS } from "../constants/theme";
 import type { ProviderInfo } from "../types/protocol";
-
-const SHEET_HEIGHT = Dimensions.get("window").height * 0.65;
 
 function ItemSeparator(): React.ReactElement {
   return <Divider />;
@@ -22,6 +20,7 @@ interface ProviderSheetProps {
 
 export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: ProviderSheetProps) {
   const theme = useTheme();
+  const sheetHeight = useWindowDimensions().height * 0.65;
   const providers = useProvidersStore((s) => s.providers);
   const activeProviderId = useProvidersStore((s) => s.activeProviderId);
   const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
@@ -48,7 +47,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.sheetBackdrop}>
-        <View style={[styles.sheetContainer, { backgroundColor: theme.colors.surface }]}>
+        <View style={[styles.sheetContainer, { maxHeight: sheetHeight, backgroundColor: theme.colors.surface }]}>
           <View style={[styles.sheetHandle, { backgroundColor: theme.colors.outline }]} />
           <View style={styles.sheetHeader}>
             <Text variant="titleMedium" style={styles.sheetTitle}>Provider 선택</Text>
@@ -94,7 +93,7 @@ export function ProviderSheet({ visible, onClose, onEdit, onDelete, onAdd }: Pro
 
 const styles = StyleSheet.create({
   sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.4)" },
-  sheetContainer: { maxHeight: SHEET_HEIGHT, borderTopLeftRadius: BORDER_RADIUS.xxl, borderTopRightRadius: BORDER_RADIUS.xxl, paddingBottom: 20 },
+  sheetContainer: { borderTopLeftRadius: BORDER_RADIUS.xxl, borderTopRightRadius: BORDER_RADIUS.xxl, paddingBottom: 20 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginTop: SPACING.sm, marginBottom: SPACING.xs },
   sheetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   sheetItem: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
