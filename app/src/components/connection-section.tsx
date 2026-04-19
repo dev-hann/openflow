@@ -1,6 +1,13 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet, Alert } from "react-native";
-import { Text, List, Surface, useTheme, Divider } from "react-native-paper";
+import {
+  Text,
+  List,
+  Surface,
+  useTheme,
+  TouchableRipple,
+  Icon,
+} from "react-native-paper";
 import { useAuthStore } from "../store/auth";
 import { useSessionsStore } from "../store/sessions";
 import { useSettingsStore } from "../store/settings";
@@ -71,35 +78,53 @@ export function ConnectionSection({ onServerChanged }: ConnectionSectionProps) {
     () => ({
       statusDot: { backgroundColor: statusColor },
       statusText: { color: statusColor },
-      serverTitle: { color: theme.colors.error },
+      changeText: {
+        color: theme.colors.onSurfaceVariant,
+      },
     }),
     [theme.colors, statusColor],
   );
 
   return (
     <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
-      <List.Item
-        title="서버"
-        description={storedAuth?.serverUrl ?? "-"}
-        left={(props) => <List.Icon {...props} icon="server" />}
-        right={() => (
-          <View style={styles.statusRow}>
-            <View style={[styles.statusDot, themed.statusDot]} />
-            <Text variant="labelSmall" style={themed.statusText}>
-              {statusText}
+      <TouchableRipple style={styles.cardInner}>
+        <View style={styles.connectionRow}>
+          <View style={styles.serverInfo}>
+            <View style={styles.serverTop}>
+              <View style={[styles.statusDot, themed.statusDot]} />
+              <Text variant="labelMedium" style={themed.statusText}>
+                {statusText}
+              </Text>
+            </View>
+            <Text
+              variant="bodyMedium"
+              style={{ color: theme.colors.onSurface }}
+              numberOfLines={1}
+            >
+              {storedAuth?.serverUrl ?? "-"}
             </Text>
           </View>
-        )}
-      />
-      <Divider />
-      <List.Item
-        title="서버 변경"
-        titleStyle={themed.serverTitle}
-        left={(props) => (
-          <List.Icon {...props} icon="link-off" color={theme.colors.error} />
-        )}
-        onPress={handleChangeServer}
-      />
+          <TouchableRipple
+            onPress={handleChangeServer}
+            style={styles.changeButton}
+            borderless
+          >
+            <View style={styles.changeContent}>
+              <Text
+                variant="labelMedium"
+                style={themed.changeText}
+              >
+                변경
+              </Text>
+              <Icon
+                source="chevron-right"
+                size={16}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </View>
+          </TouchableRipple>
+        </View>
+      </TouchableRipple>
     </Surface>
   );
 }
@@ -110,6 +135,38 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     overflow: "hidden",
   },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  cardInner: {
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  connectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+  },
+  serverInfo: {
+    flex: 1,
+    gap: SPACING.xs,
+  },
+  serverTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  changeButton: {
+    borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  changeContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
 });

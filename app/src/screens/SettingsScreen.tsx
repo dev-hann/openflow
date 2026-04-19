@@ -39,6 +39,12 @@ export function SettingsScreen({ navigation }: Props) {
   const setProviders = useProvidersStore((s) => s.setProviders);
 
   const [providerSheetVisible, setProviderSheetVisible] = useState(false);
+  const [modelSheetVisible, setModelSheetVisible] = useState(false);
+
+  const closeProviderSheet = useCallback(
+    () => setProviderSheetVisible(false),
+    [],
+  );
 
   const refreshData = useCallback(async () => {
     const client = await getApi();
@@ -126,7 +132,7 @@ export function SettingsScreen({ navigation }: Props) {
         fontWeight: "600" as const,
       },
       providerModel: { color: theme.colors.onSurfaceVariant },
-      addProviderTitle: {
+      changeText: {
         color: theme.colors.primary,
         fontWeight: "500" as const,
       },
@@ -138,10 +144,7 @@ export function SettingsScreen({ navigation }: Props) {
     <>
       <ScrollView
         style={{ backgroundColor: theme.colors.background }}
-        contentContainerStyle={{
-          padding: SPACING.md,
-          paddingBottom: SPACING.xxl,
-        }}
+        contentContainerStyle={styles.scrollContent}
       >
         <Text
           variant="titleSmall"
@@ -155,12 +158,15 @@ export function SettingsScreen({ navigation }: Props) {
           variant="titleSmall"
           style={[styles.sectionLabel, themed.sectionLabel]}
         >
-          AI Provider
+          AI 모델
         </Text>
         <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
           {activeProvider ? (
-            <TouchableRipple onPress={() => setProviderSheetVisible(true)}>
-              <View style={styles.providerCard}>
+            <TouchableRipple
+              onPress={() => setModelSheetVisible(true)}
+              style={styles.aiModelCard}
+            >
+              <View style={styles.aiModelRow}>
                 <View
                   style={[
                     styles.providerIcon,
@@ -168,25 +174,31 @@ export function SettingsScreen({ navigation }: Props) {
                   ]}
                 >
                   <Icon
-                    source="cloud-outline"
-                    size={20}
+                    source="brain"
+                    size={22}
                     color={theme.colors.primary}
                   />
                 </View>
-                <View style={styles.providerInfo}>
+                <View style={styles.aiModelInfo}>
                   <Text variant="bodyLarge" style={themed.providerName}>
-                    {activeProvider.name}
+                    {currentModel || activeProvider.model || "모델 없음"}
                   </Text>
                   <Text
                     variant="bodySmall"
                     style={themed.providerModel}
                     numberOfLines={1}
                   >
-                    {activeProvider.model}
+                    via {activeProvider.name}
                   </Text>
                 </View>
+                <Text
+                  variant="labelMedium"
+                  style={themed.changeText}
+                >
+                  변경
+                </Text>
                 <Icon
-                  source="chevron-down"
+                  source="chevron-right"
                   size={20}
                   color={theme.colors.onSurfaceVariant}
                 />
@@ -202,32 +214,52 @@ export function SettingsScreen({ navigation }: Props) {
               onPress={handleAddProvider}
             />
           )}
+        </Surface>
+
+        <Text
+          variant="titleSmall"
+          style={[styles.sectionLabel, themed.sectionLabel]}
+        >
+          관리
+        </Text>
+        <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
+          <List.Item
+            title="Provider 관리"
+            description={`${providers.length}개 Provider`}
+            left={(props) => (
+              <List.Icon {...props} icon="cloud-outline" />
+            )}
+            right={(props) => (
+              <List.Icon {...props} icon="chevron-right" />
+            )}
+            onPress={() => setProviderSheetVisible(true)}
+          />
+          {storedAuth && availableModels.length > 0 && (
+            <>
+              <Divider />
+              <List.Item
+                title="모델 선택"
+                description={currentModel || "선택 안됨"}
+                left={(props) => (
+                  <List.Icon {...props} icon="cube-outline" />
+                )}
+                right={(props) => (
+                  <List.Icon {...props} icon="chevron-right" />
+                )}
+                onPress={() => setModelSheetVisible(true)}
+              />
+            </>
+          )}
           <Divider />
           <List.Item
             title="새 Provider 추가"
-            titleStyle={themed.addProviderTitle}
+            titleStyle={themed.changeText}
             left={(props) => (
               <List.Icon {...props} icon="plus" color={theme.colors.primary} />
             )}
             onPress={handleAddProvider}
           />
         </Surface>
-
-        {storedAuth && availableModels.length > 0 && (
-          <>
-            <Text
-              variant="titleSmall"
-              style={[styles.sectionLabel, themed.sectionLabel]}
-            >
-              모델
-            </Text>
-            <ModelSection
-              currentModel={currentModel}
-              availableModels={availableModels}
-              onModelChange={handleModelChange}
-            />
-          </>
-        )}
 
         {storedAuth && (
           <>
@@ -252,16 +284,33 @@ export function SettingsScreen({ navigation }: Props) {
 
       <ProviderSheet
         visible={providerSheetVisible}
-        onClose={() => setProviderSheetVisible(false)}
+        onClose={closeProviderSheet}
         onEdit={handleEditProvider}
         onDelete={handleDeleteProvider}
         onAdd={handleAddProvider}
       />
+
+      {storedAuth && availableModels.length > 0 && (
+        <ModelSection
+          visible={modelSheetVisible}
+          onClose={() => setModelSheetVisible(false)}
+          currentModel={currentModel}
+          availableModels={availableModels}
+          onModelChange={async (model) => {
+            await handleModelChange(model);
+            setModelSheetVisible(false);
+          }}
+        />
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    padding: SPACING.md,
+    paddingBottom: SPACING.xxl,
+  },
   sectionLabel: {
     marginBottom: SPACING.xs,
     marginTop: SPACING.sm,
@@ -274,18 +323,25 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     overflow: "hidden",
   },
-  providerCard: {
+  aiModelCard: {
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  aiModelRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
+    gap: SPACING.xs,
   },
   providerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },
-  providerInfo: { flex: 1, marginLeft: SPACING.sm },
+  aiModelInfo: {
+    flex: 1,
+    marginLeft: SPACING.xs,
+  },
 });

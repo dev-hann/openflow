@@ -1,16 +1,43 @@
 import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
-import { Text, TextInput, Button, Card, useTheme } from "react-native-paper";
+import {
+  Text,
+  TextInput,
+  Button,
+  Card,
+  useTheme,
+  Surface,
+  TouchableRipple,
+  Icon,
+} from "react-native-paper";
 import { KeyboardSafeView } from "./KeyboardSafeView";
-import { PresetSelector } from "./preset-selector";
 import { VerifySection } from "./verify-section";
+import { PROVIDER_PRESETS } from "../constants/presets";
 import type { ProviderPreset } from "../constants/presets";
 import type { ProviderInfo } from "../types/protocol";
 import { useAuthStore } from "../store/auth";
 import { createApiClient } from "../services/api";
 import { normalizeUrl } from "../utils/normalize-url";
-import { SPACING } from "../constants/theme";
+import { SPACING, BORDER_RADIUS, SHADOWS } from "../constants/theme";
 import { useProviderVerify } from "../hooks/use-provider-verify";
+
+const GRID_COLUMNS = 3;
+const GRID_GAP = SPACING.sm;
+
+const PRESET_ICONS: Record<string, string> = {
+  "zai-coding-global": "code-braces",
+  "zai-coding-cn": "code-braces",
+  "zai-global": "earth",
+  "zai-cn": "earth",
+  openai: "robot-outline",
+  anthropic: "brain",
+  google: "google",
+  deepseek: "magnify",
+  groq: "lightning-bolt",
+  openrouter: "transit-connection-variant",
+  ollama: "llama",
+  custom: "cog-outline",
+};
 
 interface ProviderFormProps {
   onComplete: () => void;
@@ -37,7 +64,6 @@ export function ProviderForm({
   const [selectedPreset, setSelectedPreset] = useState<ProviderPreset | null>(
     null,
   );
-  const [presetMenuVisible, setPresetMenuVisible] = useState(false);
   const [name, setName] = useState(editProvider?.name ?? "");
   const [baseUrl, setBaseUrl] = useState(editProvider?.baseUrl ?? "");
   const [apiKey, setApiKey] = useState(editProvider?.apiKey ?? "");
@@ -54,7 +80,6 @@ export function ProviderForm({
     setSelectedPreset(preset);
     if (preset.baseUrl) setBaseUrl(preset.baseUrl);
     if (!name) setName(preset.label.split(" (")[0]);
-    setPresetMenuVisible(false);
   }
 
   function validateForm(): string | null {
@@ -121,11 +146,13 @@ export function ProviderForm({
 
   const showApiKeyField = selectedPreset?.needsApiKey !== false || isEditMode;
 
+  const presets = PROVIDER_PRESETS.filter((p) => p.id !== "custom");
+
   return (
     <KeyboardSafeView>
       <ScrollView
         style={{ backgroundColor: theme.colors.background }}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.formContent}
         keyboardShouldPersistTaps="handled"
       >
         <Text variant="headlineSmall" style={styles.headline}>
@@ -139,6 +166,74 @@ export function ProviderForm({
             ? "연결 정보를 수정하세요"
             : "사용할 AI 서비스를 설정하세요"}
         </Text>
+
+        {!isEditMode && (
+          <>
+            <Text
+              variant="labelMedium"
+              style={[
+                styles.gridLabel,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Provider 유형
+            </Text>
+            <View style={styles.presetGrid}>
+              {presets.map((preset) => {
+                const isSelected = selectedPreset?.id === preset.id;
+                const icon = PRESET_ICONS[preset.id] ?? "cloud-outline";
+                return (
+                  <TouchableRipple
+                    key={preset.id}
+                    onPress={() => handleSelectPreset(preset)}
+                    style={styles.presetTouch}
+                  >
+                    <Surface
+                      style={[
+                        styles.presetCard,
+                        SHADOWS.sm,
+                        {
+                          backgroundColor: isSelected
+                            ? theme.colors.primaryContainer
+                            : theme.colors.surfaceVariant,
+                          borderColor: isSelected
+                            ? theme.colors.primary
+                            : "transparent",
+                        },
+                      ]}
+                      elevation={0}
+                    >
+                      <Icon
+                        source={icon}
+                        size={22}
+                        color={
+                          isSelected
+                            ? theme.colors.primary
+                            : theme.colors.onSurfaceVariant
+                        }
+                      />
+                      <Text
+                        variant="labelSmall"
+                        style={[
+                          styles.presetLabel,
+                          {
+                            color: isSelected
+                              ? theme.colors.primary
+                              : theme.colors.onSurface,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {preset.label.split(" (")[0]}
+                      </Text>
+                    </Surface>
+                  </TouchableRipple>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         <Card
           style={[
             styles.card,
@@ -147,15 +242,6 @@ export function ProviderForm({
           mode="contained"
         >
           <Card.Content>
-            {!isEditMode && (
-              <PresetSelector
-                selectedPreset={selectedPreset}
-                visible={presetMenuVisible}
-                onDismiss={() => setPresetMenuVisible(false)}
-                onShow={() => setPresetMenuVisible(true)}
-                onSelect={handleSelectPreset}
-              />
-            )}
             <TextInput
               label="이름"
               placeholder="예: My GPT-4o"
@@ -245,9 +331,34 @@ export function ProviderForm({
 }
 
 const styles = StyleSheet.create({
-  content: { padding: SPACING.md, paddingBottom: SPACING.xxl },
+  formContent: { padding: SPACING.md, paddingBottom: SPACING.xxl },
   headline: { marginBottom: SPACING.xs },
   subtitle: { marginBottom: SPACING.lg },
+  gridLabel: {
+    marginBottom: SPACING.sm,
+  },
+  presetGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  presetTouch: {
+    flexBasis: `${(100 / GRID_COLUMNS)}%`,
+  },
+  presetCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xs,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1.5,
+    minHeight: 72,
+    gap: SPACING.xs,
+  },
+  presetLabel: {
+    textAlign: "center",
+  },
   card: { overflow: "hidden" },
   field: { marginBottom: SPACING.sm },
   buttonRow: {

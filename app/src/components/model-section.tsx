@@ -1,105 +1,170 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useCallback, useMemo } from "react";
+import { View, StyleSheet, Modal, Pressable, FlatList } from "react-native";
 import {
   Text,
-  List,
-  Surface,
   useTheme,
   TouchableRipple,
   Icon,
-  Menu,
 } from "react-native-paper";
-import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
+import { SPACING, BORDER_RADIUS, SHADOWS } from "../constants/theme";
 
 interface ModelSectionProps {
+  visible: boolean;
+  onClose: () => void;
   currentModel: string;
   availableModels: string[];
   onModelChange: (model: string) => Promise<void>;
 }
 
+const SHEET_HEIGHT_RATIO = 0.5;
+const BACKDROP_COLOR = "rgba(0,0,0,0.4)";
+
 export function ModelSection({
+  visible,
+  onClose,
   currentModel,
   availableModels,
   onModelChange,
 }: ModelSectionProps) {
   const theme = useTheme();
-  const [menuVisible, setMenuVisible] = useState(false);
 
   const handleSelect = useCallback(
     async (model: string) => {
       await onModelChange(model);
-      setMenuVisible(false);
     },
     [onModelChange],
   );
 
   const themed = useMemo(
     () => ({
-      label: { color: theme.colors.onSurfaceVariant },
-      value: {
-        color: theme.colors.onSurface,
-        fontWeight: "500" as const,
-      },
+      modalBg: { backgroundColor: theme.colors.surface },
+      handle: { backgroundColor: theme.colors.outline },
+      title: { color: theme.colors.onSurface },
+      modelName: { color: theme.colors.onSurface },
+      modelDesc: { color: theme.colors.onSurfaceVariant },
+      activeBg: { backgroundColor: theme.colors.primaryContainer },
+      activeText: { color: theme.colors.primary },
     }),
     [theme.colors],
   );
 
-  return (
-    <Surface style={[styles.card, SHADOWS.sm]} elevation={0}>
-      <Menu
-        visible={menuVisible}
-        onDismiss={() => setMenuVisible(false)}
-        anchor={
-          <TouchableRipple onPress={() => setMenuVisible(true)}>
-            <View style={styles.modelRow}>
-              <List.Icon icon="cube-outline" />
-              <View style={styles.modelInfo}>
-                <Text variant="bodySmall" style={themed.label}>
-                  현재 모델
-                </Text>
-                <Text variant="bodyLarge" style={themed.value}>
-                  {currentModel ?? "선택 안됨"}
+  const renderItem = useCallback(
+    ({ item }: { item: string }) => {
+      const isActive = item === currentModel;
+      return (
+        <TouchableRipple onPress={() => handleSelect(item)}>
+          <View
+            style={[
+              styles.modelItem,
+              isActive && styles.modelItemActive,
+              isActive && themed.activeBg,
+            ]}
+          >
+            <View style={styles.modelItemContent}>
+              <Icon
+                source={isActive ? "check-circle" : "circle-outline"}
+                size={20}
+                color={isActive ? theme.colors.primary : theme.colors.onSurfaceVariant}
+              />
+              <View style={styles.modelItemText}>
+                <Text
+                  variant="bodyLarge"
+                  style={[
+                    themed.modelName,
+                    isActive && themed.activeText,
+                    isActive && { fontWeight: "600" },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item}
                 </Text>
               </View>
-              <Icon
-                source="chevron-down"
-                size={20}
-                color={theme.colors.onSurfaceVariant}
-              />
             </View>
-          </TouchableRipple>
-        }
-        contentStyle={{
-          backgroundColor: theme.colors.surface,
-          borderRadius: BORDER_RADIUS.md,
-        }}
-      >
-        {availableModels.map((m) => (
-          <Menu.Item
-            key={m}
-            onPress={() => handleSelect(m)}
-            title={m}
-            leadingIcon={m === currentModel ? "check-circle" : "circle-outline"}
-            titleStyle={{
-              fontWeight: m === currentModel ? "600" : "400",
-            }}
+          </View>
+        </TouchableRipple>
+      );
+    },
+    [currentModel, handleSelect, theme.colors, themed],
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.sheetBackdrop} onPress={onClose}>
+        <View
+          style={[
+            styles.sheetContainer,
+            themed.modalBg,
+          ]}
+        >
+          <View style={[styles.sheetHandle, themed.handle]} />
+          <View style={styles.sheetHeader}>
+            <Text variant="titleMedium" style={[styles.sheetTitle, themed.title]}>
+              모델 선택
+            </Text>
+          </View>
+          <FlatList
+            data={availableModels}
+            keyExtractor={(item) => item}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
           />
-        ))}
-      </Menu>
-    </Surface>
+        </View>
+      </Pressable>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    overflow: "hidden",
+  sheetBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: BACKDROP_COLOR,
   },
-  modelRow: {
+  sheetContainer: {
+    borderTopLeftRadius: BORDER_RADIUS.xxl,
+    borderTopRightRadius: BORDER_RADIUS.xxl,
+    maxHeight: "50%",
+    paddingBottom: SPACING.xl,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  sheetHeader: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  sheetTitle: {
+    fontWeight: "600",
+  },
+  listContent: {
+    paddingBottom: SPACING.xl,
+  },
+  modelItem: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.xs,
+  },
+  modelItemActive: {
+    borderRadius: BORDER_RADIUS.md,
+  },
+  modelItemContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingRight: SPACING.md,
+    gap: SPACING.sm,
   },
-  modelInfo: { flex: 1 },
+  modelItemText: {
+    flex: 1,
+  },
 });
