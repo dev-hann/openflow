@@ -1,28 +1,24 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
+import { View, StyleSheet, ScrollView, Alert } from "react-native";
+import { Text, List, Button, Surface, useTheme, TouchableRipple, Icon, Menu, Divider } from "react-native-paper";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuthStore } from "../store/auth";
 import { useSessionsStore } from "../store/sessions";
 import { useSettingsStore } from "../store/settings";
+import { useProvidersStore } from "../store/providers";
 import { createApiClient } from "../services/api";
-import { saveAuth, clearAuth } from "../services/auth";
-import type { SessionInfo } from "../types/protocol";
+import { clearAuth } from "../services/auth";
+import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
+import type { ProviderInfo } from "../types/protocol";
+import type { SettingsStackParamList } from "./ProviderEditScreen";
+import { ProviderSheet } from "../components/ProviderSheet";
 
-export function SettingsScreen() {
-  const colors = useTheme();
+type Props = NativeStackScreenProps<SettingsStackParamList, "SettingsMain">;
+
+export function SettingsScreen({ navigation }: Props) {
+  const theme = useTheme();
   const storedAuth = useAuthStore((s) => s.storedAuth);
-  const setStoredAuth = useAuthStore((s) => s.setStoredAuth);
+  const clearAll = useAuthStore((s) => s.clearAll);
   const isConnected = useAuthStore((s) => s.isConnected);
   const getValidToken = useAuthStore((s) => s.getValidToken);
   const setSessions = useSessionsStore((s) => s.setSessions);
@@ -31,11 +27,13 @@ export function SettingsScreen() {
   const availableModels = useSettingsStore((s) => s.availableModels);
   const setCurrentModel = useSettingsStore((s) => s.setCurrentModel);
   const setAvailableModels = useSettingsStore((s) => s.setAvailableModels);
+  const providers = useProvidersStore((s) => s.providers);
+  const activeProviderId = useProvidersStore((s) => s.activeProviderId);
+  const setProviders = useProvidersStore((s) => s.setProviders);
+  const setActiveProviderId = useProvidersStore((s) => s.setActiveProviderId);
 
-  const [inputUrl, setInputUrl] = useState(storedAuth?.serverUrl ?? "");
-  const [pin, setPin] = useState("");
-  const [pairing, setPairing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [providerSheetVisible, setProviderSheetVisible] = useState(false);
+  const [modelMenuVisible, setModelMenuVisible] = useState(false);
 
   const refreshData = useCallback(async () => {
     const token = await getValidToken();
@@ -43,86 +41,32 @@ export function SettingsScreen() {
     if (!token || !auth) return;
     try {
       const api = createApiClient(auth.serverUrl);
-      const [sessions, modelInfo] = await Promise.all([
-        api.listSessions(token),
-        api.listModels(token),
+      const [sessions, modelInfo, providerInfo] = await Promise.all([
+        api.listSessions(token), api.listModels(token), api.listProviders(token),
       ]);
       setSessions(sessions);
       setAvailableModels(modelInfo.models);
       setCurrentModel(modelInfo.current);
+      setProviders(providerInfo.providers, providerInfo.activeProviderId);
     } catch {
-      // token might be expired
-    }
-  }, [getValidToken, setSessions, setAvailableModels, setCurrentModel]);
-
-  useEffect(() => {
-    if (storedAuth) {
-      setInputUrl(storedAuth.serverUrl);
-      refreshData();
-    }
-  }, [storedAuth, refreshData]);
-
-  async function handlePairInit(): Promise<void> {
-    if (!inputUrl.trim()) {
-      Alert.alert("오류", "서버 주소를 입력하세요.");
       return;
     }
-    setLoading(true);
-    try {
-      const api = createApiClient(inputUrl.trim());
-      await api.pairInit();
-      setPairing(true);
-    } catch (err) {
-      Alert.alert("연결 실패", err instanceof Error ? err.message : "서버에 연결할 수 없습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [getValidToken, setSessions, setAvailableModels, setCurrentModel, setProviders]);
 
-  async function handlePairVerify(): Promise<void> {
-    if (pin.trim().length !== 6) {
-      Alert.alert("오류", "6자리 PIN을 입력하세요.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const api = createApiClient(inputUrl.trim());
-      const tokens = await api.pairVerify(pin.trim(), "Mobile App");
-      const auth = { serverUrl: inputUrl.trim(), ...tokens };
-      await saveAuth(auth);
-      setStoredAuth(auth);
-      setPairing(false);
-      setPin("");
-    } catch (err) {
-      Alert.alert("인증 실패", err instanceof Error ? err.message : "PIN이 올바르지 않습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => { if (storedAuth) refreshData(); }, [storedAuth, refreshData]);
 
-  async function handleUnpair(): Promise<void> {
+  function handleChangeServer(): void {
     if (!storedAuth) return;
-    Alert.alert("페어링 해제", "이 기기의 페어링을 해제하시겠습니까?", [
+    Alert.alert("서버 변경", "연결된 서버를 변경하시겠습니까?", [
       { text: "취소", style: "cancel" },
-      {
-        text: "해제",
-        style: "destructive",
-        onPress: async () => {
-          const token = await getValidToken();
-          if (token) {
-            try {
-              const api = createApiClient(storedAuth.serverUrl);
-              await api.unpair(token);
-            } catch {
-              // clear local anyway
-            }
-          }
-          await clearAuth();
-          setStoredAuth(null);
-          setSessions([]);
-          setActiveSessionId(null);
-        },
-      },
+      { text: "변경", style: "destructive", onPress: async () => {
+        const token = await getValidToken();
+        if (token) { try { await createApiClient(storedAuth.serverUrl).unpair(token); } catch { return; } }
+        await clearAuth();
+        clearAll();
+        setSessions([]);
+        setActiveSessionId(null);
+      }},
     ]);
   }
 
@@ -130,226 +74,152 @@ export function SettingsScreen() {
     const token = await getValidToken();
     if (!token || !storedAuth) return;
     try {
-      const api = createApiClient(storedAuth.serverUrl);
-      await api.switchModel(token, model);
+      await createApiClient(storedAuth.serverUrl).switchModel(token, model);
       setCurrentModel(model);
-    } catch {
-      Alert.alert("오류", "모델 변경에 실패했습니다.");
-    }
+      setModelMenuVisible(false);
+    } catch { Alert.alert("오류", "모델 변경에 실패했습니다."); }
   }
 
+  async function handleDeleteProvider(p: ProviderInfo): Promise<void> {
+    const token = await getValidToken();
+    if (!token || !storedAuth) return;
+    try { await createApiClient(storedAuth.serverUrl).deleteProvider(token, p.id); refreshData(); }
+    catch { Alert.alert("오류", "Provider 삭제에 실패했습니다."); }
+  }
+
+  function handleEditProvider(p: ProviderInfo): void {
+    navigation.navigate("ProviderEdit", {
+      editProvider: { id: p.id, name: p.name, baseUrl: p.baseUrl, apiKey: p.apiKey, model: p.model },
+    });
+  }
+
+  function handleAddProvider(): void {
+    navigation.navigate("ProviderEdit", {});
+  }
+
+  const activeProvider = providers.find((p) => p.id === activeProviderId);
+  const statusColor = isConnected ? theme.colors.tertiary : theme.colors.error;
+  const statusText = isConnected ? "연결됨" : "연결 끊김";
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>연결</Text>
-        {!storedAuth ? (
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-              value={inputUrl}
-              onChangeText={setInputUrl}
-              placeholder="서버 주소 (예: http://192.168.0.5:9800)"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              editable={!pairing}
-            />
-            {!pairing ? (
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: colors.primary }]}
-                onPress={handlePairInit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={colors.textInverse} />
-                ) : (
-                  <Text style={[styles.buttonText, { color: colors.textInverse }]}>연결</Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View>
-                <Text style={[styles.pinHint, { color: colors.textSecondary }]}>
-                  서버 터미널에 표시된 PIN을 입력하세요
-                </Text>
-                <TextInput
-                  style={[styles.pinInput, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
-                  value={pin}
-                  onChangeText={setPin}
-                  placeholder="000000"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  autoFocus
-                />
-                <View style={styles.row}>
-                  <TouchableOpacity
-                    style={[styles.buttonHalf, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-                    onPress={() => { setPairing(false); setPin(""); }}
-                  >
-                    <Text style={[styles.buttonText, { color: colors.text }]}>취소</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.buttonHalf, { backgroundColor: colors.primary }]}
-                    onPress={handlePairVerify}
-                    disabled={loading || pin.length !== 6}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color={colors.textInverse} />
-                    ) : (
-                      <Text style={[styles.buttonText, { color: colors.textInverse }]}>인증</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+    <>
+      <ScrollView style={{ backgroundColor: theme.colors.background }} contentContainerStyle={{ padding: SPACING.md, paddingBottom: SPACING.xxl }}>
+        <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>연결</Text>
+        <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+          <List.Item
+            title="서버"
+            description={storedAuth?.serverUrl ?? "-"}
+            left={(props) => <List.Icon {...props} icon="server" />}
+            right={() => (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xs }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: statusColor }} />
+                <Text variant="labelSmall" style={{ color: statusColor }}>{statusText}</Text>
               </View>
             )}
-          </View>
-        ) : (
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>서버</Text>
-              <Text style={[styles.value, { color: colors.text }]}>{storedAuth.serverUrl}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>상태</Text>
-              <View style={styles.statusRow}>
-                <View style={[styles.statusDot, { backgroundColor: isConnected ? colors.success : colors.error }]} />
-                <Text style={[styles.value, { color: colors.text }]}>
-                  {isConnected ? "연결됨" : "연결 끊김"}
-                </Text>
+          />
+          <Divider />
+          <List.Item
+            title="서버 변경"
+            titleStyle={{ color: theme.colors.error }}
+            left={(props) => <List.Icon {...props} icon="link-off" color={theme.colors.error} />}
+            onPress={handleChangeServer}
+          />
+        </Surface>
+
+        <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>AI Provider</Text>
+        <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+          {activeProvider ? (
+            <TouchableRipple onPress={() => setProviderSheetVisible(true)}>
+              <View style={styles.providerCard}>
+                <View style={[styles.providerIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+                  <Icon source="cloud-outline" size={20} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+                  <Text variant="bodyLarge" style={{ fontWeight: "600" }}>{activeProvider.name}</Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+                    {activeProvider.model}
+                  </Text>
+                </View>
+                <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
               </View>
-            </View>
-            <TouchableOpacity
-              style={[styles.dangerButton, { borderColor: colors.error }]}
-              onPress={handleUnpair}
-            >
-              <Text style={{ color: colors.error, ...TYPOGRAPHY.body }}>페어링 해제</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+            </TouchableRipple>
+          ) : (
+            <List.Item
+              title="Provider를 설정하세요"
+              description="AI 서비스를 연결하려면 탭하세요"
+              left={(props) => <List.Icon {...props} icon="cloud-off-outline" />}
+              onPress={handleAddProvider}
+            />
+          )}
+          <Divider />
+          <List.Item
+            title="새 Provider 추가"
+            titleStyle={{ color: theme.colors.primary, fontWeight: "500" }}
+            left={(props) => <List.Icon {...props} icon="plus" color={theme.colors.primary} />}
+            onPress={handleAddProvider}
+          />
+        </Surface>
 
         {storedAuth && availableModels.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>모델</Text>
-            <View style={[styles.card, { backgroundColor: colors.surface }]}>
-              {availableModels.map((model) => (
-                <TouchableOpacity
-                  key={model}
-                  style={[
-                    styles.modelItem,
-                    {
-                      backgroundColor: model === currentModel ? colors.primary : colors.inputBg,
-                    },
-                  ]}
-                  onPress={() => handleModelChange(model)}
-                >
-                  <Text
-                    style={{
-                      ...TYPOGRAPHY.body,
-                      color: model === currentModel ? colors.textInverse : colors.text,
-                    }}
-                  >
-                    {model}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>모델</Text>
+            <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+              <Menu
+                visible={modelMenuVisible}
+                onDismiss={() => setModelMenuVisible(false)}
+                anchor={
+                  <TouchableRipple onPress={() => setModelMenuVisible(true)}>
+                    <View style={styles.modelRow}>
+                      <List.Icon icon="cube-outline" />
+                      <View style={{ flex: 1 }}>
+                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>현재 모델</Text>
+                        <Text variant="bodyLarge" style={{ fontWeight: "500" }}>{currentModel ?? "선택 안됨"}</Text>
+                      </View>
+                      <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+                    </View>
+                  </TouchableRipple>
+                }
+                contentStyle={{ backgroundColor: theme.colors.surface, borderRadius: BORDER_RADIUS.md }}
+              >
+                {availableModels.map((m) => (
+                  <Menu.Item
+                    key={m}
+                    onPress={() => handleModelChange(m)}
+                    title={m}
+                    leadingIcon={m === currentModel ? "check-circle" : "circle-outline"}
+                    titleStyle={{ fontWeight: m === currentModel ? "600" : "400" }}
+                  />
+                ))}
+              </Menu>
+            </Surface>
           </>
         )}
 
         {storedAuth && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>정보</Text>
-            <View style={[styles.card, { backgroundColor: colors.surface }]}>
-              <View style={styles.row}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>버전</Text>
-                <Text style={[styles.value, { color: colors.text }]}>1.0.0</Text>
-              </View>
-            </View>
+            <Text variant="titleSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>정보</Text>
+            <Surface style={[styles.card, { ...SHADOWS.sm }]} elevation={0}>
+              <List.Item title="버전" description="1.0.0" left={(props) => <List.Icon {...props} icon="information-outline" />} />
+            </Surface>
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+
+      <ProviderSheet
+        visible={providerSheetVisible}
+        onClose={() => setProviderSheetVisible(false)}
+        onEdit={handleEditProvider}
+        onDelete={handleDeleteProvider}
+        onAdd={handleAddProvider}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: SPACING.md, paddingBottom: SPACING.xxl },
-  sectionTitle: {
-    ...TYPOGRAPHY.subtitle,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  card: {
-    borderRadius: 12,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: SPACING.xs,
-  },
-  label: { ...TYPOGRAPHY.body },
-  value: { ...TYPOGRAPHY.body },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  input: {
-    borderRadius: 10,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    fontSize: 15,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-  },
-  pinInput: {
-    borderRadius: 10,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    fontSize: 28,
-    textAlign: "center",
-    letterSpacing: 12,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-  },
-  pinHint: {
-    ...TYPOGRAPHY.caption,
-    textAlign: "center",
-    marginBottom: SPACING.sm,
-  },
-  button: {
-    borderRadius: 10,
-    paddingVertical: SPACING.sm + 2,
-    alignItems: "center",
-  },
-  buttonHalf: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: SPACING.sm + 2,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  buttonText: { ...TYPOGRAPHY.subtitle },
-  dangerButton: {
-    borderRadius: 10,
-    paddingVertical: SPACING.sm + 2,
-    alignItems: "center",
-    borderWidth: 1,
-    marginTop: SPACING.sm,
-  },
-  modelItem: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    borderRadius: 8,
-    marginTop: SPACING.xs,
-  },
+  sectionLabel: { marginBottom: SPACING.xs, marginTop: SPACING.sm, marginLeft: SPACING.xs, fontWeight: "600", letterSpacing: 0.5 },
+  card: { borderRadius: BORDER_RADIUS.lg, marginBottom: SPACING.md, overflow: "hidden" },
+  providerCard: { flexDirection: "row", alignItems: "center", paddingVertical: SPACING.md, paddingHorizontal: SPACING.md },
+  providerIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+  modelRow: { flexDirection: "row", alignItems: "center", paddingRight: SPACING.md },
 });
