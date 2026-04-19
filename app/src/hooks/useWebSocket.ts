@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { WsServerMessage } from "../types/protocol";
-import { normalizeUrl } from "../services/api";
+import { normalizeUrl } from "../utils/normalize-url";
 import { useAuthStore } from "../store/auth";
 import { useChatStore } from "../store/chat";
 import { useSessionsStore } from "../store/sessions";

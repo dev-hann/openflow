@@ -1,12 +1,7 @@
 import type { TokenPair, SessionInfo, StoredAuth, ProviderInfo } from "../types/protocol";
+import { normalizeUrl } from "../utils/normalize-url";
 
-export function normalizeUrl(url: string): string {
-  let trimmed = url.trim().replace(/\/$/, "");
-  if (!/^https?:\/\//i.test(trimmed)) {
-    trimmed = `http://${trimmed}`;
-  }
-  return trimmed;
-}
+export { normalizeUrl } from "../utils/normalize-url";
 
 export class ApiError extends Error {
   constructor(
