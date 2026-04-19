@@ -6,7 +6,12 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "setup": "eas login && eas build:configure --platform android && eas init",
+    "build": "eas build --platform android --profile preview --non-interactive --wait",
+    "build:dev": "eas build --platform android --profile development --non-interactive",
+    "build:ios": "eas build --platform ios --profile preview --non-interactive --wait",
+    "build:status": "eas build:list --limit 1"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -14,6 +19,8 @@
     "@react-navigation/native": "^7.2.2",
     "@react-navigation/stack": "^7.8.10",
     "expo": "~54.0.33",
+    "expo-dev-client": "^55.0.27",
+    "expo-router": "^55.0.12",
     "expo-secure-store": "^55.0.13",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
