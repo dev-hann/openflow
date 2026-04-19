@@ -1,102 +1,212 @@
-import React, { useRef, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList } from "react-native";
-import { useTheme, SPACING, TYPOGRAPHY } from "../constants/theme";
+import React, { useRef, useCallback, useEffect } from "react";
+import { View, StyleSheet, FlatList, Animated, Easing, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { Text, useTheme, Icon } from "react-native-paper";
+import Markdown from "react-native-markdown-display";
+import { SPACING, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import type { ChatMessage } from "../store/chat";
+
+function TypingIndicator({ color }: { color: string }) {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 300, useNativeDriver: true, easing: Easing.ease }),
+          Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true, easing: Easing.ease }),
+        ]),
+      );
+    const a1 = anim(dot1, 0);
+    const a2 = anim(dot2, 150);
+    const a3 = anim(dot3, 300);
+    a1.start();
+    a2.start();
+    a3.start();
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
+  }, [dot1, dot2, dot3]);
+
+  const opacity = (dot: Animated.Value) => dot.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] });
+
+  return (
+    <View style={styles.typingDots}>
+      <Animated.View style={[styles.dot, { backgroundColor: color, opacity: opacity(dot1) }]} />
+      <Animated.View style={[styles.dot, { backgroundColor: color, opacity: opacity(dot2) }]} />
+      <Animated.View style={[styles.dot, { backgroundColor: color, opacity: opacity(dot3) }]} />
+    </View>
+  );
+}
+
+function formatTime(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  isFirstInGroup: boolean;
+  isLastInGroup: boolean;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
-  const colors = useTheme();
+export function MessageBubble({ message, isFirstInGroup, isLastInGroup }: MessageBubbleProps) {
+  const theme = useTheme();
   const isUser = message.role === "user";
 
+  const mdStyles = {
+    body: { color: theme.colors.onSurface, fontSize: 15, lineHeight: 22 },
+    paragraph: { margin: 0, marginBottom: 6 },
+    heading1: { color: theme.colors.onSurface, fontSize: 20, fontWeight: "bold" as const, marginTop: 8, marginBottom: 4 },
+    heading2: { color: theme.colors.onSurface, fontSize: 17, fontWeight: "bold" as const, marginTop: 6, marginBottom: 3 },
+    heading3: { color: theme.colors.onSurface, fontSize: 15, fontWeight: "bold" as const, marginTop: 4, marginBottom: 2 },
+    code_inline: { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurface, fontSize: 13, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+    code_block: { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurface, borderRadius: 8, padding: 12, fontSize: 13 },
+    fence: { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurface, borderRadius: 8, padding: 12, fontSize: 13 },
+    bullet_list: { marginVertical: 2 },
+    ordered_list: { marginVertical: 2 },
+    blockquote: { backgroundColor: theme.colors.surfaceVariant, borderLeftColor: theme.colors.primary, borderLeftWidth: 3, paddingLeft: 10, borderRadius: 4 },
+    strong: { fontWeight: "bold" as const },
+    em: { fontStyle: "italic" as const },
+  };
+
+  const bubbleBg = isUser ? theme.colors.primary : theme.colors.surface;
+  const textColor = isUser ? theme.colors.onPrimary : theme.colors.onSurface;
+
+  const showAvatar = !isUser && isFirstInGroup;
+  const showTimestamp = isLastInGroup;
+
   return (
-    <View
-      style={[
-        styles.container,
-        isUser ? styles.userContainer : styles.assistantContainer,
-      ]}
-    >
-      <View
-        style={[
-          styles.bubble,
-          isUser
-            ? { backgroundColor: colors.userBg, borderBottomRightRadius: 4 }
-            : { backgroundColor: colors.assistantBg, borderBottomLeftRadius: 4 },
-        ]}
-      >
-        <Text style={[styles.text, { color: isUser ? colors.textInverse : colors.text }]}>
-          {message.content}
-        </Text>
-        {message.isStreaming && !message.content && (
-          <View style={styles.typingDots}>
-            <View style={[styles.dot, { backgroundColor: colors.textSecondary }]} />
+    <View style={[
+      styles.container,
+      { marginTop: isFirstInGroup ? SPACING.md : SPACING.xs },
+    ]}>
+      {!isUser && (
+        <View style={styles.assistantRow}>
+          {showAvatar ? (
+            <View style={[styles.avatar, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Icon source="sparkles" size={14} color={theme.colors.primary} />
+            </View>
+          ) : (
+            <View style={styles.avatarSpacer} />
+          )}
+          <View style={styles.bubbleColumn}>
+            <View
+              style={[
+                styles.bubble,
+                { backgroundColor: bubbleBg, ...SHADOWS.sm },
+                isUser && { borderBottomRightRadius: 4 },
+                !isUser && isFirstInGroup && { borderTopLeftRadius: 4 },
+                !isUser && !isFirstInGroup && { borderTopLeftRadius: BORDER_RADIUS.lg },
+                !isUser && isLastInGroup && { borderBottomLeftRadius: 4 },
+                !isUser && !isLastInGroup && { borderBottomLeftRadius: BORDER_RADIUS.lg },
+                message.isFailed && { borderWidth: 1.5, borderColor: theme.colors.error },
+              ]}
+            >
+              {message.isStreaming && !message.content ? (
+                <TypingIndicator color={theme.colors.onSurfaceVariant} />
+              ) : isUser ? (
+                <Text style={{ color: textColor, fontSize: 15, lineHeight: 22 }} selectable>{message.content}</Text>
+              ) : (
+                <Markdown style={mdStyles}>{message.content}</Markdown>
+              )}
+            </View>
+            {showTimestamp && (
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2, marginHorizontal: 4 }}>
+                {message.isFailed ? "전송 실패" : formatTime(message.timestamp)}
+              </Text>
+            )}
           </View>
-        )}
-      </View>
+        </View>
+      )}
+      {isUser && (
+        <View style={styles.userColumn}>
+          <View
+            style={[
+              styles.bubble,
+              { backgroundColor: bubbleBg, ...SHADOWS.sm },
+              { borderBottomRightRadius: 4 },
+              !isFirstInGroup && { borderTopRightRadius: BORDER_RADIUS.lg },
+              !isLastInGroup && { borderBottomRightRadius: BORDER_RADIUS.lg },
+              message.isFailed && { borderWidth: 1.5, borderColor: theme.colors.error },
+            ]}
+          >
+            <Text style={{ color: textColor, fontSize: 15, lineHeight: 22 }} selectable>{message.content}</Text>
+          </View>
+          {showTimestamp && (
+            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2, marginHorizontal: 4, textAlign: "right" }}>
+              {message.isFailed ? "전송 실패" : formatTime(message.timestamp)}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
 
 interface MessageListProps {
   messages: ChatMessage[];
+  onScrollStateChange?: (nearBottom: boolean) => void;
+  ref?: React.Ref<FlatList>;
 }
 
-export function MessageList({ messages }: MessageListProps) {
-  const colors = useTheme();
-  const listRef = useRef<FlatList>(null);
-
-  const handleContentSizeChange = useCallback(() => {
-    listRef.current?.scrollToEnd({ animated: true });
+export const MessageList = React.forwardRef<FlatList, MessageListProps>(function MessageList({ messages, onScrollStateChange }, forwardedRef) {
+  const theme = useTheme();
+  const internalRef = useRef<FlatList>(null);
+  const scrollToBottom = useCallback(() => {
+    internalRef.current?.scrollToEnd({ animated: true });
   }, []);
+
+  const setRef = useCallback((instance: FlatList | null) => {
+    internalRef.current = instance;
+    if (typeof forwardedRef === "function") {
+      forwardedRef(instance);
+    } else if (forwardedRef) {
+      (forwardedRef as React.MutableRefObject<FlatList | null>).current = instance;
+    }
+  }, [forwardedRef]);
+
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    if (contentSize.height === 0) return;
+    const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+    onScrollStateChange?.(distanceFromBottom > 150);
+  }, [onScrollStateChange]);
+
+  const renderMessage = useCallback(({ item, index }: { item: ChatMessage; index: number }) => {
+    const prev = index > 0 ? messages[index - 1] : null;
+    const next = index < messages.length - 1 ? messages[index + 1] : null;
+    const isFirstInGroup = !prev || prev.role !== item.role;
+    const isLastInGroup = !next || next.role !== item.role;
+    return <MessageBubble message={item} isFirstInGroup={isFirstInGroup} isLastInGroup={isLastInGroup} />;
+  }, [messages]);
 
   return (
     <FlatList
-      ref={listRef}
+      ref={setRef}
       data={messages}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <MessageBubble message={item} />}
-      contentContainerStyle={[styles.listContent, { backgroundColor: colors.background }]}
+      renderItem={renderMessage}
+      contentContainerStyle={[styles.listContent, { backgroundColor: theme.colors.background }]}
       showsVerticalScrollIndicator={false}
       keyboardDismissMode="interactive"
-      onContentSizeChange={handleContentSizeChange}
+      onContentSizeChange={scrollToBottom}
+      onLayout={scrollToBottom}
+      onScroll={handleScroll}
+      scrollEventThrottle={200}
     />
   );
-}
+});
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  userContainer: {
-    alignItems: "flex-end",
-  },
-  assistantContainer: {
-    alignItems: "flex-start",
-  },
-  bubble: {
-    maxWidth: "80%",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    borderRadius: 16,
-  },
-  text: {
-    ...TYPOGRAPHY.body,
-    lineHeight: 20,
-  },
-  typingDots: {
-    flexDirection: "row",
-    paddingVertical: 2,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  listContent: {
-    paddingVertical: SPACING.md,
-    paddingBottom: SPACING.xl,
-  },
+  container: { paddingHorizontal: SPACING.md },
+  assistantRow: { flexDirection: "row", alignItems: "flex-start" },
+  avatar: { width: 26, height: 26, borderRadius: 13, justifyContent: "center", alignItems: "center", marginTop: 2 },
+  avatarSpacer: { width: 26 },
+  bubbleColumn: { flex: 1, marginLeft: SPACING.sm, alignItems: "flex-start" },
+  userColumn: { alignItems: "flex-end" },
+  bubble: { maxWidth: "90%", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: BORDER_RADIUS.lg },
+  typingDots: { flexDirection: "row", gap: 4, paddingVertical: 4, alignItems: "center" },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  listContent: { paddingVertical: SPACING.sm, paddingBottom: SPACING.lg },
 });
