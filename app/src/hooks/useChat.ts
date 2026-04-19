@@ -6,9 +6,11 @@ import { useAuthStore } from "../store/auth";
 import { createApiClient } from "../services/api";
 
 export function useChat() {
-  const { send } = useWebSocket();
+  const { send, reconnect: wsReconnect } = useWebSocket();
   const addMessage = useChatStore((s) => s.addMessage);
   const setSending = useChatStore((s) => s.setSending);
+  const clearMessages = useChatStore((s) => s.clearMessages);
+  const markLastMessageFailed = useChatStore((s) => s.markLastMessageFailed);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
   const addSession = useSessionsStore((s) => s.addSession);
@@ -47,28 +49,45 @@ export function useChat() {
       const sessionId = await ensureSession();
       if (!sessionId) return;
 
+      const now = Date.now();
       addMessage({
-        id: `user-${Date.now()}`,
+        id: `user-${now}`,
         role: "user",
         content: content.trim(),
+        timestamp: now,
       });
 
       addMessage({
-        id: `assistant-${Date.now()}`,
+        id: `assistant-${now}`,
         role: "assistant",
         content: "",
         isStreaming: true,
+        timestamp: now,
       });
 
       setSending(true);
-      send({
-        type: "message",
-        sessionId,
-        content: content.trim(),
-      });
+
+      try {
+        send({
+          type: "message",
+          sessionId,
+          content: content.trim(),
+        });
+      } catch {
+        markLastMessageFailed();
+      }
     },
-    [send, addMessage, setSending, ensureSession],
+    [send, addMessage, setSending, markLastMessageFailed, ensureSession],
   );
 
-  return { sendMessage };
+  const switchSession = useCallback(
+    (sessionId: string) => {
+      clearMessages();
+      setActiveSessionId(sessionId);
+      send({ type: "switch_session", sessionId });
+    },
+    [clearMessages, setActiveSessionId, send],
+  );
+
+  return { sendMessage, switchSession, reconnect: wsReconnect };
 }
