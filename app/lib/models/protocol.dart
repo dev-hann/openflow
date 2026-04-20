@@ -1,0 +1,268 @@
+import 'package:equatable/equatable.dart';
+
+enum MessageRole { user, assistant }
+
+class ChatMessage extends Equatable {
+  final String id;
+  final MessageRole role;
+  final String content;
+  final bool isStreaming;
+  final bool isFailed;
+  final DateTime timestamp;
+
+  const ChatMessage({
+    required this.id,
+    required this.role,
+    required this.content,
+    this.isStreaming = false,
+    this.isFailed = false,
+    required this.timestamp,
+  });
+
+  ChatMessage copyWith({
+    String? content,
+    bool? isStreaming,
+    bool? isFailed,
+  }) {
+    return ChatMessage(
+      id: id,
+      role: role,
+      content: content ?? this.content,
+      isStreaming: isStreaming ?? this.isStreaming,
+      isFailed: isFailed ?? this.isFailed,
+      timestamp: timestamp,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, role, content, isStreaming, isFailed, timestamp];
+}
+
+sealed class WsClientMessage {
+  Map<String, dynamic> toJson();
+}
+
+class WsChatMsg extends WsClientMessage {
+  final String sessionId;
+  final String content;
+  WsChatMsg({required this.sessionId, required this.content});
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'chat',
+        'session_id': sessionId,
+        'content': content,
+      };
+}
+
+class WsSwitchSession extends WsClientMessage {
+  final String sessionId;
+  WsSwitchSession({required this.sessionId});
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'switch_session',
+        'session_id': sessionId,
+      };
+}
+
+class WsPing extends WsClientMessage {
+  @override
+  Map<String, dynamic> toJson() => {'type': 'ping'};
+}
+
+class WsAuth extends WsClientMessage {
+  final String accessToken;
+  WsAuth({required this.accessToken});
+
+  @override
+  Map<String, dynamic> toJson() => {
+        'type': 'auth',
+        'access_token': accessToken,
+      };
+}
+
+sealed class WsServerMessage {
+  static WsServerMessage fromJson(Map<String, dynamic> json) {
+    return switch (json['type'] as String) {
+      'token' => WsTokenChunk(
+          sessionId: json['session_id'] as String,
+          content: json['content'] as String,
+        ),
+      'response' => WsResponse(
+          sessionId: json['session_id'] as String,
+          content: json['content'] as String,
+        ),
+      'error' => WsError(
+          sessionId: json['session_id'] as String? ?? '',
+          code: json['code'] as String? ?? 'UNKNOWN',
+          message: json['message'] as String? ?? '',
+        ),
+      'auth_required' => WsAuthRequired(),
+      'auth_ok' => WsAuthOk(),
+      'session_switched' => WsSessionSwitched(
+          sessionId: json['session_id'] as String,
+        ),
+      'pong' => WsPong(),
+      _ => throw FormatException('Unknown WS message type: ${json['type']}'),
+    };
+  }
+}
+
+class WsTokenChunk extends WsServerMessage {
+  final String sessionId;
+  final String content;
+  WsTokenChunk({required this.sessionId, required this.content});
+}
+
+class WsResponse extends WsServerMessage {
+  final String sessionId;
+  final String content;
+  WsResponse({required this.sessionId, required this.content});
+}
+
+class WsError extends WsServerMessage {
+  final String sessionId;
+  final String code;
+  final String message;
+  WsError({
+    required this.sessionId,
+    required this.code,
+    required this.message,
+  });
+}
+
+class WsAuthRequired extends WsServerMessage {}
+
+class WsAuthOk extends WsServerMessage {}
+
+class WsSessionSwitched extends WsServerMessage {
+  final String sessionId;
+  WsSessionSwitched({required this.sessionId});
+}
+
+class WsPong extends WsServerMessage {}
+
+class SessionInfo extends Equatable {
+  final String id;
+  final String title;
+  final DateTime createdAt;
+
+  const SessionInfo({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+  });
+
+  factory SessionInfo.fromJson(Map<String, dynamic> json) => SessionInfo(
+        id: json['id'] as String,
+        title: json['title'] as String? ?? '새 대화',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          (json['created_at'] as num).toInt() * 1000,
+        ),
+      );
+
+  @override
+  List<Object?> get props => [id, title, createdAt];
+}
+
+class TokenPair extends Equatable {
+  final String accessToken;
+  final String refreshToken;
+
+  const TokenPair({required this.accessToken, required this.refreshToken});
+
+  factory TokenPair.fromJson(Map<String, dynamic> json) => TokenPair(
+        accessToken: json['access_token'] as String,
+        refreshToken: json['refresh_token'] as String,
+      );
+
+  @override
+  List<Object?> get props => [accessToken, refreshToken];
+}
+
+class StoredAuth extends Equatable {
+  final String serverUrl;
+  final String accessToken;
+  final String refreshToken;
+  final DateTime pairedAt;
+
+  const StoredAuth({
+    required this.serverUrl,
+    required this.accessToken,
+    required this.refreshToken,
+    required this.pairedAt,
+  });
+
+  factory StoredAuth.fromJson(Map<String, dynamic> json) => StoredAuth(
+        serverUrl: json['serverUrl'] as String,
+        accessToken: json['accessToken'] as String,
+        refreshToken: json['refreshToken'] as String,
+        pairedAt: DateTime.fromMillisecondsSinceEpoch(
+          (json['pairedAt'] as num).toInt(),
+        ),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'serverUrl': serverUrl,
+        'accessToken': accessToken,
+        'refreshToken': refreshToken,
+        'pairedAt': pairedAt.millisecondsSinceEpoch,
+      };
+
+  @override
+  List<Object?> get props => [serverUrl, accessToken, refreshToken, pairedAt];
+}
+
+class ProviderInfo extends Equatable {
+  final String id;
+  final String name;
+  final String baseUrl;
+  final String model;
+  final bool apiKeySet;
+  final bool isActive;
+  final DateTime createdAt;
+
+  const ProviderInfo({
+    required this.id,
+    required this.name,
+    required this.baseUrl,
+    required this.model,
+    this.apiKeySet = false,
+    this.isActive = false,
+    required this.createdAt,
+  });
+
+  factory ProviderInfo.fromJson(Map<String, dynamic> json) => ProviderInfo(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        baseUrl: json['base_url'] as String,
+        model: json['model'] as String? ?? '',
+        apiKeySet: json['api_key_set'] as bool? ?? false,
+        isActive: json['is_active'] as bool? ?? false,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          (json['created_at'] as num).toInt() * 1000,
+        ),
+      );
+
+  ProviderInfo copyWith({
+    String? name,
+    String? baseUrl,
+    String? model,
+    bool? apiKeySet,
+    bool? isActive,
+  }) {
+    return ProviderInfo(
+      id: id,
+      name: name ?? this.name,
+      baseUrl: baseUrl ?? this.baseUrl,
+      model: model ?? this.model,
+      apiKeySet: apiKeySet ?? this.apiKeySet,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, name, baseUrl, model, apiKeySet, isActive, createdAt];
+}

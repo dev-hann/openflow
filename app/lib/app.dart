@@ -1,0 +1,169 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'config/theme.dart';
+import 'cubits/auth_cubit.dart';
+import 'cubits/chat_cubit.dart';
+import 'cubits/sessions_cubit.dart';
+import 'models/protocol.dart';
+import 'screens/chat_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/provider_edit_screen.dart';
+import 'services/api_client.dart';
+import 'services/websocket_service.dart';
+import 'widgets/app_drawer.dart';
+
+class OpenFlowMaterialApp extends StatelessWidget {
+  const OpenFlowMaterialApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'OpenFlow',
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      debugShowCheckedModeBanner: false,
+      home: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, authState) {
+          if (authState.storedAuth == null) {
+            return OnboardingScreen(
+              onComplete: () {},
+            );
+          }
+          return const MainScreen();
+        },
+      ),
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+
+  Future<void> _loadSessions() async {
+    final authCubit = context.read<AuthCubit>();
+    final token = await authCubit.getValidToken();
+    if (token == null || !mounted) return;
+
+    try {
+      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+      final sessions = await api.listSessions(token);
+      if (mounted) {
+        context.read<SessionsCubit>().setSessions(sessions);
+        if (sessions.isNotEmpty) {
+          context.read<SessionsCubit>().setActiveSessionId(sessions.first.id);
+        }
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return BlocBuilder<SessionsCubit, SessionsState>(
+      builder: (context, sessionsState) {
+        final activeSession = sessionsState.sessions
+            .where((s) => s.id == sessionsState.activeSessionId)
+            .firstOrNull;
+        final title = activeSession?.title ?? '새 대화';
+
+        return Scaffold(
+          appBar: AppBar(
+            leading: Builder(
+              builder: (scaffoldContext) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+              ),
+            ),
+            title: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: BlocBuilder<AuthCubit, AuthState>(
+                  builder: (context, authState) {
+                    return Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: authState.isConnected
+                            ? theme.colorScheme.tertiary
+                            : theme.colorScheme.error,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          drawer: AppDrawer(
+            sessions: sessionsState.sessions,
+            activeSessionId: sessionsState.activeSessionId,
+            onSessionTap: (id) {
+              Navigator.of(context).pop();
+              final ws = context.read<WebSocketService>();
+              final chatCubit = context.read<ChatCubit>();
+              context.read<SessionsCubit>().setActiveSessionId(id);
+              chatCubit.clearMessages();
+              ws.send(WsSwitchSession(sessionId: id));
+            },
+            onNewChat: () {
+              Navigator.of(context).pop();
+              final chatCubit = context.read<ChatCubit>();
+              context.read<SessionsCubit>().setActiveSessionId(null);
+              chatCubit.clearMessages();
+            },
+            onSessionDelete: (id) async {
+              final authCubit = context.read<AuthCubit>();
+              final token = await authCubit.getValidToken();
+              if (token == null) return;
+              try {
+                final api =
+                    createApiClient(authCubit.state.storedAuth!.serverUrl);
+                await api.deleteSession(token, id);
+                if (mounted) {
+                  context.read<SessionsCubit>().removeSession(id);
+                }
+              } catch (_) {}
+            },
+            onSettings: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    onProviderEdit: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderEditScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          body: const ChatScreen(),
+        );
+      },
+    );
+  }
+}

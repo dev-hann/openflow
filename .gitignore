@@ -11,3 +11,8 @@ telegram-offset.json
 *.key
 paired-devices.json
 .worktrees/
+
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/

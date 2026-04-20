@@ -22,7 +22,7 @@ export interface AgentConfig {
 }
 
 export interface AgentDeps {
-  llm: LlmClient;
+  llm: LlmClient | (() => LlmClient);
   memory: MemoryStore;
   tools: ToolExecutor;
   config: AgentConfig;
@@ -50,7 +50,8 @@ export interface AgentEngine {
 }
 
 export function createAgentEngine(deps: AgentDeps): AgentEngine {
-  const { llm, memory, tools, config, confirmationHandler, confirmationTimeout } = deps;
+  const { memory, tools, config, confirmationHandler, confirmationTimeout } = deps;
+  const resolveLlm = typeof deps.llm === "function" ? deps.llm : () => deps.llm as LlmClient;
 
   if (!existsSync(config.workspace)) {
     mkdirSync(config.workspace, { recursive: true });
@@ -62,7 +63,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
   });
 
   const compaction = createCompaction({
-    llm,
+    llm: resolveLlm,
     config: { maxContextTokens: 30_000, compactThreshold: 0.8 },
   });
 
@@ -122,7 +123,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     round?: number,
   ): Promise<LlmResponse> {
     try {
-      return await llm.chat({
+      return await resolveLlm().chat({
         messages,
         toolDefinitions: toolDefinitions.length > 0 ? toolDefinitions : undefined,
         onToken: round === 0 ? onToken : undefined,

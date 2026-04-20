@@ -6,7 +6,7 @@
 
 ```
 ┌──────────────┐
-│  Mobile App  │  Expo/React Native (SDK 54)
+│  Mobile App  │  Flutter 3.29+ / Dart 3.6+
 └──────┬───────┘
        │ WebSocket + REST API
 ┌──────▼───────┐
@@ -304,6 +304,8 @@ Server                        App
 | POST | `/api/providers/:id/verify` | Yes | Test provider connectivity |
 | GET | `/api/providers/:id/models` | Yes | List available models |
 | GET | `/api/status` | Yes | Health check |
+| POST | `/api/push-tokens` | Yes | Register push notification token |
+| DELETE | `/api/push-tokens` | Yes | Unregister push notification token |
 
 Rate limit: 10 req/60s on auth endpoints per IP.
 
@@ -311,9 +313,9 @@ Rate limit: 10 req/60s on auth endpoints per IP.
 
 ## Push Notifications
 
-Expo push notifications via `expo-server-sdk`.
+Server-side push notification support for connected devices.
 
-- Tokens stored in memory (reset on restart)
+- Tokens persisted to `~/.openflow/push-tokens.json` (survive restarts)
 - Auto-unregister devices returning `DeviceNotRegistered`
 - Startup/shutdown notifications sent to all registered devices
 - `enabled: false` → all methods are no-ops
@@ -377,14 +379,19 @@ Max skill file size: 256 KB. Skills listed in system prompt as XML; agent reads 
 
 ## Companion App
 
-Expo/React Native mobile app (`app/` directory):
+Flutter mobile app (`app/` directory):
 
-- **Expo SDK 54**, React 19, React Native 0.81
-- **State:** Zustand
-- **Navigation:** React Navigation (bottom tabs + stack)
-- **Markdown:** `react-native-markdown-display`
-- **Secure storage:** `expo-secure-store` (tokens)
-- **Build:** EAS Build for iOS/Android
+- **Flutter 3.29+**, Dart 3.6+, Material 3
+- **State:** flutter_bloc (Cubit pattern) — 5 Cubits (Auth, Chat, Sessions, Providers, Settings)
+- **Navigation:** Imperative `MaterialPageRoute`
+- **Markdown:** `flutter_markdown` (assistant responses)
+- **Secure storage:** `flutter_secure_storage` (token persistence)
+- **WebSocket:** `web_socket_channel` with auto-reconnect (exponential backoff + jitter)
+- **Onboarding:** 3-step flow (server URL → PIN verification → provider setup)
+- **Provider management:** 12 presets, add/edit/delete, connection verification, model listing
+- **Streaming:** Token-by-token streaming via `WsTokenChunk`, typing indicator
+- **Build:** GitHub Actions → Android APK (split-per-abi, minification enabled)
+- **Distribution:** GitHub Releases (APK sideloading)
 
 ---
 

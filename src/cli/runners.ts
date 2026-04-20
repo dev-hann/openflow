@@ -29,11 +29,10 @@ function createAgentDeps(
     maxTokens: config.llm.maxTokens,
     temperature: config.llm.temperature,
   });
-  const llm = providerPool.getClient();
 
   const tools = createToolExecutor(config.tools, config.agent.workspace, sender);
   const agent = createAgentEngine({
-    llm,
+    llm: () => providerPool.getClient(),
     memory,
     tools,
     config: { ...config.agent, skills: config.skills },

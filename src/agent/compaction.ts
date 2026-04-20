@@ -34,12 +34,13 @@ export interface CompactionConfig {
 }
 
 export interface CompactionDeps {
-  llm: LlmClient;
+  llm: LlmClient | (() => LlmClient);
   config: CompactionConfig;
 }
 
 export function createCompaction(deps: CompactionDeps) {
-  const { llm, config } = deps;
+  const { config } = deps;
+  const resolveLlm = typeof deps.llm === "function" ? deps.llm : () => deps.llm as LlmClient;
 
   async function compactIfNeeded(
     sessionId: string,
@@ -78,7 +79,7 @@ export function createCompaction(deps: CompactionDeps) {
     const conversation = messages.map(messageToText).join("\n\n");
 
     try {
-      const result = await llm.complete({
+      const result = await resolveLlm().complete({
         messages: [
           { role: "system", content: COMPACT_SYSTEM_PROMPT },
           { role: "user", content: conversation },
