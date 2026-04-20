@@ -101,12 +101,12 @@ sealed class WsServerMessage {
           code: json['code'] as String? ?? 'UNKNOWN',
           message: json['message'] as String? ?? '',
         ),
-      'auth_required' => WsAuthRequired(),
-      'auth_ok' => WsAuthOk(),
+      'auth_required' => const WsAuthRequired(),
+      'auth_ok' => const WsAuthOk(),
       'session_switched' => WsSessionSwitched(
           sessionId: json['session_id'] as String,
         ),
-      'pong' => WsPong(),
+      'pong' => const WsPong(),
       _ => throw FormatException('Unknown WS message type: ${json['type']}'),
     };
   }
@@ -135,16 +135,22 @@ class WsError extends WsServerMessage {
   final String message;
 }
 
-class WsAuthRequired extends WsServerMessage {}
+class WsAuthRequired extends WsServerMessage {
+  const WsAuthRequired();
+}
 
-class WsAuthOk extends WsServerMessage {}
+class WsAuthOk extends WsServerMessage {
+  const WsAuthOk();
+}
 
 class WsSessionSwitched extends WsServerMessage {
   const WsSessionSwitched({required this.sessionId});
   final String sessionId;
 }
 
-class WsPong extends WsServerMessage {}
+class WsPong extends WsServerMessage {
+  const WsPong();
+}
 
 class SessionInfo extends Equatable {
   const SessionInfo({
