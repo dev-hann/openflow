@@ -101,103 +101,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             builder: (context, providersState) {
               return BlocBuilder<SettingsCubit, SettingsState>(
                 builder: (context, settingsState) {
-                  return ListView(
-                    padding: const EdgeInsets.all(Spacing.md),
-                    children: [
-                      ConnectionSection(
-                        isConnected: authState.isConnected,
-                        serverUrl: authState.storedAuth?.serverUrl,
-                        onServerChanged: _handleServerChanged,
-                      ),
-                      const SizedBox(height: Spacing.lg),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(Spacing.md),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'AI 모델',
-                                style: theme.textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: Spacing.sm),
-                              Text(
-                                settingsState.currentModel ?? '선택되지 않음',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: settingsState.currentModel != null
-                                      ? null
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.lg),
-                      Row(
-                        children: [
-                          Text(
-                            'Provider',
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const Spacer(),
-                          TextButton.icon(
-                            onPressed: widget.onProviderEdit,
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('추가'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: Spacing.sm),
-                      ...providersState.providers.map((provider) {
-                        final isActive =
-                            provider.id == providersState.activeProviderId;
-                        return Card(
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.dns_outlined,
-                              color:
-                                  isActive ? theme.colorScheme.primary : null,
-                            ),
-                            title: Text(provider.name),
-                            subtitle: Text(provider.model),
-                            trailing:
-                                isActive ? const Chip(label: Text('활성')) : null,
-                            onTap: isActive
-                                ? null
-                                : () => _switchProvider(provider.id),
-                          ),
-                        );
-                      }),
-                      if (settingsState.availableModels.isNotEmpty) ...[
-                        const SizedBox(height: Spacing.lg),
-                        Text('모델', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: Spacing.sm),
-                        Wrap(
-                          spacing: Spacing.xs,
-                          children: settingsState.availableModels.map((model) {
-                            return ChoiceChip(
-                              label: Text(model),
-                              selected: model == settingsState.currentModel,
-                              onSelected: (_) {
-                                context
-                                    .read<SettingsCubit>()
-                                    .setCurrentModel(model);
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                      const SizedBox(height: Spacing.xxl),
-                      Center(
-                        child: Text(
-                          'OpenFlow v1.0.0',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ),
-                    ],
+                  return _buildContent(
+                    theme,
+                    authState,
+                    providersState,
+                    settingsState,
                   );
                 },
               );
@@ -205,6 +113,124 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildContent(
+    ThemeData theme,
+    AuthState authState,
+    ProvidersState providersState,
+    SettingsState settingsState,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(Spacing.md),
+      children: [
+        ConnectionSection(
+          isConnected: authState.isConnected,
+          serverUrl: authState.storedAuth?.serverUrl,
+          onServerChanged: _handleServerChanged,
+        ),
+        const SizedBox(height: Spacing.lg),
+        _buildModelCard(theme, settingsState),
+        const SizedBox(height: Spacing.lg),
+        _buildProviderSection(theme, providersState),
+        if (settingsState.availableModels.isNotEmpty) ...[
+          const SizedBox(height: Spacing.lg),
+          _buildModelChips(settingsState),
+        ],
+        const SizedBox(height: Spacing.xxl),
+        Center(
+          child: Text(
+            'OpenFlow v1.0.0',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModelCard(ThemeData theme, SettingsState settingsState) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('AI 모델', style: theme.textTheme.titleSmall),
+            const SizedBox(height: Spacing.sm),
+            Text(
+              settingsState.currentModel ?? '선택되지 않음',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: settingsState.currentModel != null
+                    ? null
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProviderSection(
+    ThemeData theme,
+    ProvidersState providersState,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Provider', style: theme.textTheme.titleMedium),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: widget.onProviderEdit,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('추가'),
+            ),
+          ],
+        ),
+        const SizedBox(height: Spacing.sm),
+        ...providersState.providers.map((provider) {
+          final isActive = provider.id == providersState.activeProviderId;
+          return Card(
+            child: ListTile(
+              leading: Icon(
+                Icons.dns_outlined,
+                color: isActive ? theme.colorScheme.primary : null,
+              ),
+              title: Text(provider.name),
+              subtitle: Text(provider.model),
+              trailing: isActive ? const Chip(label: Text('활성')) : null,
+              onTap: isActive ? null : () => _switchProvider(provider.id),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildModelChips(SettingsState settingsState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('모델', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: Spacing.sm),
+        Wrap(
+          spacing: Spacing.xs,
+          children: settingsState.availableModels.map((model) {
+            return ChoiceChip(
+              label: Text(model),
+              selected: model == settingsState.currentModel,
+              onSelected: (_) {
+                context.read<SettingsCubit>().setCurrentModel(model);
+              },
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
