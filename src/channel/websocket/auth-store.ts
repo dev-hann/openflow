@@ -1,7 +1,8 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { homedir } from "node:os";
+
 import { createLogger } from "../../utils/logger.js";
+import { createJsonFileStore } from "../../utils/json-file-store.js";
 
 const log = createLogger("ws/auth-store");
 
@@ -19,6 +20,12 @@ interface AuthStoreData {
 
 const DEFAULT_DATA: AuthStoreData = { devices: [] };
 
+function isAuthStoreData(data: unknown): data is AuthStoreData {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return Array.isArray(obj.devices);
+}
+
 export interface AuthStore {
   addDevice(device: DeviceRecord): void;
   findDeviceBySessionKey(sessionKey: string): DeviceRecord | undefined;
@@ -31,68 +38,56 @@ export interface AuthStore {
 
 export function createAuthStore(filePath?: string): AuthStore {
   const resolvedPath = filePath ?? join(homedir(), ".openflow", "auth-store.json");
-  let data: AuthStoreData = loadData(resolvedPath);
-
-  function loadData(path: string): AuthStoreData {
-    try {
-      if (!existsSync(path)) return { ...DEFAULT_DATA };
-      const raw = readFileSync(path, "utf-8").trim();
-      const parsed = JSON.parse(raw) as AuthStoreData;
-      if (!Array.isArray(parsed.devices)) return { ...DEFAULT_DATA };
-      return parsed;
-    } catch {
-      log.debug({ path }, "failed to load auth store, using defaults");
-      return { ...DEFAULT_DATA };
-    }
-  }
-
-  function save(): void {
-    const dir = dirname(resolvedPath);
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(resolvedPath, JSON.stringify(data, null, 2) + "\n", { encoding: "utf-8", mode: 0o600 });
-  }
+  const store = createJsonFileStore<AuthStoreData>(resolvedPath, DEFAULT_DATA, {
+    validate: isAuthStoreData,
+  });
 
   function addDevice(device: DeviceRecord): void {
-    data.devices = data.devices.filter((d) => d.sessionKey !== device.sessionKey);
-    data.devices.push(device);
-    save();
+    store.update((data) => {
+      data.devices = data.devices.filter((d) => d.sessionKey !== device.sessionKey);
+      data.devices.push(device);
+    });
     log.info({ label: device.label }, "device paired");
   }
 
   function findDeviceBySessionKey(sessionKey: string): DeviceRecord | undefined {
-    return data.devices.find((d) => d.sessionKey === sessionKey);
+    return store.getData().devices.find((d) => d.sessionKey === sessionKey);
   }
 
   function findDeviceByRefreshHash(hash: string): DeviceRecord | undefined {
-    return data.devices.find((d) => d.refreshTokenHash === hash);
+    return store.getData().devices.find((d) => d.refreshTokenHash === hash);
   }
 
   function updateRefreshHash(sessionKey: string, newHash: string): void {
-    const device = data.devices.find((d) => d.sessionKey === sessionKey);
-    if (!device) return;
-    device.refreshTokenHash = newHash;
-    device.lastSeen = Date.now();
-    save();
+    store.update((data) => {
+      const device = data.devices.find((d) => d.sessionKey === sessionKey);
+      if (!device) return;
+      device.refreshTokenHash = newHash;
+      device.lastSeen = Date.now();
+    });
   }
 
   function updateLastSeen(sessionKey: string): void {
-    const device = data.devices.find((d) => d.sessionKey === sessionKey);
-    if (!device) return;
-    device.lastSeen = Date.now();
-    save();
+    store.update((data) => {
+      const device = data.devices.find((d) => d.sessionKey === sessionKey);
+      if (!device) return;
+      device.lastSeen = Date.now();
+    });
   }
 
   function removeDevice(sessionKey: string): boolean {
-    const before = data.devices.length;
-    data.devices = data.devices.filter((d) => d.sessionKey !== sessionKey);
-    if (data.devices.length === before) return false;
-    save();
-    log.info({ sessionKey }, "device unpaired");
-    return true;
+    let removed = false;
+    store.update((data) => {
+      const before = data.devices.length;
+      data.devices = data.devices.filter((d) => d.sessionKey !== sessionKey);
+      removed = data.devices.length < before;
+    });
+    if (removed) log.info({ sessionKey }, "device unpaired");
+    return removed;
   }
 
   function listDevices(): DeviceRecord[] {
-    return [...data.devices];
+    return [...store.getData().devices];
   }
 
   return {

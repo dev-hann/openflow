@@ -1,8 +1,7 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
 import { homedir } from "node:os";
 
 import { createLogger } from "../utils/logger.js";
+import { createJsonFileStore } from "../utils/json-file-store.js";
 
 const log = createLogger("notification/tokens");
 
@@ -28,63 +27,52 @@ interface StoreData {
 
 const DEFAULT_DATA: StoreData = { tokens: [] };
 
+function isStoreData(data: unknown): data is StoreData {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return Array.isArray(obj.tokens);
+}
+
 export function createPushTokenStore(filePath?: string): PushTokenStore {
   const resolvedPath = filePath ?? `${homedir()}/.openflow/push-tokens.json`;
-  let data: StoreData = loadData(resolvedPath);
-
-  function loadData(path: string): StoreData {
-    try {
-      if (!existsSync(path)) return { ...DEFAULT_DATA };
-      const raw = readFileSync(path, "utf-8").trim();
-      const parsed = JSON.parse(raw) as StoreData;
-      if (!Array.isArray(parsed.tokens)) return { ...DEFAULT_DATA };
-      return parsed;
-    } catch {
-      log.debug({ path }, "failed to load push token store, using defaults");
-      return { ...DEFAULT_DATA };
-    }
-  }
-
-  function save(): void {
-    const dir = dirname(resolvedPath);
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(resolvedPath, JSON.stringify(data, null, 2) + "\n", {
-      encoding: "utf-8",
-      mode: 0o600,
-    });
-    log.debug({ count: data.tokens.length }, "token store saved");
-  }
+  const store = createJsonFileStore<StoreData>(resolvedPath, DEFAULT_DATA, {
+    validate: isStoreData,
+  });
 
   function register(token: string, platform: PushTokenRecord["platform"], label: string): void {
-    data.tokens = data.tokens.filter((t) => t.token !== token);
-    const now = Date.now();
-    data.tokens.push({ token, platform, label, registeredAt: now, lastUsedAt: now });
-    save();
+    store.update((data) => {
+      data.tokens = data.tokens.filter((t) => t.token !== token);
+      const now = Date.now();
+      data.tokens.push({ token, platform, label, registeredAt: now, lastUsedAt: now });
+    });
     log.info({ platform, label }, "push token registered");
   }
 
   function unregister(token: string): boolean {
-    const before = data.tokens.length;
-    data.tokens = data.tokens.filter((t) => t.token !== token);
-    if (data.tokens.length === before) return false;
-    save();
-    log.info({ token: token.slice(0, 8) + "..." }, "push token unregistered");
-    return true;
+    let removed = false;
+    store.update((data) => {
+      const before = data.tokens.length;
+      data.tokens = data.tokens.filter((t) => t.token !== token);
+      removed = data.tokens.length < before;
+    });
+    if (removed) log.info({ token: token.slice(0, 8) + "..." }, "push token unregistered");
+    return removed;
   }
 
   function getAll(): PushTokenRecord[] {
-    return [...data.tokens];
+    return [...store.getData().tokens];
   }
 
   function getByToken(token: string): PushTokenRecord | undefined {
-    return data.tokens.find((t) => t.token === token);
+    return store.getData().tokens.find((t) => t.token === token);
   }
 
   function touchLastUsed(token: string): void {
-    const record = data.tokens.find((t) => t.token === token);
-    if (!record) return;
-    record.lastUsedAt = Date.now();
-    save();
+    store.update((data) => {
+      const record = data.tokens.find((t) => t.token === token);
+      if (!record) return;
+      record.lastUsedAt = Date.now();
+    });
   }
 
   return { register, unregister, getAll, getByToken, touchLastUsed };
