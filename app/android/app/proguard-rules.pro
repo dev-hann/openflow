@@ -1,2 +1,3 @@
 -keep class io.flutter.** { *; }
 -keep class com.it_nomads.fluttersecurestorage.** { *; }
+-dontwarn com.google.android.play.core.**
