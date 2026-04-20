@@ -26,7 +26,10 @@ export function validateUrl(url: string): void {
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error(`Unsupported protocol: ${parsed.protocol}`);
   }
-  const hostname = parsed.hostname.toLowerCase();
+  const rawHostname = parsed.hostname.toLowerCase();
+  const hostname = rawHostname.startsWith("[") && rawHostname.endsWith("]")
+    ? rawHostname.slice(1, -1)
+    : rawHostname;
   if (
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
