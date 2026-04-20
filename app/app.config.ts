@@ -31,6 +31,7 @@ const config: ExpoConfig = {
     package: "com.openflow.app",
     allowBackup: true,
     softwareKeyboardLayoutMode: "resize",
+    usesCleartextTraffic: true,
   },
   web: {
     bundler: "metro",
