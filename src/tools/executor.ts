@@ -90,18 +90,12 @@ const shellTool: InternalTool = {
   },
 };
 
-export function createToolExecutor(
+function registerDefaultTools(
   config: ToolsConfig,
   workspace: string,
-  sender?: ChannelSender,
-): ToolExecutor {
-  const allTools: Map<string, InternalTool> = new Map();
-  let currentSender = sender;
-
-  function register(tool: InternalTool): void {
-    allTools.set(tool.name, tool);
-  }
-
+  sender: ChannelSender | undefined,
+  register: (tool: InternalTool) => void,
+): void {
   if (config.shell.enabled) {
     const shellWithConfig: InternalTool = {
       ...shellTool,
@@ -125,11 +119,24 @@ export function createToolExecutor(
     register(browserTools.screenshot);
     register(browserTools.execute);
   }
-
-  if (currentSender) {
-    register(createSendMessageTool(currentSender));
-    register(createSendImageTool(currentSender, workspace));
+  if (sender) {
+    register(createSendMessageTool(sender));
+    register(createSendImageTool(sender, workspace));
   }
+}
+
+export function createToolExecutor(
+  config: ToolsConfig,
+  workspace: string,
+  sender?: ChannelSender,
+): ToolExecutor {
+  const allTools: Map<string, InternalTool> = new Map();
+
+  function register(tool: InternalTool): void {
+    allTools.set(tool.name, tool);
+  }
+
+  registerDefaultTools(config, workspace, sender, register);
 
   const requireConfirmation = config.requireConfirmation ?? [];
 
@@ -143,7 +150,6 @@ export function createToolExecutor(
     },
 
     updateSender(newSender: ChannelSender): void {
-      currentSender = newSender;
       allTools.delete("send_message");
       allTools.delete("send_image");
       register(createSendMessageTool(newSender));
