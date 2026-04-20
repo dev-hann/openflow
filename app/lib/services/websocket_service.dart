@@ -92,7 +92,10 @@ class WebSocketService {
           onConnected?.call();
         case WsPong():
           break;
-        default:
+        case WsTokenChunk():
+        case WsResponse():
+        case WsError():
+        case WsSessionSwitched():
           onMessage?.call(message);
       }
     } on Object {

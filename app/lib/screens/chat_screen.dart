@@ -80,7 +80,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       case WsSessionSwitched(:final sessionId):
         context.read<SessionsCubit>().setActiveSessionId(sessionId);
         chatCubit.clearMessages();
-      default:
+      case WsAuthRequired():
+      case WsAuthOk():
+      case WsPong():
         break;
     }
   }
