@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -20,7 +21,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat();
+    )..repeat().ignore();
   }
 
   @override
@@ -61,5 +62,3 @@ class _TypingIndicatorState extends State<TypingIndicator>
     );
   }
 }
-
-

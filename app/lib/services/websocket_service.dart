@@ -10,7 +10,7 @@ typedef VoidCallback = void Function();
 
 class WebSocketService {
   WebSocketChannel? _channel;
-  StreamSubscription? _subscription;
+  StreamSubscription<dynamic>? _subscription;
   Timer? _pingTimer;
   Timer? _reconnectTimer;
 
@@ -73,7 +73,7 @@ class WebSocketService {
         onError: _handleError,
         onDone: _handleDone,
       );
-    } catch (_) {
+    } on Object {
       _scheduleReconnect();
     }
   }
@@ -95,7 +95,9 @@ class WebSocketService {
         default:
           onMessage?.call(message);
       }
-    } catch (_) {}
+    } on Object {
+      // Ignore malformed messages
+    }
   }
 
   void _handleError(Object error) {
@@ -146,9 +148,9 @@ class WebSocketService {
     _stopPing();
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
-    _subscription?.cancel();
+    unawaited(_subscription?.cancel());
     _subscription = null;
-    _channel?.sink.close();
+    unawaited(_channel?.sink.close());
     _channel = null;
   }
 }

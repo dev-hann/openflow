@@ -67,7 +67,9 @@ class _MainScreenState extends State<MainScreen> {
           context.read<SessionsCubit>().setActiveSessionId(sessions.first.id);
         }
       }
-    } catch (_) {}
+    } on Object {
+      // Session load failure is non-critical
+    }
   }
 
   @override
@@ -149,16 +151,20 @@ class _MainScreenState extends State<MainScreen> {
             },
             onSettings: () {
               Navigator.of(context).pop();
-              Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(
-                  builder: (_) => SettingsScreen(
-                    onProviderEdit: () {
-                      Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ProviderEditScreen(),
-                        ),
-                      );
-                    },
+              unawaited(
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SettingsScreen(
+                      onProviderEdit: () {
+                        unawaited(
+                          Navigator.of(context).push<void>(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ProviderEditScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               );

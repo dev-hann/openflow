@@ -23,7 +23,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pinController = TextEditingController();
   bool _loading = false;
   String? _error;
-  // ignore: use_late_for_private_fields_and_variables
+  // ignore: use_late_for_private_fields_and_variables, document_ignores
   TokenPair? _tokens;
 
   @override
@@ -48,12 +48,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     try {
       final api = createApiClient(url);
       await api.pairInit();
+      if (!mounted) return;
       context.read<SettingsCubit>().setServerUrl(url);
       setState(() {
         _step = _Step.pin;
         _loading = false;
       });
-    } catch (e) {
+    } on Object catch (e) {
       setState(() {
         _error = '서버에 연결할 수 없습니다: $e';
         _loading = false;
@@ -84,13 +85,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         refreshToken: _tokens!.refreshToken,
         pairedAt: DateTime.now(),
       );
+      if (!mounted) return;
       await context.read<AuthCubit>().saveAuth(auth);
 
       setState(() {
         _step = _Step.provider;
         _loading = false;
       });
-    } catch (e) {
+    } on Object catch (e) {
       setState(() {
         _error = 'PIN 인증 실패: $e';
         _loading = false;

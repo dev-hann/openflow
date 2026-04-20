@@ -18,7 +18,7 @@ class AuthStorage {
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
       return StoredAuth.fromJson(json);
-    } catch (_) {
+    } on Object {
       return null;
     }
   }

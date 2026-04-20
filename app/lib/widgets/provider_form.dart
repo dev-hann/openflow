@@ -84,7 +84,7 @@ class _ProviderFormState extends State<ProviderForm> {
           _selectedModel = response.first;
         }
       });
-    } catch (e) {
+    } on Object catch (e) {
       setState(() {
         _verifying = false;
         _verifyResult = VerifyResult(ok: false, error: e.toString());

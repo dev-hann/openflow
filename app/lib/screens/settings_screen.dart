@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/constants/dimensions.dart';
@@ -22,7 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    unawaited(_loadData());
   }
 
   Future<void> _loadData() async {
@@ -38,22 +40,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final providers = await api.listProviders(token);
       if (mounted) context.read<ProvidersCubit>().setProviders(providers);
-    } catch (_) {}
+    } on Object {
+      // Provider load failure is non-critical
+    }
 
     try {
       final sessions = await api.listSessions(token);
       if (mounted) context.read<SessionsCubit>().setSessions(sessions);
-    } catch (_) {}
+    } on Object {
+      // Session load failure is non-critical
+    }
   }
 
   Future<void> _handleServerChanged() async {
     final authCubit = context.read<AuthCubit>();
     final ws = context.read<WebSocketService>();
+    final sessionsCubit = context.read<SessionsCubit>();
+    final providersCubit = context.read<ProvidersCubit>();
+    final settingsCubit = context.read<SettingsCubit>();
     ws.disconnect();
     await authCubit.clearAll();
-    context.read<SessionsCubit>().setSessions([]);
-    context.read<ProvidersCubit>().setProviders([]);
-    context.read<SettingsCubit>().setServerUrl('');
+    sessionsCubit.setSessions([]);
+    providersCubit.setProviders([]);
+    settingsCubit.setServerUrl('');
   }
 
   Future<void> _switchProvider(String providerId) async {
@@ -69,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       providersCubit.setActiveProviderId(providerId);
       final providers = await api.listProviders(token);
       providersCubit.setProviders(providers);
-    } catch (e) {
+    } on Object catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Provider 전환 실패: $e')),

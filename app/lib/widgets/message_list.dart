@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
@@ -46,13 +48,14 @@ class MessageListState extends State<MessageList> {
   }
 
   void scrollToBottom() {
-    if (_controller.hasClients) {
+    if (!_controller.hasClients) return;
+    unawaited(
       _controller.animateTo(
         _controller.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
-      );
-    }
+      ),
+    );
   }
 
   @override
