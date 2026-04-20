@@ -1,6 +1,7 @@
 import { createLogger } from "../utils/logger.js";
 import { createProviderPool } from "../llm/pool.js";
-import { createMemoryStore, createProviderStore } from "../memory/store.js";
+import { createMemoryStore } from "../memory/store.js";
+import { createProviderStore } from "../memory/provider-store.js";
 import { createToolExecutor, type ChannelSender } from "../tools/executor.js";
 import { createAgentEngine } from "../agent/engine.js";
 import { createWebSocketChannel } from "../channel/websocket/index.js";

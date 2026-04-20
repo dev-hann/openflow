@@ -1,11 +1,14 @@
 export {
   createMemoryStore,
-  createProviderStore,
   type MemoryStore,
   type Session,
   type AddMessageParams,
   type SearchResult,
-  type ProviderStore,
-  type Provider,
-  type AddProviderParams,
 } from "./store.js";
+
+export {
+  createProviderStore,
+  type Provider,
+  type ProviderStore,
+  type AddProviderParams,
+} from "./provider-store.js";
