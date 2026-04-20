@@ -75,8 +75,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocBuilder<SessionsCubit, SessionsState>(
       builder: (context, sessionsState) {
         final activeSession = sessionsState.sessions
@@ -85,94 +83,103 @@ class _MainScreenState extends State<MainScreen> {
         final title = activeSession?.title ?? '새 대화';
 
         return Scaffold(
-          appBar: AppBar(
-            leading: Builder(
-              builder: (scaffoldContext) => IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
-              ),
-            ),
-            title: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: BlocBuilder<AuthCubit, AuthState>(
-                  builder: (context, authState) {
-                    return Container(
-                      width: 8,
-                      height: 8,
-                      margin: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: authState.isConnected
-                            ? theme.colorScheme.tertiary
-                            : theme.colorScheme.error,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          drawer: AppDrawer(
-            sessions: sessionsState.sessions,
-            activeSessionId: sessionsState.activeSessionId,
-            onSessionTap: (id) {
-              Navigator.of(context).pop();
-              final ws = context.read<WebSocketService>();
-              final chatCubit = context.read<ChatCubit>();
-              context.read<SessionsCubit>().setActiveSessionId(id);
-              chatCubit.clearMessages();
-              ws.send(WsSwitchSession(sessionId: id));
-            },
-            onNewChat: () {
-              Navigator.of(context).pop();
-              final chatCubit = context.read<ChatCubit>();
-              context.read<SessionsCubit>().setActiveSessionId(null);
-              chatCubit.clearMessages();
-            },
-            onSessionDelete: (id) async {
-              final authCubit = context.read<AuthCubit>();
-              final token = await authCubit.getValidToken();
-              if (token == null) return;
-              try {
-                final api =
-                    createApiClient(authCubit.state.storedAuth!.serverUrl);
-                await api.deleteSession(token, id);
-                if (!context.mounted) return;
-                if (mounted) {
-                  context.read<SessionsCubit>().removeSession(id);
-                }
-              } on Object {
-                // Session deletion failure is non-critical
-              }
-            },
-            onSettings: () {
-              Navigator.of(context).pop();
-              unawaited(
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SettingsScreen(
-                      onProviderEdit: () {
-                        unawaited(
-                          Navigator.of(context).push<void>(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const ProviderEditScreen(),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+          appBar: _buildAppBar(context, title),
+          drawer: _buildDrawer(context, sessionsState),
+          body: const ChatScreen(),
+        );
+      },
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, String title) {
+    final theme = Theme.of(context);
+
+    return AppBar(
+      leading: Builder(
+        builder: (scaffoldContext) => IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+        ),
+      ),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              return Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: authState.isConnected
+                      ? theme.colorScheme.tertiary
+                      : theme.colorScheme.error,
                 ),
               );
             },
           ),
-          body: const ChatScreen(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context, SessionsState sessionsState) {
+    return AppDrawer(
+      sessions: sessionsState.sessions,
+      activeSessionId: sessionsState.activeSessionId,
+      onSessionTap: (id) {
+        Navigator.of(context).pop();
+        final ws = context.read<WebSocketService>();
+        final chatCubit = context.read<ChatCubit>();
+        context.read<SessionsCubit>().setActiveSessionId(id);
+        chatCubit.clearMessages();
+        ws.send(WsSwitchSession(sessionId: id));
+      },
+      onNewChat: () {
+        Navigator.of(context).pop();
+        final chatCubit = context.read<ChatCubit>();
+        context.read<SessionsCubit>().setActiveSessionId(null);
+        chatCubit.clearMessages();
+      },
+      onSessionDelete: (id) async {
+        final authCubit = context.read<AuthCubit>();
+        final token = await authCubit.getValidToken();
+        if (token == null) return;
+        try {
+          final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+          await api.deleteSession(token, id);
+          if (!context.mounted) return;
+          if (mounted) {
+            context.read<SessionsCubit>().removeSession(id);
+          }
+        } on Object {
+          // Session deletion failure is non-critical
+        }
+      },
+      onSettings: () {
+        Navigator.of(context).pop();
+        unawaited(
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => SettingsScreen(
+                onProviderEdit: () {
+                  unawaited(
+                    Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ProviderEditScreen(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
         );
       },
     );
