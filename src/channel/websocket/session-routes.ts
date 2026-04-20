@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createLogger } from "../../utils/logger.js";
 import type { MemoryStore } from "../../memory/index.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
-import { sendJson, readJsonBody, requireAuth } from "./middleware.js";
+import { sendJson, readJsonBody, readJsonObject, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
 import { route, routePattern, type Route } from "./routes.js";
@@ -57,12 +57,11 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   async function handlePushTokenRegister(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { token, platform, label } = body as { token?: string; platform?: string; label?: string };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const token = body.token as string | undefined;
+    const platform = body.platform as string | undefined;
+    const label = body.label as string | undefined;
     if (!token) {
       sendJson(res, 400, { error: "token_required" });
       return;
@@ -79,12 +78,9 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   async function handlePushTokenUnregister(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { token } = body as { token?: string };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const token = body.token as string | undefined;
     if (!token) {
       sendJson(res, 400, { error: "token_required" });
       return;

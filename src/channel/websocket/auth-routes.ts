@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonBody, requireAuth } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, type Route } from "./routes.js";
 
@@ -55,12 +55,10 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
       sendJson(res, 429, { error: "rate_limited" });
       return;
     }
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { pin, label } = body as { pin?: string; label?: string };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const pin = body.pin as string | undefined;
+    const label = body.label as string | undefined;
     if (!pin) {
       sendJson(res, 400, { error: "pin_required" });
       return;
@@ -78,12 +76,9 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
       sendJson(res, 429, { error: "rate_limited" });
       return;
     }
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { refreshToken } = body as { refreshToken?: string };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const refreshToken = body.refreshToken as string | undefined;
     if (!refreshToken) {
       sendJson(res, 400, { error: "refresh_token_required" });
       return;

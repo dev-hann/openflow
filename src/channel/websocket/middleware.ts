@@ -66,6 +66,18 @@ export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   }
 }
 
+export async function readJsonObject(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<Record<string, unknown> | null> {
+  const body = await readJsonBody(req);
+  if (!body || typeof body !== "object") {
+    sendJson(res, 400, { error: "invalid_body" });
+    return null;
+  }
+  return body as Record<string, unknown>;
+}
+
 export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
   if (!enabled) return;
   res.setHeader("Access-Control-Allow-Origin", "*");

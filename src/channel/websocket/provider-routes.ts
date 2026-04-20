@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createLogger } from "../../utils/logger.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
-import { sendJson, readJsonBody, requireAuth } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, routePattern, type Route } from "./routes.js";
 
@@ -56,18 +56,13 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   async function handleProviderCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { name, baseUrl, apiKey, model, isDefault } = body as {
-      name?: string;
-      baseUrl?: string;
-      apiKey?: string;
-      model?: string;
-      isDefault?: boolean;
-    };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const name = body.name as string | undefined;
+    const baseUrl = body.baseUrl as string | undefined;
+    const apiKey = body.apiKey as string | undefined;
+    const model = body.model as string | undefined;
+    const isDefault = body.isDefault as boolean | undefined;
     if (!name || !baseUrl || !apiKey || !model) {
       sendJson(res, 400, { error: "name, baseUrl, apiKey, model are required" });
       return;
@@ -96,18 +91,14 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
       sendJson(res, 400, { error: "provider_id_required" });
       return;
     }
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { name, baseUrl, apiKey, model } = body as {
-      name?: string;
-      baseUrl?: string;
-      apiKey?: string;
-      model?: string;
-    };
-    const updated = providerStore.updateProvider(providerId, { name, baseUrl, apiKey, model });
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const updated = providerStore.updateProvider(providerId, {
+      name: body.name as string | undefined,
+      baseUrl: body.baseUrl as string | undefined,
+      apiKey: body.apiKey as string | undefined,
+      model: body.model as string | undefined,
+    });
     if (!updated) {
       sendJson(res, 404, { error: "provider_not_found" });
       return;
@@ -134,12 +125,9 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   async function handleProviderSwitch(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { providerId } = body as { providerId?: string };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const providerId = body.providerId as string | undefined;
     if (!providerId) {
       sendJson(res, 400, { error: "providerId_required" });
       return;
