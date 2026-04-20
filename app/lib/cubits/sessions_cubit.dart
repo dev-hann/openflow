@@ -50,8 +50,12 @@ class SessionsCubit extends Cubit<SessionsState> {
 
   void removeSession(String sessionId) {
     final sessions = state.sessions.where((s) => s.id != sessionId).toList();
-    final activeId =
-        state.activeSessionId == sessionId ? null : state.activeSessionId;
-    emit(SessionsState(sessions: sessions, activeSessionId: activeId));
+    final wasActive = state.activeSessionId == sessionId;
+    emit(
+      state.copyWith(
+        sessions: sessions,
+        clearActive: wasActive,
+      ),
+    );
   }
 }
