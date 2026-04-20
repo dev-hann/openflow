@@ -11,8 +11,8 @@ import {
   setCorsHeaders,
   handleOptions,
 } from "./middleware.js";
-import type { SessionInfo } from "./protocol.js";
 import { createProviderRoutes } from "./provider-routes.js";
+import { createSessionRoutes } from "./session-routes.js";
 
 const log = createLogger("ws/routes");
 
@@ -117,86 +117,13 @@ export function createRoutes(deps: RoutesDeps) {
     sendJson(res, 200, { ok: true });
   }
 
-  function handleSessionsList(req: IncomingMessage, res: ServerResponse): void {
-    const auth = requireAuth(req, res, authService);
-    if (!auth) return;
-    const sessions = memoryStore.listSessions();
-    const result: SessionInfo[] = sessions.map((s) => ({
-      id: s.id,
-      title: s.title,
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
-      messageCount: memoryStore.getMessages(s.id).length,
-    }));
-    sendJson(res, 200, { sessions: result });
-  }
-
-  async function handleSessionCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const auth = requireAuth(req, res, authService);
-    if (!auth) return;
-    const body = await readJsonBody(req);
-    const { title } = (body ?? {}) as { title?: string };
-    const session = memoryStore.createSession(title ?? "New Chat");
-    sendJson(res, 201, { id: session.id, title: session.title });
-  }
-
-  function handleSessionDelete(req: IncomingMessage, res: ServerResponse, path: string): void {
-    const auth = requireAuth(req, res, authService);
-    if (!auth) return;
-    const sessionId = path.slice("/api/sessions/".length);
-    if (!sessionId) {
-      sendJson(res, 400, { error: "session_id_required" });
-      return;
-    }
-    memoryStore.deleteSession(sessionId);
-    sendJson(res, 200, { ok: true });
-  }
-
   function handleStatus(req: IncomingMessage, res: ServerResponse): void {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     sendJson(res, 200, { status: "ok" });
   }
 
-  async function handlePushTokenRegister(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const auth = requireAuth(req, res, authService);
-    if (!auth) return;
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { token, platform, label } = body as { token?: string; platform?: string; label?: string };
-    if (!token) {
-      sendJson(res, 400, { error: "token_required" });
-      return;
-    }
-    if (platform !== "ios" && platform !== "android" && platform !== "web") {
-      sendJson(res, 400, { error: "platform must be ios, android, or web" });
-      return;
-    }
-    pushTokenStore.register(token, platform, label ?? "Unknown device");
-    log.info({ platform, label }, "push token registered via API");
-    sendJson(res, 200, { ok: true });
-  }
-
-  async function handlePushTokenUnregister(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const auth = requireAuth(req, res, authService);
-    if (!auth) return;
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { error: "invalid_body" });
-      return;
-    }
-    const { token } = body as { token?: string };
-    if (!token) {
-      sendJson(res, 400, { error: "token_required" });
-      return;
-    }
-    const removed = pushTokenStore.unregister(token);
-    sendJson(res, 200, { ok: removed });
-  }
-
+  const sessionRoutes = createSessionRoutes({ authService, memoryStore, pushTokenStore });
   const providerRoutes = createProviderRoutes({ authService, providerStore, providerPool });
 
   const routes: Array<{ match: (path: string, method: string) => boolean; handler: RouteHandler }> = [
@@ -204,13 +131,9 @@ export function createRoutes(deps: RoutesDeps) {
     { match: (p, m) => p === "/api/auth/pair/verify" && m === "POST", handler: (_req, res, ctx) => handlePairVerify(_req, res, ctx.clientIp) },
     { match: (p, m) => p === "/api/auth/refresh" && m === "POST", handler: (_req, res, ctx) => handleRefresh(_req, res, ctx.clientIp) },
     { match: (p, m) => p === "/api/auth/unpair" && m === "DELETE", handler: (req, res) => handleUnpair(req, res) },
-    { match: (p, m) => p === "/api/sessions" && m === "GET", handler: (req, res) => handleSessionsList(req, res) },
-    { match: (p, m) => p === "/api/sessions" && m === "POST", handler: (req, res) => handleSessionCreate(req, res) },
-    { match: (p, m) => p.startsWith("/api/sessions/") && m === "DELETE", handler: (req, res, ctx) => handleSessionDelete(req, res, ctx.path) },
+    ...sessionRoutes,
     ...providerRoutes,
     { match: (p, m) => p === "/api/status" && m === "GET", handler: (req, res) => handleStatus(req, res) },
-    { match: (p, m) => p === "/api/push-tokens" && m === "POST", handler: (req, res) => handlePushTokenRegister(req, res) },
-    { match: (p, m) => p === "/api/push-tokens" && m === "DELETE", handler: (req, res) => handlePushTokenUnregister(req, res) },
   ];
 
   async function dispatchRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
