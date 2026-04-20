@@ -80,25 +80,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _deleteProvider(String providerId) async {
-    final authCubit = context.read<AuthCubit>();
-    final token = await authCubit.getValidToken();
-    if (token == null) return;
-
-    try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-      await api.deleteProvider(token, providerId);
-      final providers = await api.listProviders(token);
-      if (mounted) context.read<ProvidersCubit>().setProviders(providers);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 실패: $e')),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

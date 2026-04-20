@@ -19,11 +19,13 @@ src/
 ├── bin.ts                # CLI 진입점
 ├── index.ts              # 공개 API
 ├── config/               # 설정 로더 + Zod 스키마
+├── cli/                  # CLI 명령어 러너
 ├── llm/                  # OpenAI 호환 HTTP 클라이언트
 ├── agent/                # 에이전트 루프 + 프롬프트 빌더
 ├── memory/               # SQLite 저장소
 ├── tools/                # 도구 레지스트리 + 실행기
-├── channel/              # Telegram 봇 클라이언트
+├── channel/              # WebSocket + REST API 서버 (모바일 앱 연동)
+├── notification/         # Expo 푸시 알림 서비스
 └── utils/                # 로거, 에러 타입
 ```
 
@@ -39,7 +41,8 @@ src/
 bin.ts → config → agent → llm
                  → tools
                  → memory
-       → channel → agent
+        → channel → agent
+        → notification
 ```
 
 - 상위 모듈이 하위 모듈을 import. 역방향 금지.
@@ -115,9 +118,13 @@ type ErrorCode =
   | "CONFIG_INVALID"
   | "LLM_REQUEST_FAILED"
   | "LLM_TIMEOUT"
+  | "LLM_STREAM_ERROR"
   | "TOOL_EXECUTION_FAILED"
   | "DB_ERROR"
-  | "TELEGRAM_API_ERROR";
+  | "DB_MIGRATION_FAILED"
+  | "NOTIFICATION_ERROR"
+  | "PERMISSION_DENIED";
+```
 
 // Result 타입 패턴 선호 (복구 가능한 경우)
 type Result<T, E = OpenFlowError> =
@@ -158,7 +165,7 @@ log.debug({ requestId, duration }, "LLM request completed");
 ### 기동 시 금지
 
 - 동적 `import()` 사용 금지 (기동 크리티컬 패스)
-- 네트워크 요청 금지 (Telegram 연결 확인은 백그라운드)
+- 네트워크 요청 금지 (백그라운드 초기화는 예외)
 - 파일 시스템 스캔 금지 (glob, recursive dir scan)
 - 외부 프로세스 실행 금지
 - 설정 파일 다중 읽기 금지 (1회 읽기 + 캐시)
@@ -205,7 +212,7 @@ pnpm check            # 전체 검증
 - 프레임워크: Vitest
 - 파일명: `*.test.ts` (소스 파일 옆)
 - 커버리지 목표: 80% lines
-- 모든 외부 경계(LLM, Telegram, 파일시스템)는 모킹
+- 모든 외부 경계(LLM, WebSocket, 파일시스템)는 모킹
 - 실제 네트워크 호출 금지
 - 임시 디렉토리 사용 후 정리
 - 타이머, 환경변수, 모의 모듈 정리 필수

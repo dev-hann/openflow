@@ -52,7 +52,7 @@ better-sqlite3 단일 데이터베이스. FTS5 대신 단순 `LIKE` 키워드 �
 ### 상태: 수락됨 (revoked & replaced)
 
 ### 배경
-초기 설계에서는 Telegram Bot API long-polling을 메인 채널로 계획. 이후 모바일 앱(Expo React Native)과의 실시간 통신이 필요해짐.
+초기 설계에서는 Telegram Bot API long-polling을 메인 채널로 계획. 이후 모바일 앱(Flutter)과의 실시간 통신이 필요해짐.
 
 ### 결정
 WebSocket + HTTP 서버를 기본 통신 채널로 채택. 클라이언트는 PIN 기반 페어링으로 인증 후 WebSocket으로 실시간 채팅, HTTP REST로 세션/프로바이더 관리.
