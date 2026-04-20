@@ -10,7 +10,8 @@ import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
-import 'package:openflow/widgets/chat_empty_state.dart';
+import 'package:openflow/widgets/chat_empty_state.dart'
+    show ChatEmptyState, EmptyStateVariant;
 import 'package:openflow/widgets/input_bar.dart';
 import 'package:openflow/widgets/message_list.dart';
 
@@ -164,7 +165,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           builder: (context, chatState) {
             if (authState.storedAuth == null) {
               return ChatEmptyState(
-                variant: 'disconnected',
+                variant: EmptyStateVariant.disconnected,
                 isSending: false,
                 onSuggestion: _sendMessage,
                 onReconnect: _reconnect,
@@ -173,7 +174,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
             if (!authState.isConnected) {
               return ChatEmptyState(
-                variant: 'connecting',
+                variant: EmptyStateVariant.connecting,
                 isSending: false,
                 onSuggestion: _sendMessage,
                 onReconnect: _reconnect,
@@ -185,7 +186,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 Expanded(
                   child: chatState.messages.isEmpty
                       ? ChatEmptyState(
-                          variant: 'empty',
+                          variant: EmptyStateVariant.empty,
                           isSending: chatState.isSending,
                           onSuggestion: _sendMessage,
                           onReconnect: _reconnect,
