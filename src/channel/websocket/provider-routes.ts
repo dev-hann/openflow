@@ -80,7 +80,9 @@ export function createProviderRoutes(deps: ProviderRoutesDeps) {
       if (!verified) {
         log.warn({ providerId: provider.id, name }, "provider created but connectivity check failed");
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      log.debug({ err, providerId: provider.id }, "background connectivity check failed");
+    });
 
     sendJson(res, 201, providerToJson(provider, provider.id === providerPool.getActiveProviderId()));
   }
