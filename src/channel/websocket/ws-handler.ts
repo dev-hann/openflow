@@ -146,9 +146,9 @@ export function createWsHandler(deps: WsHandlerDeps) {
 
   function broadcast(type: string, payload: Record<string, unknown>): void {
     const msg = serializeWsServerMessage({ type, ...payload } as WsServerMessage);
-    for (const ws of clients.keys()) {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(msg);
+    for (const client of clients.keys()) {
+      if (client.readyState === client.OPEN) {
+        client.send(msg);
       }
     }
   }

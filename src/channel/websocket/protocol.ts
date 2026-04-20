@@ -55,6 +55,11 @@ export interface WsPong {
   type: "pong";
 }
 
+export interface WsNotification {
+  type: "notification";
+  message: string;
+}
+
 export type WsServerMessage =
   | WsTokenChunk
   | WsResponse
@@ -62,7 +67,8 @@ export type WsServerMessage =
   | WsAuthRequired
   | WsAuthOk
   | WsSessionSwitched
-  | WsPong;
+  | WsPong
+  | WsNotification;
 
 export interface SessionInfo {
   id: string;
