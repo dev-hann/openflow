@@ -133,55 +133,63 @@ class _MainScreenState extends State<MainScreen> {
     return AppDrawer(
       sessions: sessionsState.sessions,
       activeSessionId: sessionsState.activeSessionId,
-      onSessionTap: (id) {
-        Navigator.of(context).pop();
-        final ws = context.read<WebSocketService>();
-        final chatCubit = context.read<ChatCubit>();
-        context.read<SessionsCubit>().setActiveSessionId(id);
-        chatCubit.clearMessages();
-        ws.send(WsSwitchSession(sessionId: id));
-      },
-      onNewChat: () {
-        Navigator.of(context).pop();
-        final chatCubit = context.read<ChatCubit>();
-        context.read<SessionsCubit>().setActiveSessionId(null);
-        chatCubit.clearMessages();
-      },
-      onSessionDelete: (id) async {
-        final authCubit = context.read<AuthCubit>();
-        final token = await authCubit.getValidToken();
-        if (token == null) return;
-        try {
-          final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-          await api.deleteSession(token, id);
-          if (!context.mounted) return;
-          if (mounted) {
-            context.read<SessionsCubit>().removeSession(id);
-          }
-        } on Object {
-          // Session deletion failure is non-critical
-        }
-      },
-      onSettings: () {
-        Navigator.of(context).pop();
-        unawaited(
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) => SettingsScreen(
-                onProviderEdit: () {
-                  unawaited(
-                    Navigator.of(context).push<void>(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const ProviderEditScreen(),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+      onSessionTap: _handleSessionTap,
+      onNewChat: _handleNewChat,
+      onSessionDelete: _handleSessionDelete,
+      onSettings: _handleSettings,
+    );
+  }
+
+  void _handleSessionTap(String id) {
+    Navigator.of(context).pop();
+    final ws = context.read<WebSocketService>();
+    final chatCubit = context.read<ChatCubit>();
+    context.read<SessionsCubit>().setActiveSessionId(id);
+    chatCubit.clearMessages();
+    ws.send(WsSwitchSession(sessionId: id));
+  }
+
+  void _handleNewChat() {
+    Navigator.of(context).pop();
+    final chatCubit = context.read<ChatCubit>();
+    context.read<SessionsCubit>().setActiveSessionId(null);
+    chatCubit.clearMessages();
+  }
+
+  Future<void> _handleSessionDelete(String id) async {
+    final authCubit = context.read<AuthCubit>();
+    final token = await authCubit.getValidToken();
+    if (token == null) return;
+    try {
+      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+      await api.deleteSession(token, id);
+      if (!context.mounted) return;
+      if (mounted) {
+        context.read<SessionsCubit>().removeSession(id);
+      }
+    } on Object {
+      // Session deletion failure is non-critical
+    }
+  }
+
+  void _handleSettings() {
+    Navigator.of(context).pop();
+    unawaited(
+      Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => SettingsScreen(
+            onProviderEdit: () {
+              unawaited(
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ProviderEditScreen(),
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
