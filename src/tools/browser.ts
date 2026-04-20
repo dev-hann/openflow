@@ -78,7 +78,11 @@ function runPlaywrightScript(script: string, timeout: number): string {
     const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
     throw new Error(output || "Browser script failed");
   } finally {
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch (err: unknown) { log.debug({ err, tmpDir }, "failed to clean temp dir"); }
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch (err: unknown) {
+      log.debug({ err, tmpDir }, "failed to clean temp dir");
+    }
   }
 }
 

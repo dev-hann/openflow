@@ -163,9 +163,20 @@ export const httpClientTool: InternalTool = {
     let headers: Record<string, string> = {};
     if (headersRaw) {
       try {
-        headers = JSON.parse(headersRaw) as Record<string, string>;
-      } catch {
-        throw new Error("Invalid headers JSON");
+        const parsed = JSON.parse(headersRaw);
+        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+          throw new Error("Invalid headers JSON");
+        }
+        for (const [key, val] of Object.entries(parsed)) {
+          if (typeof key !== "string" || typeof val !== "string") {
+            throw new Error("Invalid headers: keys and values must be strings");
+          }
+        }
+        headers = parsed as Record<string, string>;
+      } catch (err: unknown) {
+        throw err instanceof Error && err.message.startsWith("Invalid headers")
+          ? err
+          : new Error("Invalid headers JSON");
       }
     }
 

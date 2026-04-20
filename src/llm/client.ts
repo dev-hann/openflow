@@ -95,7 +95,8 @@ async function sendRequest(
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
-    if (signal) signal.addEventListener("abort", () => controller.abort());
+    const abortHandler = () => controller.abort();
+    if (signal) signal.addEventListener("abort", abortHandler);
 
     try {
       const response = await fetch(url, {
@@ -141,6 +142,7 @@ async function sendRequest(
       throw new OpenFlowError(`LLM request failed: ${msg}`, "LLM_REQUEST_FAILED", err);
     } finally {
       clearTimeout(timeout);
+      if (signal) signal.removeEventListener("abort", abortHandler);
     }
   }
 

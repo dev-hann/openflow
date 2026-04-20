@@ -2,8 +2,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
-import { ensureDirSync } from "../utils/fs.js";
-import { resolveHomePath } from "../utils/fs.js";
+import { ensureDirSync, resolveHomePath } from "../utils/fs.js";
 import { withSyncRetry } from "../utils/retry.js";
 
 const log = createLogger("workspace");
