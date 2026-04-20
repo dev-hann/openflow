@@ -62,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await authCubit.clearAll();
     sessionsCubit.setSessions([]);
     providersCubit.setProviders([]);
-    settingsCubit.setServerUrl('');
+    settingsCubit.clearServerUrl();
   }
 
   Future<void> _switchProvider(String providerId) async {

@@ -60,6 +60,7 @@ class ChatCubit extends Cubit<ChatState> {
 
   void removeFailedPair() {
     final messages = List<ChatMessage>.from(state.messages);
+    final originalLength = messages.length;
     while (messages.isNotEmpty) {
       final last = messages.last;
       if (last.role == MessageRole.assistant && last.isFailed) {
@@ -71,7 +72,9 @@ class ChatCubit extends Cubit<ChatState> {
         break;
       }
     }
-    emit(state.copyWith(messages: messages));
+    if (messages.length != originalLength) {
+      emit(state.copyWith(messages: messages));
+    }
   }
 
   void clearMessages() {

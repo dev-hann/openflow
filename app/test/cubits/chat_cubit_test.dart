@@ -25,64 +25,74 @@ void main() {
       'addMessage appends message',
       build: () => cubit,
       act: (cubit) {
-        cubit.addMessage(ChatMessage(
-          id: '1',
-          role: MessageRole.user,
-          content: 'Hello',
-          timestamp: DateTime(2025),
-        ),);
-      },
-      expect: () => [
-        ChatState(messages: [
+        cubit.addMessage(
           ChatMessage(
             id: '1',
             role: MessageRole.user,
             content: 'Hello',
             timestamp: DateTime(2025),
           ),
-        ],),
+        );
+      },
+      expect: () => [
+        ChatState(
+          messages: [
+            ChatMessage(
+              id: '1',
+              role: MessageRole.user,
+              content: 'Hello',
+              timestamp: DateTime(2025),
+            ),
+          ],
+        ),
       ],
     );
 
     blocTest<ChatCubit, ChatState>(
       'appendToLastMessage appends token to streaming assistant message',
       build: () => cubit,
-      seed: () => ChatState(messages: [
-        ChatMessage(
-          id: '1',
-          role: MessageRole.assistant,
-          content: 'Hello',
-          isStreaming: true,
-          timestamp: DateTime(2025),
-        ),
-      ],),
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: '1',
+            role: MessageRole.assistant,
+            content: 'Hello',
+            isStreaming: true,
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
       act: (cubit) {
         cubit.appendToLastMessage(' World');
       },
       expect: () => [
-        ChatState(messages: [
-          ChatMessage(
-            id: '1',
-            role: MessageRole.assistant,
-            content: 'Hello World',
-            isStreaming: true,
-            timestamp: DateTime(2025),
-          ),
-        ],),
+        ChatState(
+          messages: [
+            ChatMessage(
+              id: '1',
+              role: MessageRole.assistant,
+              content: 'Hello World',
+              isStreaming: true,
+              timestamp: DateTime(2025),
+            ),
+          ],
+        ),
       ],
     );
 
     blocTest<ChatCubit, ChatState>(
       'appendToLastMessage ignores non-streaming messages',
       build: () => cubit,
-      seed: () => ChatState(messages: [
-        ChatMessage(
-          id: '1',
-          role: MessageRole.assistant,
-          content: 'Hello',
-          timestamp: DateTime(2025),
-        ),
-      ],),
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: '1',
+            role: MessageRole.assistant,
+            content: 'Hello',
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
       act: (cubit) {
         cubit.appendToLastMessage(' World');
       },
@@ -157,21 +167,23 @@ void main() {
     blocTest<ChatCubit, ChatState>(
       'removeFailedPair removes failed assistant and preceding user',
       build: () => cubit,
-      seed: () => ChatState(messages: [
-        ChatMessage(
-          id: 'u1',
-          role: MessageRole.user,
-          content: 'Hello',
-          timestamp: DateTime(2025),
-        ),
-        ChatMessage(
-          id: 'a1',
-          role: MessageRole.assistant,
-          content: '',
-          isFailed: true,
-          timestamp: DateTime(2025),
-        ),
-      ],),
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: 'u1',
+            role: MessageRole.user,
+            content: 'Hello',
+            timestamp: DateTime(2025),
+          ),
+          ChatMessage(
+            id: 'a1',
+            role: MessageRole.assistant,
+            content: '',
+            isFailed: true,
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
       act: (cubit) {
         cubit.removeFailedPair();
       },
@@ -181,14 +193,16 @@ void main() {
     blocTest<ChatCubit, ChatState>(
       'clearMessages empties the list',
       build: () => cubit,
-      seed: () => ChatState(messages: [
-        ChatMessage(
-          id: '1',
-          role: MessageRole.user,
-          content: 'Hello',
-          timestamp: DateTime(2025),
-        ),
-      ],),
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: '1',
+            role: MessageRole.user,
+            content: 'Hello',
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
       act: (cubit) {
         cubit.clearMessages();
       },
@@ -202,6 +216,69 @@ void main() {
         cubit.setSending(true);
       },
       expect: () => [const ChatState(isSending: true)],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'removeFailedPair does nothing when last message is not failed',
+      build: () => cubit,
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: 'u1',
+            role: MessageRole.user,
+            content: 'Hello',
+            timestamp: DateTime(2025),
+          ),
+          ChatMessage(
+            id: 'a1',
+            role: MessageRole.assistant,
+            content: 'Hi there',
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
+      act: (cubit) {
+        cubit.removeFailedPair();
+      },
+      expect: () => <ChatState>[],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'removeFailedPair does nothing when messages are empty',
+      build: () => cubit,
+      act: (cubit) {
+        cubit.removeFailedPair();
+      },
+      expect: () => <ChatState>[],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'appendToLastMessage does nothing when messages are empty',
+      build: () => cubit,
+      act: (cubit) {
+        cubit.appendToLastMessage('token');
+      },
+      expect: () => <ChatState>[],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'finalizeLastMessage does nothing when last message is user',
+      build: () => cubit,
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: 'u1',
+            role: MessageRole.user,
+            content: 'Hello',
+            timestamp: DateTime(2025),
+          ),
+        ],
+        isSending: true,
+      ),
+      act: (cubit) {
+        cubit.finalizeLastMessage();
+      },
+      expect: () => <ChatState>[],
     );
   });
 }

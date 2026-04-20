@@ -37,10 +37,12 @@ void main() {
       'setProviders detects active provider',
       build: () => cubit,
       act: (c) {
-        c.setProviders([
-          _provider('p1'),
-          _provider('p2', isActive: true),
-        ],);
+        c.setProviders(
+          [
+            _provider('p1'),
+            _provider('p2', isActive: true),
+          ],
+        );
       },
       expect: () => [
         ProvidersState(
@@ -88,18 +90,22 @@ void main() {
     blocTest<ProvidersCubit, ProvidersState>(
       'updateProvider replaces matching provider',
       build: () => cubit,
-      seed: () => ProvidersState(providers: [
-        _provider('p1'),
-        _provider('p2'),
-      ],),
+      seed: () => ProvidersState(
+        providers: [
+          _provider('p1'),
+          _provider('p2'),
+        ],
+      ),
       act: (c) {
         c.updateProvider(_provider('p1', isActive: true));
       },
       expect: () => [
-        ProvidersState(providers: [
-          _provider('p1', isActive: true),
-          _provider('p2'),
-        ],),
+        ProvidersState(
+          providers: [
+            _provider('p1', isActive: true),
+            _provider('p2'),
+          ],
+        ),
       ],
     );
   });

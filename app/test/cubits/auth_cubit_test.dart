@@ -1,25 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/auth_storage.dart';
 
-class MockAuthStorage implements AuthStorage {
-  StoredAuth? _stored;
+class MockAuthStorage extends Mock implements AuthStorage {}
 
-  @override
-  Future<void> saveAuth(StoredAuth auth) async {
-    _stored = auth;
-  }
-
-  @override
-  Future<StoredAuth?> loadAuth() async => _stored;
-
-  @override
-  Future<void> clearAuth() async {
-    _stored = null;
-  }
-}
+class FakeStoredAuth extends Fake implements StoredAuth {}
 
 StoredAuth _testAuth({
   String serverUrl = 'http://localhost:9800',
@@ -35,6 +23,10 @@ StoredAuth _testAuth({
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeStoredAuth());
+  });
+
   group('AuthCubit', () {
     late MockAuthStorage storage;
     late AuthCubit cubit;
@@ -56,9 +48,11 @@ void main() {
 
     blocTest<AuthCubit, AuthState>(
       'loadAuth loads from storage',
-      build: () => cubit,
+      build: () {
+        when(() => storage.loadAuth()).thenAnswer((_) async => _testAuth());
+        return cubit;
+      },
       act: (c) async {
-        await storage.saveAuth(_testAuth());
         await c.loadAuth();
       },
       expect: () => [
@@ -68,7 +62,10 @@ void main() {
 
     blocTest<AuthCubit, AuthState>(
       'loadAuth does nothing when storage is empty',
-      build: () => cubit,
+      build: () {
+        when(() => storage.loadAuth()).thenAnswer((_) async => null);
+        return cubit;
+      },
       act: (c) async {
         await c.loadAuth();
       },
@@ -99,23 +96,35 @@ void main() {
 
     blocTest<AuthCubit, AuthState>(
       'saveAuth persists and updates state',
-      build: () => cubit,
+      build: () {
+        when(() => storage.saveAuth(any())).thenAnswer((_) async {});
+        return cubit;
+      },
       act: (c) async {
         await c.saveAuth(_testAuth());
       },
       expect: () => [
         AuthState(storedAuth: _testAuth()),
       ],
+      verify: (c) {
+        verify(() => storage.saveAuth(_testAuth())).called(1);
+      },
     );
 
     blocTest<AuthCubit, AuthState>(
       'clearAll clears state and storage',
-      build: () => cubit,
+      build: () {
+        when(() => storage.clearAuth()).thenAnswer((_) async {});
+        return cubit;
+      },
       seed: () => AuthState(storedAuth: _testAuth(), isConnected: true),
       act: (c) async {
         await c.clearAll();
       },
       expect: () => [const AuthState()],
+      verify: (c) {
+        verify(() => storage.clearAuth()).called(1);
+      },
     );
   });
 }

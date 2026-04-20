@@ -13,12 +13,15 @@ class SettingsState extends Equatable {
 
   SettingsState copyWith({
     String? serverUrl,
+    bool clearServerUrl = false,
     String? currentModel,
+    bool clearCurrentModel = false,
     List<String>? availableModels,
   }) {
     return SettingsState(
-      serverUrl: serverUrl ?? this.serverUrl,
-      currentModel: currentModel ?? this.currentModel,
+      serverUrl: clearServerUrl ? null : (serverUrl ?? this.serverUrl),
+      currentModel:
+          clearCurrentModel ? null : (currentModel ?? this.currentModel),
       availableModels: availableModels ?? this.availableModels,
     );
   }
@@ -34,8 +37,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     emit(state.copyWith(serverUrl: url));
   }
 
+  void clearServerUrl() {
+    emit(state.copyWith(clearServerUrl: true));
+  }
+
   void setCurrentModel(String model) {
     emit(state.copyWith(currentModel: model));
+  }
+
+  void clearCurrentModel() {
+    emit(state.copyWith(clearCurrentModel: true));
   }
 
   void setAvailableModels(List<String> models) {
