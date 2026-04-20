@@ -119,7 +119,7 @@ class WebSocketService {
   void _startPing() {
     _stopPing();
     _pingTimer = Timer.periodic(_pingInterval, (_) {
-      send(WsPing());
+      send(const WsPing());
     });
   }
 

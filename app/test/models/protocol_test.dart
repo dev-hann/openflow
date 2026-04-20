@@ -57,7 +57,7 @@ void main() {
 
   group('WsClientMessage', () {
     test('WsChatMsg serializes correctly', () {
-      final msg = WsChatMsg(sessionId: 's1', content: 'hello');
+      const msg = WsChatMsg(sessionId: 's1', content: 'hello');
       final json = msg.toJson();
       expect(json['type'], 'chat');
       expect(json['session_id'], 's1');
@@ -65,19 +65,19 @@ void main() {
     });
 
     test('WsSwitchSession serializes correctly', () {
-      final msg = WsSwitchSession(sessionId: 's2');
+      const msg = WsSwitchSession(sessionId: 's2');
       final json = msg.toJson();
       expect(json['type'], 'switch_session');
       expect(json['session_id'], 's2');
     });
 
     test('WsPing serializes correctly', () {
-      final msg = WsPing();
+      const msg = WsPing();
       expect(msg.toJson(), {'type': 'ping'});
     });
 
     test('WsAuth serializes correctly', () {
-      final msg = WsAuth(accessToken: 'at_test123');
+      const msg = WsAuth(accessToken: 'at_test123');
       final json = msg.toJson();
       expect(json['type'], 'auth');
       expect(json['access_token'], 'at_test123');

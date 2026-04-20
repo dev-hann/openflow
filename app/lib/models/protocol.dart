@@ -39,11 +39,12 @@ class ChatMessage extends Equatable {
 }
 
 sealed class WsClientMessage {
+  const WsClientMessage();
   Map<String, dynamic> toJson();
 }
 
 class WsChatMsg extends WsClientMessage {
-  WsChatMsg({required this.sessionId, required this.content});
+  const WsChatMsg({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
 
@@ -56,7 +57,7 @@ class WsChatMsg extends WsClientMessage {
 }
 
 class WsSwitchSession extends WsClientMessage {
-  WsSwitchSession({required this.sessionId});
+  const WsSwitchSession({required this.sessionId});
   final String sessionId;
 
   @override
@@ -67,12 +68,13 @@ class WsSwitchSession extends WsClientMessage {
 }
 
 class WsPing extends WsClientMessage {
+  const WsPing();
   @override
   Map<String, dynamic> toJson() => {'type': 'ping'};
 }
 
 class WsAuth extends WsClientMessage {
-  WsAuth({required this.accessToken});
+  const WsAuth({required this.accessToken});
   final String accessToken;
 
   @override
