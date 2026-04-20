@@ -181,74 +181,81 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               );
             }
 
-            return Column(
-              children: [
-                Expanded(
-                  child: chatState.messages.isEmpty
-                      ? ChatEmptyState(
-                          variant: EmptyStateVariant.empty,
-                          isSending: chatState.isSending,
-                          onSuggestion: _sendMessage,
-                          onReconnect: _reconnect,
-                        )
-                      : Stack(
-                          children: [
-                            MessageList(
-                              key: _listKey,
-                              messages: chatState.messages,
-                              onScrollStateChange: (scrolledUp) =>
-                                  setState(() => _scrolledUp = scrolledUp),
-                              onRetry: _retryLastMessage,
-                            ),
-                            if (_scrolledUp)
-                              Positioned(
-                                bottom: 16,
-                                right: 16,
-                                child: FloatingActionButton.small(
-                                  onPressed: () =>
-                                      _listKey.currentState?.scrollToBottom(),
-                                  child: const Icon(
-                                    Icons.keyboard_double_arrow_down,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                ),
-                if (chatState.isSending)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.md,
-                      vertical: Spacing.xs + 2,
-                    ),
-                    color: Theme.of(context).colorScheme.surface,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '생각 중...',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                InputBar(
-                  onSend: _sendMessage,
-                  disabled: chatState.isSending,
-                ),
-              ],
-            );
+            return _buildChatContent(context, chatState);
           },
         );
       },
+    );
+  }
+
+  Widget _buildChatContent(BuildContext context, ChatState chatState) {
+    return Column(
+      children: [
+        Expanded(
+          child: chatState.messages.isEmpty
+              ? ChatEmptyState(
+                  variant: EmptyStateVariant.empty,
+                  isSending: chatState.isSending,
+                  onSuggestion: _sendMessage,
+                  onReconnect: _reconnect,
+                )
+              : Stack(
+                  children: [
+                    MessageList(
+                      key: _listKey,
+                      messages: chatState.messages,
+                      onScrollStateChange: (scrolledUp) =>
+                          setState(() => _scrolledUp = scrolledUp),
+                      onRetry: _retryLastMessage,
+                    ),
+                    if (_scrolledUp)
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: FloatingActionButton.small(
+                          onPressed: () =>
+                              _listKey.currentState?.scrollToBottom(),
+                          child: const Icon(
+                            Icons.keyboard_double_arrow_down,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        if (chatState.isSending) _buildSendingIndicator(context),
+        InputBar(
+          onSend: _sendMessage,
+          disabled: chatState.isSending,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSendingIndicator(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.xs + 2,
+      ),
+      color: Theme.of(context).colorScheme.surface,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '생각 중...',
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+        ],
+      ),
     );
   }
 }
