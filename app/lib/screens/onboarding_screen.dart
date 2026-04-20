@@ -23,9 +23,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pinController = TextEditingController();
   bool _loading = false;
   String? _error;
-  // This field is conditionally assigned and null-checked before use.
-  // ignore: use_late_for_private_fields_and_variables
-  TokenPair? _tokens;
 
   @override
   void dispose() {
@@ -78,12 +75,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     try {
       final url = context.read<SettingsCubit>().state.serverUrl!;
       final api = createApiClient(url);
-      _tokens = await api.pairVerify(pin, 'mobile');
+      final tokens = await api.pairVerify(pin, 'mobile');
 
       final auth = StoredAuth(
         serverUrl: url,
-        accessToken: _tokens!.accessToken,
-        refreshToken: _tokens!.refreshToken,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
         pairedAt: DateTime.now(),
       );
       if (!mounted) return;
