@@ -5,6 +5,7 @@ import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import { sendJson, readJsonBody, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
+import { route, routePattern, type Route } from "./routes.js";
 
 const log = createLogger("ws/provider-routes");
 
@@ -41,7 +42,7 @@ export interface ProviderRoutesDeps {
   providerPool: ProviderPool;
 }
 
-export function createProviderRoutes(deps: ProviderRoutesDeps) {
+export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   const { authService, providerStore, providerPool } = deps;
 
   async function handleProvidersList(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -218,12 +219,12 @@ export function createProviderRoutes(deps: ProviderRoutesDeps) {
   }
 
   return [
-    { match: (p: string, m: string) => p === "/api/providers" && m === "GET", handler: handleProvidersList },
-    { match: (p: string, m: string) => p === "/api/providers" && m === "POST", handler: handleProviderCreate },
-    { match: (p: string, m: string) => !!p.match(/^\/api\/providers\/[^/]+$/) && m === "PUT", handler: (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handleProviderUpdate(req, res, ctx.path) },
-    { match: (p: string, m: string) => !!p.match(/^\/api\/providers\/[^/]+$/) && m === "DELETE", handler: (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handleProviderDelete(req, res, ctx.path) },
-    { match: (p: string, m: string) => p === "/api/providers/current" && m === "PUT", handler: handleProviderSwitch },
-    { match: (p: string, m: string) => !!p.match(/^\/api\/providers\/[^/]+\/verify$/) && m === "POST", handler: (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handleProviderVerify(req, res, ctx.path) },
-    { match: (p: string, m: string) => !!p.match(/^\/api\/providers\/[^/]+\/models$/) && m === "GET", handler: (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handleProviderModels(req, res, ctx.path) },
+    route("/api/providers", "GET", handleProvidersList),
+    route("/api/providers", "POST", handleProviderCreate),
+    routePattern(/^\/api\/providers\/[^/]+$/, "PUT", (req, res, ctx) => handleProviderUpdate(req, res, ctx.path)),
+    routePattern(/^\/api\/providers\/[^/]+$/, "DELETE", (req, res, ctx) => handleProviderDelete(req, res, ctx.path)),
+    route("/api/providers/current", "PUT", handleProviderSwitch),
+    routePattern(/^\/api\/providers\/[^/]+\/verify$/, "POST", (req, res, ctx) => handleProviderVerify(req, res, ctx.path)),
+    routePattern(/^\/api\/providers\/[^/]+\/models$/, "GET", (req, res, ctx) => handleProviderModels(req, res, ctx.path)),
   ];
 }

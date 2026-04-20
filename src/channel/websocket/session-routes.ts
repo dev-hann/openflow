@@ -6,6 +6,7 @@ import type { PushTokenStore } from "../../notification/token-store.js";
 import { sendJson, readJsonBody, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
+import { route, routePattern, type Route } from "./routes.js";
 
 const log = createLogger("ws/session-routes");
 
@@ -15,7 +16,7 @@ export interface SessionRoutesDeps {
   pushTokenStore: PushTokenStore;
 }
 
-export function createSessionRoutes(deps: SessionRoutesDeps) {
+export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   const { authService, memoryStore, pushTokenStore } = deps;
 
   function handleSessionsList(req: IncomingMessage, res: ServerResponse): void {
@@ -93,10 +94,10 @@ export function createSessionRoutes(deps: SessionRoutesDeps) {
   }
 
   return [
-    { match: (p: string, m: string) => p === "/api/sessions" && m === "GET", handler: (req: IncomingMessage, res: ServerResponse) => handleSessionsList(req, res) },
-    { match: (p: string, m: string) => p === "/api/sessions" && m === "POST", handler: (req: IncomingMessage, res: ServerResponse) => handleSessionCreate(req, res) },
-    { match: (p: string, m: string) => p.startsWith("/api/sessions/") && m === "DELETE", handler: (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handleSessionDelete(req, res, ctx.path) },
-    { match: (p: string, m: string) => p === "/api/push-tokens" && m === "POST", handler: (req: IncomingMessage, res: ServerResponse) => handlePushTokenRegister(req, res) },
-    { match: (p: string, m: string) => p === "/api/push-tokens" && m === "DELETE", handler: (req: IncomingMessage, res: ServerResponse) => handlePushTokenUnregister(req, res) },
+    route("/api/sessions", "GET", (req, res) => handleSessionsList(req, res)),
+    route("/api/sessions", "POST", (req, res) => handleSessionCreate(req, res)),
+    routePattern(/^\/api\/sessions\/.+$/, "DELETE", (req, res, ctx) => handleSessionDelete(req, res, ctx.path)),
+    route("/api/push-tokens", "POST", (req, res) => handlePushTokenRegister(req, res)),
+    route("/api/push-tokens", "DELETE", (req, res) => handlePushTokenUnregister(req, res)),
   ];
 }

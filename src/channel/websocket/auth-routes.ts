@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { sendJson, readJsonBody, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
+import { route, type Route } from "./routes.js";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
@@ -9,8 +10,6 @@ const RATE_LIMIT_MAX_REQUESTS = 10;
 export interface AuthRoutesDeps {
   authService: AuthService;
 }
-
-type RouteHandler = (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => Promise<void> | void;
 
 function createRateLimiter() {
   const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -38,7 +37,7 @@ function createRateLimiter() {
   return { checkRateLimit };
 }
 
-export function createAuthRoutes(deps: AuthRoutesDeps) {
+export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
   const { authService } = deps;
   const { checkRateLimit } = createRateLimiter();
 
@@ -111,10 +110,10 @@ export function createAuthRoutes(deps: AuthRoutesDeps) {
   }
 
   return [
-    { match: (p: string, m: string) => p === "/api/auth/pair/init" && m === "POST", handler: (_req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handlePairInit(_req, res, ctx.clientIp) },
-    { match: (p: string, m: string) => p === "/api/auth/pair/verify" && m === "POST", handler: (_req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handlePairVerify(_req, res, ctx.clientIp) },
-    { match: (p: string, m: string) => p === "/api/auth/refresh" && m === "POST", handler: (_req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => handleRefresh(_req, res, ctx.clientIp) },
-    { match: (p: string, m: string) => p === "/api/auth/unpair" && m === "DELETE", handler: (req: IncomingMessage, res: ServerResponse) => handleUnpair(req, res) },
-    { match: (p: string, m: string) => p === "/api/status" && m === "GET", handler: (req: IncomingMessage, res: ServerResponse) => handleStatus(req, res) },
-  ] as Array<{ match: (path: string, method: string) => boolean; handler: RouteHandler }>;
+    route("/api/auth/pair/init", "POST", (req, res, ctx) => handlePairInit(req, res, ctx.clientIp)),
+    route("/api/auth/pair/verify", "POST", (req, res, ctx) => handlePairVerify(req, res, ctx.clientIp)),
+    route("/api/auth/refresh", "POST", (req, res, ctx) => handleRefresh(req, res, ctx.clientIp)),
+    route("/api/auth/unpair", "DELETE", (req, res) => handleUnpair(req, res)),
+    route("/api/status", "GET", (req, res) => handleStatus(req, res)),
+  ];
 }

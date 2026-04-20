@@ -16,6 +16,21 @@ import { createSessionRoutes } from "./session-routes.js";
 
 const log = createLogger("ws/routes");
 
+export type RouteHandler = (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => Promise<void> | void;
+
+export interface Route {
+  match: (path: string, method: string) => boolean;
+  handler: RouteHandler;
+}
+
+export function route(path: string, method: string, handler: RouteHandler): Route {
+  return { match: (p, m) => p === path && m === method, handler };
+}
+
+export function routePattern(pattern: RegExp, method: string, handler: RouteHandler): Route {
+  return { match: (p, m) => !!p.match(pattern) && m === method, handler };
+}
+
 export interface RoutesDeps {
   authService: AuthService;
   memoryStore: MemoryStore;
@@ -25,8 +40,6 @@ export interface RoutesDeps {
   corsEnabled: boolean;
 }
 
-type RouteHandler = (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => Promise<void> | void;
-
 export function createRoutes(deps: RoutesDeps) {
   const { authService, memoryStore, providerStore, providerPool, pushTokenStore, corsEnabled } = deps;
 
@@ -34,7 +47,7 @@ export function createRoutes(deps: RoutesDeps) {
   const sessionRoutes = createSessionRoutes({ authService, memoryStore, pushTokenStore });
   const providerRoutes = createProviderRoutes({ authService, providerStore, providerPool });
 
-  const routes: Array<{ match: (path: string, method: string) => boolean; handler: RouteHandler }> = [
+  const routes: Route[] = [
     ...authRoutes,
     ...sessionRoutes,
     ...providerRoutes,
