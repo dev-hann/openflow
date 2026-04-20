@@ -3,21 +3,20 @@ import 'package:equatable/equatable.dart';
 enum MessageRole { user, assistant }
 
 class ChatMessage extends Equatable {
+
+  const ChatMessage({
+    required this.id,
+    required this.role,
+    required this.content,
+    required this.timestamp, this.isStreaming = false,
+    this.isFailed = false,
+  });
   final String id;
   final MessageRole role;
   final String content;
   final bool isStreaming;
   final bool isFailed;
   final DateTime timestamp;
-
-  const ChatMessage({
-    required this.id,
-    required this.role,
-    required this.content,
-    this.isStreaming = false,
-    this.isFailed = false,
-    required this.timestamp,
-  });
 
   ChatMessage copyWith({
     String? content,
@@ -43,9 +42,9 @@ sealed class WsClientMessage {
 }
 
 class WsChatMsg extends WsClientMessage {
+  WsChatMsg({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
-  WsChatMsg({required this.sessionId, required this.content});
 
   @override
   Map<String, dynamic> toJson() => {
@@ -56,8 +55,8 @@ class WsChatMsg extends WsClientMessage {
 }
 
 class WsSwitchSession extends WsClientMessage {
-  final String sessionId;
   WsSwitchSession({required this.sessionId});
+  final String sessionId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -72,8 +71,8 @@ class WsPing extends WsClientMessage {
 }
 
 class WsAuth extends WsClientMessage {
-  final String accessToken;
   WsAuth({required this.accessToken});
+  final String accessToken;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -110,26 +109,26 @@ sealed class WsServerMessage {
 }
 
 class WsTokenChunk extends WsServerMessage {
+  WsTokenChunk({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
-  WsTokenChunk({required this.sessionId, required this.content});
 }
 
 class WsResponse extends WsServerMessage {
+  WsResponse({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
-  WsResponse({required this.sessionId, required this.content});
 }
 
 class WsError extends WsServerMessage {
-  final String sessionId;
-  final String code;
-  final String message;
   WsError({
     required this.sessionId,
     required this.code,
     required this.message,
   });
+  final String sessionId;
+  final String code;
+  final String message;
 }
 
 class WsAuthRequired extends WsServerMessage {}
@@ -137,16 +136,13 @@ class WsAuthRequired extends WsServerMessage {}
 class WsAuthOk extends WsServerMessage {}
 
 class WsSessionSwitched extends WsServerMessage {
-  final String sessionId;
   WsSessionSwitched({required this.sessionId});
+  final String sessionId;
 }
 
 class WsPong extends WsServerMessage {}
 
 class SessionInfo extends Equatable {
-  final String id;
-  final String title;
-  final DateTime createdAt;
 
   const SessionInfo({
     required this.id,
@@ -161,14 +157,15 @@ class SessionInfo extends Equatable {
           (json['created_at'] as num).toInt() * 1000,
         ),
       );
+  final String id;
+  final String title;
+  final DateTime createdAt;
 
   @override
   List<Object?> get props => [id, title, createdAt];
 }
 
 class TokenPair extends Equatable {
-  final String accessToken;
-  final String refreshToken;
 
   const TokenPair({required this.accessToken, required this.refreshToken});
 
@@ -176,16 +173,14 @@ class TokenPair extends Equatable {
         accessToken: json['access_token'] as String,
         refreshToken: json['refresh_token'] as String,
       );
+  final String accessToken;
+  final String refreshToken;
 
   @override
   List<Object?> get props => [accessToken, refreshToken];
 }
 
 class StoredAuth extends Equatable {
-  final String serverUrl;
-  final String accessToken;
-  final String refreshToken;
-  final DateTime pairedAt;
 
   const StoredAuth({
     required this.serverUrl,
@@ -202,6 +197,10 @@ class StoredAuth extends Equatable {
           (json['pairedAt'] as num).toInt(),
         ),
       );
+  final String serverUrl;
+  final String accessToken;
+  final String refreshToken;
+  final DateTime pairedAt;
 
   Map<String, dynamic> toJson() => {
         'serverUrl': serverUrl,
@@ -215,22 +214,14 @@ class StoredAuth extends Equatable {
 }
 
 class ProviderInfo extends Equatable {
-  final String id;
-  final String name;
-  final String baseUrl;
-  final String model;
-  final bool apiKeySet;
-  final bool isActive;
-  final DateTime createdAt;
 
   const ProviderInfo({
     required this.id,
     required this.name,
     required this.baseUrl,
     required this.model,
-    this.apiKeySet = false,
+    required this.createdAt, this.apiKeySet = false,
     this.isActive = false,
-    required this.createdAt,
   });
 
   factory ProviderInfo.fromJson(Map<String, dynamic> json) => ProviderInfo(
@@ -244,6 +235,13 @@ class ProviderInfo extends Equatable {
           (json['created_at'] as num).toInt() * 1000,
         ),
       );
+  final String id;
+  final String name;
+  final String baseUrl;
+  final String model;
+  final bool apiKeySet;
+  final bool isActive;
+  final DateTime createdAt;
 
   ProviderInfo copyWith({
     String? name,

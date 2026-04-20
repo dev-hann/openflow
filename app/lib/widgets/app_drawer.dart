@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
-import '../models/protocol.dart';
-import '../utils/format_time.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/format_time.dart';
 
 class AppDrawer extends StatelessWidget {
+
+  const AppDrawer({
+    required this.sessions, required this.onSessionTap, required this.onNewChat, required this.onSessionDelete, required this.onSettings, super.key,
+    this.activeSessionId,
+  });
   final List<SessionInfo> sessions;
   final String? activeSessionId;
   final ValueChanged<String> onSessionTap;
   final VoidCallback onNewChat;
   final ValueChanged<String> onSessionDelete;
   final VoidCallback onSettings;
-
-  const AppDrawer({
-    super.key,
-    required this.sessions,
-    this.activeSessionId,
-    required this.onSessionTap,
-    required this.onNewChat,
-    required this.onSessionDelete,
-    required this.onSettings,
-  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../constants/dimensions.dart';
-import '../models/protocol.dart';
-import '../utils/format_time.dart';
-import 'typing_indicator.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/format_time.dart';
+import 'package:openflow/widgets/typing_indicator.dart';
 
 class MessageBubble extends StatelessWidget {
-  final ChatMessage message;
-  final bool isFirstInGroup;
-  final bool isLastInGroup;
-  final VoidCallback? onRetry;
 
   const MessageBubble({
-    super.key,
-    required this.message,
+    required this.message, super.key,
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
     this.onRetry,
   });
+  final ChatMessage message;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {

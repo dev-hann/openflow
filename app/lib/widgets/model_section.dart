@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
+import 'package:openflow/constants/dimensions.dart';
 
 class ModelSection extends StatelessWidget {
+
+  const ModelSection({
+    required this.availableModels, required this.onModelChange, super.key,
+    this.currentModel,
+  });
   final String? currentModel;
   final List<String> availableModels;
   final ValueChanged<String> onModelChange;
-
-  const ModelSection({
-    super.key,
-    this.currentModel,
-    required this.availableModels,
-    required this.onModelChange,
-  });
 
   @override
   Widget build(BuildContext context) {

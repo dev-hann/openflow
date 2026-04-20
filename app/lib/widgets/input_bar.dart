@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
+import 'package:openflow/constants/dimensions.dart';
 
 class InputBar extends StatefulWidget {
+
+  const InputBar({required this.onSend, super.key, this.disabled = false});
   final ValueChanged<String> onSend;
   final bool disabled;
-
-  const InputBar({super.key, required this.onSend, this.disabled = false});
 
   @override
   State<InputBar> createState() => _InputBarState();
@@ -70,10 +70,10 @@ class _InputBarState extends State<InputBar> {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _handleSend(),
                   enabled: !widget.disabled,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: '무엇이든 물어보세요...',
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                       horizontal: Spacing.md,
                       vertical: 12,
                     ),

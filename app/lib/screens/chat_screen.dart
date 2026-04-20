@@ -1,16 +1,17 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../cubits/auth_cubit.dart';
-import '../cubits/chat_cubit.dart';
-import '../cubits/sessions_cubit.dart';
-import '../models/protocol.dart';
-import '../services/api_client.dart';
-import '../services/websocket_service.dart';
-import '../constants/dimensions.dart';
-import '../widgets/message_list.dart';
-import '../widgets/input_bar.dart';
-import '../widgets/chat_empty_state.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/cubits/auth_cubit.dart';
+import 'package:openflow/cubits/chat_cubit.dart';
+import 'package:openflow/cubits/sessions_cubit.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/services/api_client.dart';
+import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/widgets/chat_empty_state.dart';
+import 'package:openflow/widgets/input_bar.dart';
+import 'package:openflow/widgets/message_list.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -99,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         final session = await api.createSession(token);
         sessionsCubit.addSession(session);
         sessionId = session.id;
-      } catch (e) {
+      } on Object catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('세션 생성 실패: $e')),
@@ -145,7 +146,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final lastUserText = _lastUserMessage;
     if (lastUserText == null) return;
     chatCubit.removeFailedPair();
-    _sendMessage(lastUserText);
+    unawaited(_sendMessage(lastUserText));
   }
 
   void _reconnect() {
@@ -205,7 +206,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                                   onPressed: () =>
                                       _listKey.currentState?.scrollToBottom(),
                                   child: const Icon(
-                                      Icons.keyboard_double_arrow_down),
+                                      Icons.keyboard_double_arrow_down,),
                                 ),
                               ),
                           ],

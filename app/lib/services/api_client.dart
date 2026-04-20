@@ -1,26 +1,27 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
-import '../models/protocol.dart';
-import '../utils/normalize_url.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/normalize_url.dart';
 
 class ApiError implements Exception {
+
+  ApiError({required this.status, required this.code, required this.message});
   final int status;
   final String code;
   final String message;
-
-  ApiError({required this.status, required this.code, required this.message});
 
   @override
   String toString() => 'ApiError($status $code): $message';
 }
 
 class ApiClient {
+
+  ApiClient(this.baseUrl) : _httpClient = http.Client();
   final String baseUrl;
   final http.Client _httpClient;
   static const _timeout = Duration(seconds: 15);
-
-  ApiClient(this.baseUrl) : _httpClient = http.Client();
 
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
@@ -96,7 +97,7 @@ class ApiClient {
   Future<SessionInfo> createSession(String accessToken, [String? title]) async {
     final json = await _post('/api/sessions', {
       if (title != null) 'title': title,
-    }, accessToken);
+    }, accessToken,);
     return SessionInfo.fromJson(json);
   }
 

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../cubits/auth_cubit.dart';
-import '../cubits/settings_cubit.dart';
-import '../models/protocol.dart';
-import '../services/api_client.dart';
-import '../constants/dimensions.dart';
-import '../widgets/provider_form.dart';
-import '../utils/normalize_url.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/cubits/auth_cubit.dart';
+import 'package:openflow/cubits/settings_cubit.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/services/api_client.dart';
+import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/widgets/provider_form.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  final VoidCallback onComplete;
 
-  const OnboardingScreen({super.key, required this.onComplete});
+  const OnboardingScreen({required this.onComplete, super.key});
+  final VoidCallback onComplete;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -23,6 +23,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pinController = TextEditingController();
   bool _loading = false;
   String? _error;
+  // ignore: use_late_for_private_fields_and_variables
   TokenPair? _tokens;
 
   @override
@@ -160,7 +161,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Column(
       children: [
         Text('서버 주소 입력',
-            style: Theme.of(context).textTheme.titleMedium),
+            style: Theme.of(context).textTheme.titleMedium,),
         const SizedBox(height: Spacing.md),
         TextField(
           controller: _serverController,

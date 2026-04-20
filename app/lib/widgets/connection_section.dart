@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
+import 'package:openflow/constants/dimensions.dart';
 
 class ConnectionSection extends StatelessWidget {
+
+  const ConnectionSection({
+    required this.isConnected, required this.onServerChanged, super.key,
+    this.serverUrl,
+  });
   final bool isConnected;
   final String? serverUrl;
   final VoidCallback onServerChanged;
-
-  const ConnectionSection({
-    super.key,
-    required this.isConnected,
-    this.serverUrl,
-    required this.onServerChanged,
-  });
 
   @override
   Widget build(BuildContext context) {

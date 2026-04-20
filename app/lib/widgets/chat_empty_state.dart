@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
+import 'package:openflow/constants/dimensions.dart';
 
 class ChatEmptyState extends StatelessWidget {
+
+  const ChatEmptyState({
+    required this.variant, required this.isSending, required this.onSuggestion, required this.onReconnect, super.key,
+  });
   final String variant; // 'disconnected', 'connecting', 'empty'
   final bool isSending;
   final ValueChanged<String> onSuggestion;
@@ -12,14 +16,6 @@ class ChatEmptyState extends StatelessWidget {
     '도움이 필요해',
     '재미있는 이야기 해줘',
   ];
-
-  const ChatEmptyState({
-    super.key,
-    required this.variant,
-    required this.isSending,
-    required this.onSuggestion,
-    required this.onReconnect,
-  });
 
   @override
   Widget build(BuildContext context) {

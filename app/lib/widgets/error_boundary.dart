@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class ErrorBoundary extends StatelessWidget {
-  final Widget child;
 
-  const ErrorBoundary({super.key, required this.child});
+  const ErrorBoundary({required this.child, super.key});
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -12,14 +12,12 @@ class ErrorBoundary extends StatelessWidget {
 }
 
 class ErrorBanner extends StatelessWidget {
-  final FlutterErrorDetails details;
-  final VoidCallback onRetry;
 
   const ErrorBanner({
-    super.key,
-    required this.details,
-    required this.onRetry,
+    required this.details, required this.onRetry, super.key,
   });
+  final FlutterErrorDetails details;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {

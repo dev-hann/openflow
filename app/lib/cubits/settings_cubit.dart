@@ -2,15 +2,15 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SettingsState extends Equatable {
-  final String? serverUrl;
-  final String? currentModel;
-  final List<String> availableModels;
 
   const SettingsState({
     this.serverUrl,
     this.currentModel,
     this.availableModels = const [],
   });
+  final String? serverUrl;
+  final String? currentModel;
+  final List<String> availableModels;
 
   SettingsState copyWith({
     String? serverUrl,

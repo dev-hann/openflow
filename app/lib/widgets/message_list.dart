@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
-import '../models/protocol.dart';
-import 'message_bubble.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/widgets/message_bubble.dart';
 
 class MessageList extends StatefulWidget {
+
+  const MessageList({
+    required this.messages, required this.onScrollStateChange, super.key,
+    this.onRetry,
+  });
   final List<ChatMessage> messages;
   final ValueChanged<bool> onScrollStateChange;
   final VoidCallback? onRetry;
-
-  const MessageList({
-    super.key,
-    required this.messages,
-    required this.onScrollStateChange,
-    this.onRetry,
-  });
 
   @override
   State<MessageList> createState() => MessageListState();

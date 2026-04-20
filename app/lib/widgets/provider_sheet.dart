@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
-import '../models/protocol.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/models/protocol.dart';
 
 class ProviderSheet extends StatelessWidget {
+
+  const ProviderSheet({
+    required this.providers, required this.onSelect, required this.onEdit, required this.onDelete, required this.onAdd, super.key,
+    this.activeProviderId,
+    this.isSwitching = false,
+  });
   final List<ProviderInfo> providers;
   final String? activeProviderId;
   final bool isSwitching;
@@ -10,17 +16,6 @@ class ProviderSheet extends StatelessWidget {
   final ValueChanged<ProviderInfo> onEdit;
   final ValueChanged<String> onDelete;
   final VoidCallback onAdd;
-
-  const ProviderSheet({
-    super.key,
-    required this.providers,
-    this.activeProviderId,
-    this.isSwitching = false,
-    required this.onSelect,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onAdd,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +28,7 @@ class ProviderSheet extends StatelessWidget {
             child: Row(
               children: [
                 Text('Provider 관리',
-                    style: Theme.of(context).textTheme.titleMedium),
+                    style: Theme.of(context).textTheme.titleMedium,),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: onAdd,
@@ -65,8 +60,8 @@ class ProviderSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: isActive
-                      ? Chip(
-                          label: const Text('활성'),
+                      ? const Chip(
+                          label: Text('활성'),
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                         )

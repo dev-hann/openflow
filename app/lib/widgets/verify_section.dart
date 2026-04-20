@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
+import 'package:openflow/constants/dimensions.dart';
 
 class VerifySection extends StatelessWidget {
+
+  const VerifySection({
+    required this.verifying, required this.onVerify, required this.onSelectModel, super.key,
+    this.result,
+    this.selectedModel,
+  });
   final bool verifying;
   final VerifyResult? result;
   final String? selectedModel;
   final VoidCallback onVerify;
   final ValueChanged<String> onSelectModel;
-
-  const VerifySection({
-    super.key,
-    required this.verifying,
-    this.result,
-    this.selectedModel,
-    required this.onVerify,
-    required this.onSelectModel,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -79,13 +76,13 @@ class VerifySection extends StatelessWidget {
 }
 
 class VerifyResult {
-  final bool ok;
-  final List<String> models;
-  final String? error;
 
   const VerifyResult({
     required this.ok,
     this.models = const [],
     this.error,
   });
+  final bool ok;
+  final List<String> models;
+  final String? error;
 }

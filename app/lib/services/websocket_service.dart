@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/normalize_url.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import '../models/protocol.dart';
-import '../utils/normalize_url.dart';
 
 typedef WsMessageCallback = void Function(WsServerMessage);
 typedef VoidCallback = void Function();
@@ -57,7 +58,7 @@ class WebSocketService {
 
   String _buildWsUrl(String serverUrl) {
     var wsUrl = normalizeUrl(serverUrl);
-    wsUrl = wsUrl.replaceFirst(RegExp(r'^http'), 'ws');
+    wsUrl = wsUrl.replaceFirst(RegExp('^http'), 'ws');
     if (!wsUrl.endsWith('/ws')) wsUrl = '$wsUrl/ws';
     return wsUrl;
   }
@@ -128,7 +129,7 @@ class WebSocketService {
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
 
-    final jitter = (1 + _reconnectAttempts * 0.2);
+    final jitter = 1 + _reconnectAttempts * 0.2;
     final delayMs = _baseReconnectDelay.inMilliseconds * (1 << _reconnectAttempts) * jitter;
     final clamped = delayMs.clamp(
       _baseReconnectDelay.inMilliseconds.toDouble(),

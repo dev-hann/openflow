@@ -1,17 +1,17 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/protocol.dart';
+import 'package:openflow/models/protocol.dart';
 
 class ProvidersState extends Equatable {
-  final List<ProviderInfo> providers;
-  final String? activeProviderId;
-  final bool isSwitching;
 
   const ProvidersState({
     this.providers = const [],
     this.activeProviderId,
     this.isSwitching = false,
   });
+  final List<ProviderInfo> providers;
+  final String? activeProviderId;
+  final bool isSwitching;
 
   ProvidersState copyWith({
     List<ProviderInfo>? providers,
@@ -38,7 +38,7 @@ class ProvidersCubit extends Cubit<ProvidersState> {
     emit(state.copyWith(
       providers: providers,
       activeProviderId: active?.id ?? state.activeProviderId,
-    ));
+    ),);
   }
 
   void setActiveProviderId(String id) {

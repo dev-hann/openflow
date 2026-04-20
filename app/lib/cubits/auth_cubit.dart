@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/protocol.dart';
-import '../services/api_client.dart';
-import '../services/auth_storage.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/services/api_client.dart';
+import 'package:openflow/services/auth_storage.dart';
 
 class AuthState extends Equatable {
-  final StoredAuth? storedAuth;
-  final bool isConnected;
 
   const AuthState({this.storedAuth, this.isConnected = false});
+  final StoredAuth? storedAuth;
+  final bool isConnected;
 
   AuthState copyWith({StoredAuth? storedAuth, bool? isConnected}) {
     return AuthState(
@@ -23,10 +23,10 @@ class AuthState extends Equatable {
 }
 
 class AuthCubit extends Cubit<AuthState> {
-  final AuthStorage storage;
-  Completer<String>? _refreshCompleter;
 
   AuthCubit(this.storage) : super(const AuthState());
+  final AuthStorage storage;
+  Completer<String>? _refreshCompleter;
 
   Future<void> loadAuth() async {
     final auth = await storage.loadAuth();

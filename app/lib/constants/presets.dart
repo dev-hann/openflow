@@ -1,9 +1,4 @@
 class ProviderPreset {
-  final String id;
-  final String label;
-  final String hint;
-  final String baseUrl;
-  final bool needsApiKey;
 
   const ProviderPreset({
     required this.id,
@@ -12,6 +7,11 @@ class ProviderPreset {
     required this.baseUrl,
     required this.needsApiKey,
   });
+  final String id;
+  final String label;
+  final String hint;
+  final String baseUrl;
+  final bool needsApiKey;
 }
 
 const kProviderPresets = <ProviderPreset>[

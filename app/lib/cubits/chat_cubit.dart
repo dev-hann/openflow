@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/protocol.dart';
+import 'package:openflow/models/protocol.dart';
 
 class ChatState extends Equatable {
-  final List<ChatMessage> messages;
-  final bool isSending;
 
   const ChatState({this.messages = const [], this.isSending = false});
+  final List<ChatMessage> messages;
+  final bool isSending;
 
   ChatState copyWith({List<ChatMessage>? messages, bool? isSending}) {
     return ChatState(

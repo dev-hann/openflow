@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../models/protocol.dart';
+import 'package:openflow/models/protocol.dart';
 
 class AuthStorage {
-  static const _key = 'openflow_auth';
-  final FlutterSecureStorage _storage;
 
   AuthStorage() : _storage = const FlutterSecureStorage();
+  static const _key = 'openflow_auth';
+  final FlutterSecureStorage _storage;
 
   Future<void> saveAuth(StoredAuth auth) async {
     await _storage.write(key: _key, value: jsonEncode(auth.toJson()));

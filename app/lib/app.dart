@@ -1,17 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'config/theme.dart';
-import 'cubits/auth_cubit.dart';
-import 'cubits/chat_cubit.dart';
-import 'cubits/sessions_cubit.dart';
-import 'models/protocol.dart';
-import 'screens/chat_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/onboarding_screen.dart';
-import 'screens/provider_edit_screen.dart';
-import 'services/api_client.dart';
-import 'services/websocket_service.dart';
-import 'widgets/app_drawer.dart';
+import 'package:openflow/config/theme.dart';
+import 'package:openflow/cubits/auth_cubit.dart';
+import 'package:openflow/cubits/chat_cubit.dart';
+import 'package:openflow/cubits/sessions_cubit.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/screens/chat_screen.dart';
+import 'package:openflow/screens/onboarding_screen.dart';
+import 'package:openflow/screens/provider_edit_screen.dart';
+import 'package:openflow/screens/settings_screen.dart';
+import 'package:openflow/services/api_client.dart';
+import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/widgets/app_drawer.dart';
 
 class OpenFlowMaterialApp extends StatelessWidget {
   const OpenFlowMaterialApp({super.key});
@@ -22,7 +24,6 @@ class OpenFlowMaterialApp extends StatelessWidget {
       title: 'OpenFlow',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
@@ -49,7 +50,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSessions();
+    unawaited(_loadSessions());
   }
 
   Future<void> _loadSessions() async {
@@ -142,16 +143,18 @@ class _MainScreenState extends State<MainScreen> {
                 if (mounted) {
                   context.read<SessionsCubit>().removeSession(id);
                 }
-              } catch (_) {}
+              } on Object {
+                // Session deletion failure is non-critical
+              }
             },
             onSettings: () {
               Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
                   builder: (_) => SettingsScreen(
                     onProviderEdit: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
+                      Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
                           builder: (_) => const ProviderEditScreen(),
                         ),
                       );

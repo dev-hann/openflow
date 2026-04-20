@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../cubits/auth_cubit.dart';
-import '../cubits/sessions_cubit.dart';
-import '../cubits/providers_cubit.dart';
-import '../cubits/settings_cubit.dart';
-import '../services/api_client.dart';
-import '../services/websocket_service.dart';
-import '../widgets/connection_section.dart';
-import '../constants/dimensions.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/cubits/auth_cubit.dart';
+import 'package:openflow/cubits/providers_cubit.dart';
+import 'package:openflow/cubits/sessions_cubit.dart';
+import 'package:openflow/cubits/settings_cubit.dart';
+import 'package:openflow/services/api_client.dart';
+import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/widgets/connection_section.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final VoidCallback? onProviderEdit;
 
   const SettingsScreen({super.key, this.onProviderEdit});
+  final VoidCallback? onProviderEdit;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -108,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('AI 모델',
-                                  style: theme.textTheme.titleSmall),
+                                  style: theme.textTheme.titleSmall,),
                               const SizedBox(height: Spacing.sm),
                               Text(
                                 settingsState.currentModel ?? '선택되지 않음',
@@ -126,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         children: [
                           Text('Provider',
-                              style: theme.textTheme.titleMedium),
+                              style: theme.textTheme.titleMedium,),
                           const Spacer(),
                           TextButton.icon(
                             onPressed: widget.onProviderEdit,

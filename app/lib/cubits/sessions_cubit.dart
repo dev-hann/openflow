@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/protocol.dart';
+import 'package:openflow/models/protocol.dart';
 
 class SessionsState extends Equatable {
-  final List<SessionInfo> sessions;
-  final String? activeSessionId;
 
   const SessionsState({this.sessions = const [], this.activeSessionId});
+  final List<SessionInfo> sessions;
+  final String? activeSessionId;
 
   SessionsState copyWith({
     List<SessionInfo>? sessions,
@@ -42,7 +42,7 @@ class SessionsCubit extends Cubit<SessionsState> {
     emit(state.copyWith(
       sessions: [session, ...state.sessions],
       activeSessionId: session.id,
-    ));
+    ),);
   }
 
   void removeSession(String sessionId) {

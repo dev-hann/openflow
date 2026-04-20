@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/protocol.dart';
-import '../widgets/provider_form.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/widgets/provider_form.dart';
 
 class ProviderEditScreen extends StatelessWidget {
-  final ProviderInfo? provider;
 
   const ProviderEditScreen({super.key, this.provider});
+  final ProviderInfo? provider;
 
   @override
   Widget build(BuildContext context) {

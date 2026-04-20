@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import '../constants/dimensions.dart';
-import '../constants/presets.dart';
-import '../models/protocol.dart';
-import 'verify_section.dart';
-import '../utils/normalize_url.dart';
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/constants/presets.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/widgets/verify_section.dart';
 
 class ProviderForm extends StatefulWidget {
-  final VoidCallback onComplete;
-  final bool showSkip;
-  final ProviderInfo? editProvider;
 
   const ProviderForm({
-    super.key,
-    required this.onComplete,
+    required this.onComplete, super.key,
     this.showSkip = false,
     this.editProvider,
   });
+  final VoidCallback onComplete;
+  final bool showSkip;
+  final ProviderInfo? editProvider;
 
   @override
   State<ProviderForm> createState() => _ProviderFormState();

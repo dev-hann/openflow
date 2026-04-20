@@ -2,9 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 class TypingIndicator extends StatefulWidget {
-  final Color color;
 
-  const TypingIndicator({super.key, required this.color});
+  const TypingIndicator({required this.color, super.key});
+  final Color color;
 
   @override
   State<TypingIndicator> createState() => _TypingIndicatorState();
