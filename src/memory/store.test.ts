@@ -133,6 +133,19 @@ describe("createMemoryStore", () => {
       expect(assistantMsg.role).toBe("assistant");
       expect("tool_calls" in assistantMsg).toBe(false);
     });
+
+    it("should count messages for a session", () => {
+      const session = store.createSession("Count");
+      expect(store.getMessageCount(session.id)).toBe(0);
+      store.addMessage({ sessionId: session.id, role: "user", content: "one" });
+      store.addMessage({ sessionId: session.id, role: "assistant", content: "two" });
+      store.addMessage({ sessionId: session.id, role: "user", content: "three" });
+      expect(store.getMessageCount(session.id)).toBe(3);
+    });
+
+    it("should return 0 count for nonexistent session", () => {
+      expect(store.getMessageCount("nonexistent")).toBe(0);
+    });
   });
 
   describe("buildContext", () => {

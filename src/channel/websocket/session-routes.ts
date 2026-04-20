@@ -27,7 +27,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps) {
       title: s.title,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
-      messageCount: memoryStore.getMessages(s.id).length,
+      messageCount: memoryStore.getMessageCount(s.id),
     }));
     sendJson(res, 200, { sessions: result });
   }

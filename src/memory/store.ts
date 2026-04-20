@@ -41,6 +41,7 @@ export interface MemoryStore {
   deleteSession(id: string): void;
   addMessage(params: AddMessageParams): void;
   getMessages(sessionId: string, limit?: number): ChatMessage[];
+  getMessageCount(sessionId: string): number;
   searchMessages(query: string, limit?: number): SearchResult[];
   buildContext(sessionId: string, maxSize: number): ChatMessage[];
   close(): void;
@@ -257,6 +258,13 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       return wrapDb("getMessages", () => {
         const rows = stmts.getMessages.all(sessionId, limit) as Array<Record<string, unknown>>;
         return rows.reverse().map(rowToMessage);
+      });
+    },
+
+    getMessageCount(sessionId: string): number {
+      return wrapDb("getMessageCount", () => {
+        const row = stmts.countMessages.get(sessionId) as Record<string, unknown>;
+        return (row?.count ?? 0) as number;
       });
     },
 
