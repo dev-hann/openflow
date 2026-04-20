@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 
 import { createLogger } from "../utils/logger.js";
-import { wrapDb, generateId, nowMs, runMigrations } from "./store.js";
+import { wrapDb, generateId, nowMs, runMigrations } from "./db-helpers.js";
 
 const log = createLogger("memory/provider");
 

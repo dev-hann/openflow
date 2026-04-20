@@ -1,12 +1,10 @@
-import { DatabaseSync } from "node:sqlite";
 import { dirname } from "node:path";
-import { randomUUID } from "node:crypto";
+import type { DatabaseSync } from "node:sqlite";
 
-import { createLogger } from "../utils/logger.js";
-import { OpenFlowError } from "../utils/errors.js";
-import { isSqliteBusy, withSyncRetry } from "../utils/retry.js";
 import { ensureDirSync } from "../utils/fs.js";
+import { createLogger } from "../utils/logger.js";
 import type { ChatMessage, ToolCall } from "../utils/message-types.js";
+import { wrapDb, generateId, nowMs, runMigrations, openDatabase } from "./db-helpers.js";
 
 const log = createLogger("memory");
 
@@ -46,45 +44,6 @@ export interface MemoryStore {
   buildContext(sessionId: string, maxSize: number): ChatMessage[];
   close(): void;
   getDb(): DatabaseSync;
-}
-
-const MIGRATIONS = [
-  `CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL DEFAULT '',
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  )`,
-  `CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL DEFAULT '',
-    tool_call_id TEXT,
-    tool_calls_json TEXT,
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_messages_content ON messages(content)`,
-  `CREATE TABLE IF NOT EXISTS providers (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    base_url TEXT NOT NULL,
-    api_key TEXT NOT NULL,
-    model TEXT NOT NULL,
-    is_default INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  )`,
-];
-
-export function generateId(): string {
-  return randomUUID();
-}
-
-export function nowMs(): number {
-  return Date.now();
 }
 
 function rowToSession(row: Record<string, unknown>): Session {
@@ -127,56 +86,8 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
   return { role: role as ChatMessage["role"], content } as ChatMessage;
 }
 
-export function wrapDb<T>(label: string, fn: () => T): T {
-  try {
-    return withSyncRetry(fn, (err) => {
-      if (isSqliteBusy(err)) {
-        log.warn({ label }, "database busy, retrying");
-        return true;
-      }
-      return false;
-    });
-  } catch (err: unknown) {
-    log.error({ label, err }, "database operation failed");
-    throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
-  }
-}
-
-function openDatabase(dbPath: string): DatabaseSync {
-  try {
-    const db = new DatabaseSync(dbPath);
-    db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA foreign_keys = ON");
-    db.exec("PRAGMA busy_timeout = 5000");
-    log.info({ dbPath }, "database opened");
-    return db;
-  } catch (err: unknown) {
-    log.error({ dbPath, err }, "failed to open database");
-    throw new OpenFlowError(`Failed to open database: ${dbPath}`, "DB_ERROR", err);
-  }
-}
-
-export function runMigrations(db: DatabaseSync): void {
-  try {
-    db.exec("BEGIN");
-    for (const sql of MIGRATIONS) {
-      db.exec(sql);
-    }
-    db.exec("COMMIT");
-    log.info("database migration completed");
-  } catch (err: unknown) {
-    db.exec("ROLLBACK");
-    log.error({ err }, "database migration failed");
-    throw new OpenFlowError("Database migration failed", "DB_MIGRATION_FAILED", err);
-  }
-}
-
-export function createMemoryStore(dbPath: string): MemoryStore {
-  ensureDirSync(dirname(dbPath));
-  const db = openDatabase(dbPath);
-  runMigrations(db);
-
-  const stmts = {
+function prepareSessionStatements(db: DatabaseSync) {
+  return {
     insertSession: db.prepare(
       "INSERT INTO sessions (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
     ),
@@ -209,6 +120,13 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       "UPDATE sessions SET updated_at = ? WHERE id = ?",
     ),
   };
+}
+
+export function createMemoryStore(dbPath: string): MemoryStore {
+  ensureDirSync(dirname(dbPath));
+  const db = openDatabase(dbPath);
+  runMigrations(db);
+  const stmts = prepareSessionStatements(db);
 
   return {
     createSession(title?: string): Session {
