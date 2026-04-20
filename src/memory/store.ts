@@ -95,6 +95,10 @@ function rowToSession(row: Record<string, unknown>): Session {
   };
 }
 
+function escapeLikeWildcards(str: string): string {
+  return str.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+}
+
 function buildSearchSnippet(content: string, query: string): string {
   const idx = content.toLowerCase().indexOf(query.toLowerCase());
   const start = Math.max(0, idx - 40);
@@ -112,8 +116,12 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
     return { role: "tool", content, tool_call_id: toolCallId };
   }
   if (role === "assistant" && toolCallsJson) {
-    const toolCalls = JSON.parse(toolCallsJson) as ToolCall[];
-    return { role: "assistant", content: content || null, tool_calls: toolCalls };
+    try {
+      const toolCalls = JSON.parse(toolCallsJson) as ToolCall[];
+      return { role: "assistant", content: content || null, tool_calls: toolCalls };
+    } catch {
+      log.warn({ role, jsonLength: toolCallsJson.length }, "malformed tool_calls_json, returning plain message");
+    }
   }
   return { role: role as ChatMessage["role"], content } as ChatMessage;
 }
@@ -193,7 +201,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     searchMessages: db.prepare(
       `SELECT m.role, m.content, m.created_at, s.id as session_id, s.title as session_title
        FROM messages m JOIN sessions s ON m.session_id = s.id
-       WHERE m.content LIKE ?
+       WHERE m.content LIKE ? ESCAPE '\\'
        ORDER BY m.created_at DESC LIMIT ?`,
     ),
     touchSession: db.prepare(
@@ -253,8 +261,9 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     },
 
     searchMessages(query: string, limit = 20): SearchResult[] {
+      const escaped = escapeLikeWildcards(query);
       return wrapDb("searchMessages", () => {
-        const rows = stmts.searchMessages.all(`%${query}%`, limit) as Array<Record<string, unknown>>;
+        const rows = stmts.searchMessages.all(`%${escaped}%`, limit) as Array<Record<string, unknown>>;
         return rows.map((row) => ({
           sessionId: row.session_id as string,
           sessionTitle: row.session_title as string,

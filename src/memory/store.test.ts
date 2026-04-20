@@ -118,6 +118,21 @@ describe("createMemoryStore", () => {
         expect(toolMsg.tool_call_id).toBe("tc_1");
       }
     });
+
+    it("should handle malformed tool_calls_json gracefully", () => {
+      const session = store.createSession("Corrupt");
+      store.addMessage({ sessionId: session.id, role: "user", content: "hi" });
+      const db = store.getDb();
+      db.prepare(
+        "INSERT INTO messages (session_id, role, content, tool_calls_json, created_at) VALUES (?, ?, ?, ?, ?)",
+      ).run(session.id, "assistant", "corrupt", "not-valid-json{", Date.now());
+
+      const messages = store.getMessages(session.id);
+      expect(messages).toHaveLength(2);
+      const assistantMsg = messages.find((m) => m.role === "assistant")!;
+      expect(assistantMsg.role).toBe("assistant");
+      expect("tool_calls" in assistantMsg).toBe(false);
+    });
   });
 
   describe("buildContext", () => {
@@ -162,6 +177,16 @@ describe("createMemoryStore", () => {
 
       const results = store.searchMessages("xyznonexistent");
       expect(results).toHaveLength(0);
+    });
+
+    it("should escape LIKE wildcards in search query", () => {
+      const session = store.createSession("Wildcards");
+      store.addMessage({ sessionId: session.id, role: "user", content: "50% discount" });
+      store.addMessage({ sessionId: session.id, role: "user", content: "other message" });
+
+      const results = store.searchMessages("50%");
+      expect(results).toHaveLength(1);
+      expect(results[0]!.content).toBe("50% discount");
     });
   });
 });

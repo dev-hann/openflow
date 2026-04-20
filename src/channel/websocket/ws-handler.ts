@@ -23,6 +23,21 @@ export function createWsHandler(deps: WsHandlerDeps) {
   const { authService, agentEngine } = deps;
   const clients = new Map<WebSocket, ClientState>();
 
+  function tryAuthenticate(text: string): ClientState | null {
+    try {
+      const msg = JSON.parse(text) as Record<string, unknown>;
+      if (msg.type === "auth" && typeof msg.accessToken === "string") {
+        const payload = authService.validateAccessToken(msg.accessToken);
+        if (payload) {
+          return { sessionKey: payload.sessionKey, activeSessionId: null };
+        }
+      }
+    } catch {
+      log.debug({ text: text.slice(0, 100) }, "non-JSON message during auth");
+    }
+    return null;
+  }
+
   function handleConnection(ws: WebSocket): void {
     let authenticated = false;
     const authTimeout = setTimeout(() => {
@@ -33,40 +48,28 @@ export function createWsHandler(deps: WsHandlerDeps) {
     authTimeout.unref();
 
     ws.on("message", (raw: Buffer) => {
+      if (authenticated) return;
+
       const text = raw.toString("utf-8");
-
-      if (!authenticated) {
-        try {
-          const msg = JSON.parse(text) as Record<string, unknown>;
-          if (msg.type === "auth" && typeof msg.accessToken === "string") {
-            const payload = authService.validateAccessToken(msg.accessToken);
-            if (payload) {
-              authenticated = true;
-              clearTimeout(authTimeout);
-              const state: ClientState = {
-                sessionKey: payload.sessionKey,
-                activeSessionId: null,
-              };
-              clients.set(ws, state);
-              ws.send(serializeWsServerMessage({ type: "auth_ok" }));
-              log.info({ sessionKey: payload.sessionKey }, "WS client authenticated");
-
-              ws.removeAllListeners("message");
-              ws.on("message", (rawInner: Buffer) => {
-                handleMessage(ws, state, rawInner.toString("utf-8")).catch((err) => {
-                  log.error({ err }, "WS message handler error");
-                });
-              });
-              return;
-            }
-          }
-        } catch {
-          log.debug({ text: text.slice(0, 100) }, "non-JSON message during auth");
-        }
+      const state = tryAuthenticate(text);
+      if (!state) {
         ws.send(serializeWsServerMessage({ type: "auth_required" }));
         ws.close(4001, "authentication required");
         return;
       }
+
+      authenticated = true;
+      clearTimeout(authTimeout);
+      clients.set(ws, state);
+      ws.send(serializeWsServerMessage({ type: "auth_ok" }));
+      log.info({ sessionKey: state.sessionKey }, "WS client authenticated");
+
+      ws.removeAllListeners("message");
+      ws.on("message", (rawInner: Buffer) => {
+        handleMessage(ws, state, rawInner.toString("utf-8")).catch((err) => {
+          log.error({ err }, "WS message handler error");
+        });
+      });
     });
 
     ws.on("close", () => {
