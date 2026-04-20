@@ -83,6 +83,7 @@ class WsAuth extends WsClientMessage {
 }
 
 sealed class WsServerMessage {
+  const WsServerMessage();
   static WsServerMessage fromJson(Map<String, dynamic> json) {
     return switch (json['type'] as String) {
       'token' => WsTokenChunk(
@@ -110,19 +111,19 @@ sealed class WsServerMessage {
 }
 
 class WsTokenChunk extends WsServerMessage {
-  WsTokenChunk({required this.sessionId, required this.content});
+  const WsTokenChunk({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
 }
 
 class WsResponse extends WsServerMessage {
-  WsResponse({required this.sessionId, required this.content});
+  const WsResponse({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
 }
 
 class WsError extends WsServerMessage {
-  WsError({
+  const WsError({
     required this.sessionId,
     required this.code,
     required this.message,
@@ -137,7 +138,7 @@ class WsAuthRequired extends WsServerMessage {}
 class WsAuthOk extends WsServerMessage {}
 
 class WsSessionSwitched extends WsServerMessage {
-  WsSessionSwitched({required this.sessionId});
+  const WsSessionSwitched({required this.sessionId});
   final String sessionId;
 }
 

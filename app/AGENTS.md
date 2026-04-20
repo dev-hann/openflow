@@ -154,10 +154,13 @@ class FooState extends Equatable {
 ```bash
 flutter pub get        # 의존성 설치
 flutter run            # 개발 모드
-flutter analyze        # 정적 분석
-flutter test           # 테스트
+flutter analyze        # 정적 분석 (very_good_analysis)
+flutter test           # 테스트 실행
 flutter build apk      # Android APK 빌드 (split-per-abi)
 ```
+
+- `flutter analyze` — 0 issues 필수 (린트는 `very_good_analysis` 적용)
+- `flutter test` — 전체 통과 필수
 
 ## 테스트 가이드라인
 

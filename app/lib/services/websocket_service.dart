@@ -6,7 +6,7 @@ import 'package:openflow/utils/normalize_url.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef WsMessageCallback = void Function(WsServerMessage);
-typedef VoidCallback = void Function();
+typedef NoArgsCallback = void Function();
 
 class WebSocketService {
   WebSocketChannel? _channel;
@@ -24,8 +24,8 @@ class WebSocketService {
   static const _maxReconnectDelay = Duration(seconds: 30);
   static const _pingInterval = Duration(seconds: 30);
 
-  VoidCallback? onConnected;
-  VoidCallback? onDisconnected;
+  NoArgsCallback? onConnected;
+  NoArgsCallback? onDisconnected;
   WsMessageCallback? onMessage;
 
   bool get isConnected => _channel != null;

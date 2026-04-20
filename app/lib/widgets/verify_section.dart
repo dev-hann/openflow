@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 import 'package:openflow/constants/dimensions.dart';
@@ -76,7 +77,7 @@ class VerifySection extends StatelessWidget {
   }
 }
 
-class VerifyResult {
+class VerifyResult extends Equatable {
   const VerifyResult({
     required this.ok,
     this.models = const [],
@@ -85,4 +86,7 @@ class VerifyResult {
   final bool ok;
   final List<String> models;
   final String? error;
+
+  @override
+  List<Object?> get props => [ok, models, error];
 }

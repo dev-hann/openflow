@@ -1,4 +1,6 @@
-class ProviderPreset {
+import 'package:equatable/equatable.dart';
+
+class ProviderPreset extends Equatable {
   const ProviderPreset({
     required this.id,
     required this.label,
@@ -11,6 +13,9 @@ class ProviderPreset {
   final String hint;
   final String baseUrl;
   final bool needsApiKey;
+
+  @override
+  List<Object?> get props => [id, label, hint, baseUrl, needsApiKey];
 }
 
 const kProviderPresets = <ProviderPreset>[
