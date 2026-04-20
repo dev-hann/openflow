@@ -78,8 +78,7 @@ class ApiClient {
     return body;
   }
 
-  Future<Map<String, dynamic>> pairInit() =>
-      _post('/api/auth/pair/init', {});
+  Future<Map<String, dynamic>> pairInit() => _post('/api/auth/pair/init', {});
 
   Future<TokenPair> pairVerify(String pin, String label) async {
     final json = await _post('/api/auth/pair/verify', {

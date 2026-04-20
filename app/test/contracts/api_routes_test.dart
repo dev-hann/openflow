@@ -29,13 +29,16 @@ void main() {
 
     final mockClient = MockClient((req) {
       capturedRequests.add(req);
-      return Future.value(http.Response(
-        jsonEncode(_okBodyFor(req.method, req.url.path)),
-        200,
-      ));
+      return Future.value(
+        http.Response(
+          jsonEncode(_okBodyFor(req.method, req.url.path)),
+          200,
+        ),
+      );
     });
 
-    final apiClient = ApiClient('http://localhost:9800', httpClient: mockClient);
+    final apiClient =
+        ApiClient('http://localhost:9800', httpClient: mockClient);
 
     await apiClient.pairInit();
     await apiClient.pairVerify('123', 'dev');
@@ -76,13 +79,16 @@ void main() {
 
     final mockClient = MockClient((req) {
       capturedRequests.add(req);
-      return Future.value(http.Response(
-        jsonEncode(_okBodyFor(req.method, req.url.path)),
-        200,
-      ));
+      return Future.value(
+        http.Response(
+          jsonEncode(_okBodyFor(req.method, req.url.path)),
+          200,
+        ),
+      );
     });
 
-    final apiClient = ApiClient('http://localhost:9800', httpClient: mockClient);
+    final apiClient =
+        ApiClient('http://localhost:9800', httpClient: mockClient);
 
     await apiClient.pairInit();
     await apiClient.pairVerify('123', 'dev');
@@ -133,7 +139,7 @@ String _normalizePath(String path) {
   return path;
 }
 
-const _providerJson = {
+const Map<String, dynamic> _providerJson = {
   'id': 'p1',
   'name': 'n',
   'base_url': 'http://x',
@@ -146,22 +152,24 @@ Map<String, dynamic> _okBodyFor(String method, String path) {
     return {'access_token': 'a', 'refresh_token': 'r'};
   }
   if (path.endsWith('/models')) {
-    return {'models': ['m1']};
+    return {
+      'models': ['m1'],
+    };
   }
   if (path.endsWith('/verify')) {
     return {'ok': true};
   }
   if (path.endsWith('/providers') && method == 'GET') {
-    return {'providers': []};
+    return <String, dynamic>{'providers': <Map<String, dynamic>>[]};
   }
   if (path.endsWith('/providers') && method == 'POST') {
-    return {..._providerJson};
+    return <String, dynamic>{..._providerJson};
   }
   if (path == '/api/providers/current') {
     return {'ok': true, 'providerId': 'p1'};
   }
   if (path.endsWith('/sessions') && method == 'GET') {
-    return {'sessions': []};
+    return <String, dynamic>{'sessions': <Map<String, dynamic>>[]};
   }
   if (path.endsWith('/sessions') && method == 'POST') {
     return {'id': 's1', 'title': 't', 'created_at': 1000};

@@ -84,7 +84,8 @@ void main() {
 
   group('listSessions', () {
     test('sends GET /api/sessions', () async {
-      customHandler = (req) => okResponse({'sessions': []});
+      customHandler = (req) =>
+          okResponse(<String, dynamic>{'sessions': <Map<String, dynamic>>[]});
       await apiClient.listSessions('at_test');
       final req = lastRequest();
       expect(req.method, 'GET');
@@ -94,7 +95,8 @@ void main() {
 
   group('createSession', () {
     test('sends POST /api/sessions', () async {
-      customHandler = (req) => okResponse({'id': 's1', 'title': 'test', 'created_at': 1000});
+      customHandler = (req) =>
+          okResponse({'id': 's1', 'title': 'test', 'created_at': 1000});
       await apiClient.createSession('at_test');
       final req = lastRequest();
       expect(req.method, 'POST');
@@ -123,7 +125,8 @@ void main() {
 
   group('listProviders', () {
     test('sends GET /api/providers', () async {
-      customHandler = (req) => okResponse({'providers': []});
+      customHandler = (req) =>
+          okResponse(<String, dynamic>{'providers': <Map<String, dynamic>>[]});
       await apiClient.listProviders('at_test');
       final req = lastRequest();
       expect(req.method, 'GET');
@@ -189,7 +192,9 @@ void main() {
 
   group('fetchProviderModels', () {
     test('sends GET /api/providers/:id/models', () async {
-      customHandler = (req) => okResponse({'models': ['gpt-4']});
+      customHandler = (req) => okResponse({
+            'models': ['gpt-4'],
+          });
       await apiClient.fetchProviderModels('at_test', 'p1');
       final req = lastRequest();
       expect(req.method, 'GET');
@@ -212,7 +217,11 @@ void main() {
     test('throws ApiError on 4xx response', () {
       customHandler = (req) => http.Response(
             jsonEncode(
-                {'code': 'invalid_or_expired_pin', 'message': 'Invalid PIN'}),
+              <String, dynamic>{
+                'code': 'invalid_or_expired_pin',
+                'message': 'Invalid PIN',
+              },
+            ),
             401,
           );
       expect(
