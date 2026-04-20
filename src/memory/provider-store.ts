@@ -47,10 +47,8 @@ function rowToProvider(row: Record<string, unknown>): Provider {
   };
 }
 
-export function createProviderStore(db: DatabaseSync): ProviderStore {
-  runMigrations(db);
-
-  const stmts = {
+function prepareProviderStatements(db: DatabaseSync) {
+  return {
     listProviders: db.prepare(
       "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers ORDER BY created_at ASC",
     ),
@@ -73,6 +71,11 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
       "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers WHERE id = ?",
     ),
   };
+}
+
+export function createProviderStore(db: DatabaseSync): ProviderStore {
+  runMigrations(db);
+  const stmts = prepareProviderStatements(db);
 
   return {
     listProviders(): Provider[] {
