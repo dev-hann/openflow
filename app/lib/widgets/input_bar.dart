@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 
 class InputBar extends StatefulWidget {
-
   const InputBar({required this.onSend, super.key, this.disabled = false});
   final ValueChanged<String> onSend;
   final bool disabled;
@@ -88,9 +88,8 @@ class _InputBarState extends State<InputBar> {
                 onPressed: canSend ? _handleSend : null,
                 icon: const Icon(Icons.send, size: 20),
                 style: IconButton.styleFrom(
-                  backgroundColor: canSend
-                      ? theme.colorScheme.primary
-                      : Colors.transparent,
+                  backgroundColor:
+                      canSend ? theme.colorScheme.primary : Colors.transparent,
                   foregroundColor: canSend
                       ? theme.colorScheme.onPrimary
                       : theme.colorScheme.onSurfaceVariant,

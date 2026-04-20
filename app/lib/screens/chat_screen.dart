@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/chat_cubit.dart';
@@ -206,7 +207,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                                   onPressed: () =>
                                       _listKey.currentState?.scrollToBottom(),
                                   child: const Icon(
-                                      Icons.keyboard_double_arrow_down,),
+                                    Icons.keyboard_double_arrow_down,
+                                  ),
                                 ),
                               ),
                           ],

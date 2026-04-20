@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/normalize_url.dart';
 
 class ApiError implements Exception {
-
   ApiError({required this.status, required this.code, required this.message});
   final int status;
   final String code;
@@ -17,7 +17,6 @@ class ApiError implements Exception {
 }
 
 class ApiClient {
-
   ApiClient(this.baseUrl) : _httpClient = http.Client();
   final String baseUrl;
   final http.Client _httpClient;
@@ -91,13 +90,19 @@ class ApiClient {
   Future<List<SessionInfo>> listSessions(String accessToken) async {
     final json = await _get('/api/sessions', accessToken);
     final list = json['sessions'] as List<dynamic>;
-    return list.map((e) => SessionInfo.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => SessionInfo.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<SessionInfo> createSession(String accessToken, [String? title]) async {
-    final json = await _post('/api/sessions', {
-      if (title != null) 'title': title,
-    }, accessToken,);
+    final json = await _post(
+      '/api/sessions',
+      {
+        if (title != null) 'title': title,
+      },
+      accessToken,
+    );
     return SessionInfo.fromJson(json);
   }
 
@@ -153,7 +158,11 @@ class ApiClient {
   }
 
   Future<void> switchProvider(String accessToken, String providerId) async {
-    await _post('/api/providers/switch', {'provider_id': providerId}, accessToken);
+    await _post(
+      '/api/providers/switch',
+      {'provider_id': providerId},
+      accessToken,
+    );
   }
 }
 

@@ -1,9 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'package:openflow/models/protocol.dart';
 
 class AuthStorage {
-
   AuthStorage() : _storage = const FlutterSecureStorage();
   static const _key = 'openflow_auth';
   final FlutterSecureStorage _storage;

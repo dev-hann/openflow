@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/app.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/chat_cubit.dart';
@@ -17,16 +18,19 @@ void main() {
   final authStorage = AuthStorage();
   final wsService = WebSocketService();
 
-  runApp(OpenFlowApp(
-    authStorage: authStorage,
-    wsService: wsService,
-  ),);
+  runApp(
+    OpenFlowApp(
+      authStorage: authStorage,
+      wsService: wsService,
+    ),
+  );
 }
 
 class OpenFlowApp extends StatelessWidget {
-
   const OpenFlowApp({
-    required this.authStorage, required this.wsService, super.key,
+    required this.authStorage,
+    required this.wsService,
+    super.key,
   });
   final AuthStorage authStorage;
   final WebSocketService wsService;
@@ -41,9 +45,7 @@ class OpenFlowApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) => AuthCubit(authStorage)
-              ..loadAuth()
-              .ignore(),
+            create: (_) => AuthCubit(authStorage)..loadAuth().ignore(),
           ),
           BlocProvider(create: (_) => ChatCubit()),
           BlocProvider(create: (_) => SessionsCubit()),

@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SettingsState extends Equatable {
-
   const SettingsState({
     this.serverUrl,
     this.currentModel,

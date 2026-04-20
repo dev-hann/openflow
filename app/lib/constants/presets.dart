@@ -1,5 +1,4 @@
 class ProviderPreset {
-
   const ProviderPreset({
     required this.id,
     required this.label,

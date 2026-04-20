@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 
 class ChatEmptyState extends StatelessWidget {
-
   const ChatEmptyState({
-    required this.variant, required this.isSending, required this.onSuggestion, required this.onReconnect, super.key,
+    required this.variant,
+    required this.isSending,
+    required this.onSuggestion,
+    required this.onReconnect,
+    super.key,
   });
   final String variant; // 'disconnected', 'connecting', 'empty'
   final bool isSending;

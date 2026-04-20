@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 
 class ProviderSheet extends StatelessWidget {
-
   const ProviderSheet({
-    required this.providers, required this.onSelect, required this.onEdit, required this.onDelete, required this.onAdd, super.key,
+    required this.providers,
+    required this.onSelect,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onAdd,
+    super.key,
     this.activeProviderId,
     this.isSwitching = false,
   });
@@ -27,8 +32,10 @@ class ProviderSheet extends StatelessWidget {
             padding: const EdgeInsets.all(Spacing.md),
             child: Row(
               children: [
-                Text('Provider 관리',
-                    style: Theme.of(context).textTheme.titleMedium,),
+                Text(
+                  'Provider 관리',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: onAdd,
@@ -49,13 +56,14 @@ class ProviderSheet extends StatelessWidget {
                 return ListTile(
                   leading: Icon(
                     Icons.dns_outlined,
-                    color: isActive
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                    color:
+                        isActive ? Theme.of(context).colorScheme.primary : null,
                   ),
                   title: Text(provider.name),
                   subtitle: Text(
-                    provider.model.isNotEmpty ? provider.model : provider.baseUrl,
+                    provider.model.isNotEmpty
+                        ? provider.model
+                        : provider.baseUrl,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -75,11 +83,15 @@ class ProviderSheet extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined, size: 18),
+                                  icon:
+                                      const Icon(Icons.edit_outlined, size: 18),
                                   onPressed: () => onEdit(provider),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 18),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 18,
+                                  ),
                                   onPressed: () => onDelete(provider.id),
                                 ),
                               ],

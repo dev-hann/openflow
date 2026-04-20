@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 
 class ModelSection extends StatelessWidget {
-
   const ModelSection({
-    required this.availableModels, required this.onModelChange, super.key,
+    required this.availableModels,
+    required this.onModelChange,
+    super.key,
     this.currentModel,
   });
   final String? currentModel;

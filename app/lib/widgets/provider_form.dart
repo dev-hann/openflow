@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/constants/presets.dart';
 import 'package:openflow/models/protocol.dart';
@@ -6,9 +7,9 @@ import 'package:openflow/utils/normalize_url.dart';
 import 'package:openflow/widgets/verify_section.dart';
 
 class ProviderForm extends StatefulWidget {
-
   const ProviderForm({
-    required this.onComplete, super.key,
+    required this.onComplete,
+    super.key,
     this.showSkip = false,
     this.editProvider,
   });

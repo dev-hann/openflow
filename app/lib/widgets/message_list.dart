@@ -1,14 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/widgets/message_bubble.dart';
 
 class MessageList extends StatefulWidget {
-
   const MessageList({
-    required this.messages, required this.onScrollStateChange, super.key,
+    required this.messages,
+    required this.onScrollStateChange,
+    super.key,
     this.onRetry,
   });
   final List<ChatMessage> messages;
@@ -66,8 +68,8 @@ class MessageListState extends State<MessageList> {
       itemCount: widget.messages.length,
       itemBuilder: (context, index) {
         final message = widget.messages[index];
-        final prevSame = index > 0 &&
-            widget.messages[index - 1].role == message.role;
+        final prevSame =
+            index > 0 && widget.messages[index - 1].role == message.role;
         final nextSame = index < widget.messages.length - 1 &&
             widget.messages[index + 1].role == message.role;
 

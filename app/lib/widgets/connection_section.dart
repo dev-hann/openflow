@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 
 class ConnectionSection extends StatelessWidget {
-
   const ConnectionSection({
-    required this.isConnected, required this.onServerChanged, super.key,
+    required this.isConnected,
+    required this.onServerChanged,
+    super.key,
     this.serverUrl,
   });
   final bool isConnected;

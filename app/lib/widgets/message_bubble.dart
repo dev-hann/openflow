@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
 import 'package:openflow/widgets/typing_indicator.dart';
 
 class MessageBubble extends StatelessWidget {
-
   const MessageBubble({
-    required this.message, super.key,
+    required this.message,
+    super.key,
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
     this.onRetry,
@@ -97,9 +98,8 @@ class MessageBubble extends StatelessWidget {
     final bgColor = isUser
         ? theme.colorScheme.primary
         : theme.colorScheme.surfaceContainerHighest;
-    final fgColor = isUser
-        ? theme.colorScheme.onPrimary
-        : theme.colorScheme.onSurface;
+    final fgColor =
+        isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

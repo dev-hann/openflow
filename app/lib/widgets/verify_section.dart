@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 
 class VerifySection extends StatelessWidget {
-
   const VerifySection({
-    required this.verifying, required this.onVerify, required this.onSelectModel, super.key,
+    required this.verifying,
+    required this.onVerify,
+    required this.onSelectModel,
+    super.key,
     this.result,
     this.selectedModel,
   });
@@ -43,9 +46,7 @@ class VerifySection extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
-              result!.ok
-                  ? '연결 성공!'
-                  : result!.error ?? '연결 실패',
+              result!.ok ? '연결 성공!' : result!.error ?? '연결 실패',
               style: TextStyle(
                 color: result!.ok
                     ? theme.colorScheme.onPrimaryContainer
@@ -76,7 +77,6 @@ class VerifySection extends StatelessWidget {
 }
 
 class VerifyResult {
-
   const VerifyResult({
     required this.ok,
     this.models = const [],

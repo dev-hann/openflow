@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
@@ -12,7 +13,6 @@ import 'package:openflow/services/websocket_service.dart';
 import 'package:openflow/widgets/connection_section.dart';
 
 class SettingsScreen extends StatefulWidget {
-
   const SettingsScreen({super.key, this.onProviderEdit});
   final VoidCallback? onProviderEdit;
 
@@ -116,8 +116,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('AI 모델',
-                                  style: theme.textTheme.titleSmall,),
+                              Text(
+                                'AI 모델',
+                                style: theme.textTheme.titleSmall,
+                              ),
                               const SizedBox(height: Spacing.sm),
                               Text(
                                 settingsState.currentModel ?? '선택되지 않음',
@@ -134,8 +136,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: Spacing.lg),
                       Row(
                         children: [
-                          Text('Provider',
-                              style: theme.textTheme.titleMedium,),
+                          Text(
+                            'Provider',
+                            style: theme.textTheme.titleMedium,
+                          ),
                           const Spacer(),
                           TextButton.icon(
                             onPressed: widget.onProviderEdit,
@@ -152,15 +156,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: ListTile(
                             leading: Icon(
                               Icons.dns_outlined,
-                              color: isActive
-                                  ? theme.colorScheme.primary
-                                  : null,
+                              color:
+                                  isActive ? theme.colorScheme.primary : null,
                             ),
                             title: Text(provider.name),
                             subtitle: Text(provider.model),
-                            trailing: isActive
-                                ? const Chip(label: Text('활성'))
-                                : null,
+                            trailing:
+                                isActive ? const Chip(label: Text('활성')) : null,
                             onTap: isActive
                                 ? null
                                 : () => _switchProvider(provider.id),
@@ -173,8 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: Spacing.sm),
                         Wrap(
                           spacing: Spacing.xs,
-                          children:
-                              settingsState.availableModels.map((model) {
+                          children: settingsState.availableModels.map((model) {
                             return ChoiceChip(
                               label: Text(model),
                               selected: model == settingsState.currentModel,

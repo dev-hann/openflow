@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/models/protocol.dart';
 
 class ProvidersState extends Equatable {
-
   const ProvidersState({
     this.providers = const [],
     this.activeProviderId,
@@ -21,7 +21,8 @@ class ProvidersState extends Equatable {
   }) {
     return ProvidersState(
       providers: providers ?? this.providers,
-      activeProviderId: clearActive ? null : (activeProviderId ?? this.activeProviderId),
+      activeProviderId:
+          clearActive ? null : (activeProviderId ?? this.activeProviderId),
       isSwitching: isSwitching ?? this.isSwitching,
     );
   }
@@ -35,10 +36,12 @@ class ProvidersCubit extends Cubit<ProvidersState> {
 
   void setProviders(List<ProviderInfo> providers) {
     final active = providers.where((p) => p.isActive).firstOrNull;
-    emit(state.copyWith(
-      providers: providers,
-      activeProviderId: active?.id ?? state.activeProviderId,
-    ),);
+    emit(
+      state.copyWith(
+        providers: providers,
+        activeProviderId: active?.id ?? state.activeProviderId,
+      ),
+    );
   }
 
   void setActiveProviderId(String id) {
@@ -50,9 +53,8 @@ class ProvidersCubit extends Cubit<ProvidersState> {
   }
 
   void updateProvider(ProviderInfo updated) {
-    final providers = state.providers
-        .map((p) => p.id == updated.id ? updated : p)
-        .toList();
+    final providers =
+        state.providers.map((p) => p.id == updated.id ? updated : p).toList();
     emit(state.copyWith(providers: providers));
   }
 }

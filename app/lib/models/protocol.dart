@@ -3,12 +3,12 @@ import 'package:equatable/equatable.dart';
 enum MessageRole { user, assistant }
 
 class ChatMessage extends Equatable {
-
   const ChatMessage({
     required this.id,
     required this.role,
     required this.content,
-    required this.timestamp, this.isStreaming = false,
+    required this.timestamp,
+    this.isStreaming = false,
     this.isFailed = false,
   });
   final String id;
@@ -34,7 +34,8 @@ class ChatMessage extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, role, content, isStreaming, isFailed, timestamp];
+  List<Object?> get props =>
+      [id, role, content, isStreaming, isFailed, timestamp];
 }
 
 sealed class WsClientMessage {
@@ -143,7 +144,6 @@ class WsSessionSwitched extends WsServerMessage {
 class WsPong extends WsServerMessage {}
 
 class SessionInfo extends Equatable {
-
   const SessionInfo({
     required this.id,
     required this.title,
@@ -166,7 +166,6 @@ class SessionInfo extends Equatable {
 }
 
 class TokenPair extends Equatable {
-
   const TokenPair({required this.accessToken, required this.refreshToken});
 
   factory TokenPair.fromJson(Map<String, dynamic> json) => TokenPair(
@@ -181,7 +180,6 @@ class TokenPair extends Equatable {
 }
 
 class StoredAuth extends Equatable {
-
   const StoredAuth({
     required this.serverUrl,
     required this.accessToken,
@@ -214,13 +212,13 @@ class StoredAuth extends Equatable {
 }
 
 class ProviderInfo extends Equatable {
-
   const ProviderInfo({
     required this.id,
     required this.name,
     required this.baseUrl,
     required this.model,
-    required this.createdAt, this.apiKeySet = false,
+    required this.createdAt,
+    this.apiKeySet = false,
     this.isActive = false,
   });
 
@@ -262,5 +260,6 @@ class ProviderInfo extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, baseUrl, model, apiKeySet, isActive, createdAt];
+  List<Object?> get props =>
+      [id, name, baseUrl, model, apiKeySet, isActive, createdAt];
 }

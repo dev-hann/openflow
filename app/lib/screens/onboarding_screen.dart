@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/settings_cubit.dart';
@@ -9,7 +10,6 @@ import 'package:openflow/utils/normalize_url.dart';
 import 'package:openflow/widgets/provider_form.dart';
 
 class OnboardingScreen extends StatefulWidget {
-
   const OnboardingScreen({required this.onComplete, super.key});
   final VoidCallback onComplete;
 
@@ -23,7 +23,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pinController = TextEditingController();
   bool _loading = false;
   String? _error;
-  // ignore: use_late_for_private_fields_and_variables, document_ignores
+  // This field is conditionally assigned and null-checked before use.
+  // ignore: use_late_for_private_fields_and_variables
   TokenPair? _tokens;
 
   @override
@@ -162,8 +163,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildServerStep() {
     return Column(
       children: [
-        Text('서버 주소 입력',
-            style: Theme.of(context).textTheme.titleMedium,),
+        Text(
+          '서버 주소 입력',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: Spacing.md),
         TextField(
           controller: _serverController,
@@ -224,9 +227,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               alignment: Alignment.center,
               child: Text(
-                i < _pinController.text.length
-                    ? _pinController.text[i]
-                    : '',
+                i < _pinController.text.length ? _pinController.text[i] : '',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             );

@@ -132,7 +132,8 @@ class WebSocketService {
     _reconnectTimer?.cancel();
 
     final jitter = 1 + _reconnectAttempts * 0.2;
-    final delayMs = _baseReconnectDelay.inMilliseconds * (1 << _reconnectAttempts) * jitter;
+    final delayMs =
+        _baseReconnectDelay.inMilliseconds * (1 << _reconnectAttempts) * jitter;
     final clamped = delayMs.clamp(
       _baseReconnectDelay.inMilliseconds.toDouble(),
       _maxReconnectDelay.inMilliseconds.toDouble(),

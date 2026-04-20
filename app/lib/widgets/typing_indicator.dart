@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class TypingIndicator extends StatefulWidget {
-
   const TypingIndicator({required this.color, super.key});
   final Color color;
 

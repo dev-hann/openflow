@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/config/theme.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/chat_cubit.dart';
@@ -142,6 +143,7 @@ class _MainScreenState extends State<MainScreen> {
                 final api =
                     createApiClient(authCubit.state.storedAuth!.serverUrl);
                 await api.deleteSession(token, id);
+                if (!context.mounted) return;
                 if (mounted) {
                   context.read<SessionsCubit>().removeSession(id);
                 }

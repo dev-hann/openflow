@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
 
 class AppDrawer extends StatelessWidget {
-
   const AppDrawer({
-    required this.sessions, required this.onSessionTap, required this.onNewChat, required this.onSessionDelete, required this.onSettings, super.key,
+    required this.sessions,
+    required this.onSessionTap,
+    required this.onNewChat,
+    required this.onSessionDelete,
+    required this.onSettings,
+    super.key,
     this.activeSessionId,
   });
   final List<SessionInfo> sessions;
@@ -58,7 +63,8 @@ class AppDrawer extends StatelessWidget {
           final isActive = session.id == activeSessionId;
           return ListTile(
             selected: isActive,
-            selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+            selectedTileColor:
+                theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             leading: const Icon(Icons.chat_bubble_outline, size: 20),
             title: Text(
               session.title,
