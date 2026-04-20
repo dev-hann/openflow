@@ -16,6 +16,7 @@ interface AgentDeps {
   memory: ReturnType<typeof createMemoryStore>;
   agent: ReturnType<typeof createAgentEngine>;
   providerPool: ReturnType<typeof createProviderPool>;
+  providerStore: ReturnType<typeof createProviderStore>;
 }
 
 function createAgentDeps(
@@ -40,7 +41,7 @@ function createAgentDeps(
     confirmationHandler,
     confirmationTimeout: config.tools.confirmationTimeout,
   });
-  return { memory, agent, providerPool };
+  return { memory, agent, providerPool, providerStore };
 }
 
 function createServerCleanup(
@@ -74,8 +75,7 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
     requestConfirmation: async () => ({ approved: true }),
   };
 
-  const { memory, agent, providerPool } = createAgentDeps(config, undefined, confirmationHandler);
-  const providerStore = createProviderStore(memory.getDb());
+  const { memory, agent, providerPool, providerStore } = createAgentDeps(config, undefined, confirmationHandler);
 
   const pushTokenStore = createPushTokenStore();
   const notification = createNotificationService(

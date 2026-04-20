@@ -11,6 +11,17 @@ export type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 
 const log = createLogger("tools");
 
+interface ExecError extends Error {
+  stdout?: string;
+  stderr?: string;
+  killed?: boolean;
+  signal?: string;
+}
+
+function isExecError(err: unknown): err is ExecError {
+  return err instanceof Error;
+}
+
 export interface ToolCall {
   id: string;
   name: string;
@@ -69,11 +80,11 @@ const shellTool: InternalTool = {
       });
       return truncate(result || "(no output)", 10_000);
     } catch (err: unknown) {
-      const e = err as { stdout?: string; stderr?: string; killed?: boolean; signal?: string };
-      if (e.killed || e.signal === "SIGTERM" || e.signal === "SIGKILL") {
+      if (!isExecError(err)) throw err;
+      if (err.killed || err.signal === "SIGTERM" || err.signal === "SIGKILL") {
         throw new Error(`Command timed out after ${timeout}ms`);
       }
-      const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
+      const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
       throw new Error(output || "Command failed with no output");
     }
   },

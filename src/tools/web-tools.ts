@@ -1,5 +1,6 @@
 import type { InternalTool } from "./types.js";
 import { truncate } from "./utils.js";
+import { OpenFlowError } from "../utils/errors.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 
 function htmlToPlainText(html: string): string {
@@ -21,10 +22,10 @@ export function validateUrl(url: string): void {
   try {
     parsed = new URL(url);
   } catch {
-    throw new Error(`Invalid URL: ${url}`);
+    throw new OpenFlowError(`Invalid URL: ${url}`, "TOOL_EXECUTION_FAILED");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error(`Unsupported protocol: ${parsed.protocol}`);
+    throw new OpenFlowError(`Unsupported protocol: ${parsed.protocol}`, "TOOL_EXECUTION_FAILED");
   }
   const rawHostname = parsed.hostname.toLowerCase();
   const hostname = rawHostname.startsWith("[") && rawHostname.endsWith("]")
@@ -44,7 +45,7 @@ export function validateUrl(url: string): void {
     hostname.startsWith("fc") ||
     hostname.startsWith("fe80")
   ) {
-    throw new Error(`Requests to private/internal networks are blocked`);
+    throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
   }
 }
 
@@ -81,7 +82,7 @@ export const webFetchTool: InternalTool = {
       const text = htmlToPlainText(html);
       return truncate(text, maxLen);
     } catch (err: unknown) {
-      throw new Error(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`);
+      throw new OpenFlowError(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`, "TOOL_EXECUTION_FAILED", err);
     }
   },
 };
@@ -129,7 +130,7 @@ export const webSearchTool: InternalTool = {
       if (results.length === 0) return "No results found.";
       return results.map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.href}`).join("\n\n");
     } catch (err: unknown) {
-      throw new Error(`Search failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new OpenFlowError(`Search failed: ${err instanceof Error ? err.message : String(err)}`, "TOOL_EXECUTION_FAILED", err);
     }
   },
 };
@@ -165,18 +166,18 @@ export const httpClientTool: InternalTool = {
       try {
         const parsed = JSON.parse(headersRaw);
         if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-          throw new Error("Invalid headers JSON");
+          throw new OpenFlowError("Invalid headers JSON", "TOOL_EXECUTION_FAILED");
         }
         for (const [key, val] of Object.entries(parsed)) {
           if (typeof key !== "string" || typeof val !== "string") {
-            throw new Error("Invalid headers: keys and values must be strings");
+            throw new OpenFlowError("Invalid headers: keys and values must be strings", "TOOL_EXECUTION_FAILED");
           }
         }
         headers = parsed as Record<string, string>;
       } catch (err: unknown) {
-        throw err instanceof Error && err.message.startsWith("Invalid headers")
+        throw err instanceof OpenFlowError
           ? err
-          : new Error("Invalid headers JSON");
+          : new OpenFlowError("Invalid headers JSON", "TOOL_EXECUTION_FAILED", err);
       }
     }
 
@@ -191,7 +192,7 @@ export const httpClientTool: InternalTool = {
       );
       return text;
     } catch (err: unknown) {
-      throw new Error(`HTTP request failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new OpenFlowError(`HTTP request failed: ${err instanceof Error ? err.message : String(err)}`, "TOOL_EXECUTION_FAILED", err);
     }
   },
 };

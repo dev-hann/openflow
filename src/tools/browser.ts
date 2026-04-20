@@ -9,6 +9,16 @@ import type { InternalTool } from "./types.js";
 
 const log = createLogger("browser");
 
+interface ExecError extends Error {
+  stdout?: string;
+  stderr?: string;
+  killed?: boolean;
+}
+
+function isExecError(err: unknown): err is ExecError {
+  return err instanceof Error;
+}
+
 export interface BrowserConfig {
   enabled: boolean;
   timeout: number;
@@ -43,8 +53,8 @@ function installChromium(timeout: number): void {
     });
     log.info("Playwright Chromium installed successfully");
   } catch (err: unknown) {
-    const e = err as { stdout?: string; stderr?: string };
-    const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
+    if (!isExecError(err)) throw err;
+    const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
     log.error({ err: output }, "failed to install Playwright Chromium");
     throw new Error(
       `Failed to auto-install Playwright Chromium. Run manually: npx playwright install chromium\n${output}`,
@@ -73,9 +83,9 @@ function runPlaywrightScript(script: string, timeout: number): string {
     });
     return result || "(no output)";
   } catch (err: unknown) {
-    const e = err as { stdout?: string; stderr?: string; killed?: boolean };
-    if (e.killed) throw new Error(`Browser script timed out after ${timeout}ms`);
-    const output = [e.stdout, e.stderr].filter(Boolean).join("\n");
+    if (!isExecError(err)) throw err;
+    if (err.killed) throw new Error(`Browser script timed out after ${timeout}ms`);
+    const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
     throw new Error(output || "Browser script failed");
   } finally {
     try {
