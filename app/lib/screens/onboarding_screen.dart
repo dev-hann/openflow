@@ -209,44 +209,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: Spacing.lg),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(6, (i) {
-            return Container(
-              width: 44,
-              height: 52,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                i < _pinController.text.length ? _pinController.text[i] : '',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-            );
-          }),
-        ),
+        _buildPinBoxes(),
         const SizedBox(height: Spacing.md),
-        SizedBox(
-          width: 200,
-          child: TextField(
-            controller: _pinController,
-            keyboardType: TextInputType.number,
-            maxLength: 6,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, letterSpacing: 8),
-            decoration: const InputDecoration(
-              counterText: '',
-              border: InputBorder.none,
-            ),
-            onChanged: (_) => setState(() {}),
-            onSubmitted: (_) => _submitPin(),
-          ),
-        ),
+        _buildPinTextField(),
         const SizedBox(height: Spacing.lg),
         SizedBox(
           width: double.infinity,
@@ -262,6 +227,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPinBoxes() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(6, (i) {
+        return Container(
+          width: 44,
+          height: 52,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            i < _pinController.text.length ? _pinController.text[i] : '',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildPinTextField() {
+    return SizedBox(
+      width: 200,
+      child: TextField(
+        controller: _pinController,
+        keyboardType: TextInputType.number,
+        maxLength: 6,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 24, letterSpacing: 8),
+        decoration: const InputDecoration(
+          counterText: '',
+          border: InputBorder.none,
+        ),
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => _submitPin(),
+      ),
     );
   }
 
