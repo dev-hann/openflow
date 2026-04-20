@@ -9,11 +9,11 @@ on:
 env:
   FLUTTER_VERSION: '3.41.x'
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
     defaults:
       run:
