@@ -68,7 +68,7 @@ WebSocket + HTTP 서버를 기본 통신 채널로 채택. 클라이언트는 PI
 - WebSocket + HTTP 서버가 포함됨 (포트 9800)
 - Telegram 의존성(grammy) 제거
 - 인증 시스템(auth.ts, auth-store.ts) 추가
-- REST API 16개 엔드포인트
+- REST API 17개 엔드포인트
 
 ---
 

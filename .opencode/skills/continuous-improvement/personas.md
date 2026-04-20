@@ -113,7 +113,7 @@
 
 - [ ] `pnpm check` — lint + format check + typecheck + test 전체 통과
 - [ ] **AGENTS.md 테스트**: 커버리지 80% lines 유지
-- [ ] **AGENTS.md 테스트**: 모든 외부 경계(LLM, Telegram, 파일시스템) 모킹됨
+- [ ] **AGENTS.md 테스트**: 모든 외부 경계(LLM, WebSocket, 파일시스템) 모킹됨
 - [ ] **AGENTS.md 테스트**: 실제 네트워크 호출 없음
 - [ ] **AGENTS.md 테스트**: 타이머, 환경변수, 모의 모듈 정리됨
 - [ ] **AGENTS.md 아키텍처 경계**: 순환 참조 없음, 의존성 방향 준수
