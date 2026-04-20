@@ -17,7 +17,8 @@ class ApiError implements Exception {
 }
 
 class ApiClient {
-  ApiClient(this.baseUrl) : _httpClient = http.Client();
+  ApiClient(this.baseUrl, {http.Client? httpClient})
+      : _httpClient = httpClient ?? http.Client();
   final String baseUrl;
   final http.Client _httpClient;
   static const _timeout = Duration(seconds: 15);
@@ -47,6 +48,17 @@ class ApiClient {
     return _parse(response);
   }
 
+  Future<Map<String, dynamic>> _put(
+    String path,
+    Map<String, dynamic> body, [
+    String? token,
+  ]) async {
+    final response = await _httpClient
+        .put(_uri(path), headers: _headers(token), body: jsonEncode(body))
+        .timeout(_timeout);
+    return _parse(response);
+  }
+
   Future<Map<String, dynamic>> _delete(String path, String token) async {
     final response = await _httpClient
         .delete(_uri(path), headers: _headers(token))
@@ -66,10 +78,11 @@ class ApiClient {
     return body;
   }
 
-  Future<Map<String, dynamic>> pairInit() => _get('/api/pair/init');
+  Future<Map<String, dynamic>> pairInit() =>
+      _post('/api/auth/pair/init', {});
 
   Future<TokenPair> pairVerify(String pin, String label) async {
-    final json = await _post('/api/pair/verify', {
+    final json = await _post('/api/auth/pair/verify', {
       'pin': pin,
       'label': label,
     });
@@ -78,13 +91,13 @@ class ApiClient {
 
   Future<TokenPair> refreshToken(String refreshToken) async {
     final json = await _post('/api/auth/refresh', {
-      'refresh_token': refreshToken,
+      'refreshToken': refreshToken,
     });
     return TokenPair.fromJson(json);
   }
 
   Future<void> unpair(String accessToken) async {
-    await _delete('/api/pair', accessToken);
+    await _delete('/api/auth/unpair', accessToken);
   }
 
   Future<List<SessionInfo>> listSessions(String accessToken) async {
@@ -95,7 +108,10 @@ class ApiClient {
         .toList();
   }
 
-  Future<SessionInfo> createSession(String accessToken, [String? title]) async {
+  Future<SessionInfo> createSession(
+    String accessToken, [
+    String? title,
+  ]) async {
     final json = await _post(
       '/api/sessions',
       {
@@ -133,7 +149,7 @@ class ApiClient {
     String id,
     Map<String, dynamic> params,
   ) async {
-    final json = await _post('/api/providers/$id', params, accessToken);
+    final json = await _put('/api/providers/$id', params, accessToken);
     return ProviderInfo.fromJson(json);
   }
 
@@ -145,7 +161,7 @@ class ApiClient {
     String accessToken,
     String id,
   ) async {
-    return _get('/api/providers/$id/verify', accessToken);
+    return _post('/api/providers/$id/verify', {}, accessToken);
   }
 
   Future<List<String>> fetchProviderModels(
@@ -158,9 +174,9 @@ class ApiClient {
   }
 
   Future<void> switchProvider(String accessToken, String providerId) async {
-    await _post(
-      '/api/providers/switch',
-      {'provider_id': providerId},
+    await _put(
+      '/api/providers/current',
+      {'providerId': providerId},
       accessToken,
     );
   }
