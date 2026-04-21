@@ -5,6 +5,8 @@ import {
   requireAuth,
   sendJson,
   readJsonBody,
+  readJsonObject,
+  requireBodyStrings,
   setCorsHeaders,
   handleOptions,
 } from "./middleware.js";
@@ -83,7 +85,10 @@ describe("extractBearerToken", () => {
 
 describe("requireAuth", () => {
   const mockAuthService = {
-    validateAccessToken: vi.fn<(token: string) => { sessionKey: string; expiresAt: number } | null>(),
+    validateAccessToken:
+      vi.fn<
+        (token: string) => { sessionKey: string; expiresAt: number } | null
+      >(),
   } as unknown as AuthService;
 
   beforeEach(() => {
@@ -227,5 +232,73 @@ describe("handleOptions", () => {
     const handled = handleOptions(req, res, false);
     expect(handled).toBe(true);
     expect(getStatusCode()).toBe(204);
+  });
+});
+
+describe("readJsonObject", () => {
+  it("should return object for valid JSON body", async () => {
+    const req = createMockRequest();
+    req[Symbol.asyncIterator] = async function* () {
+      yield Buffer.from(JSON.stringify({ key: "value" }));
+    };
+    const { res } = createMockResponse();
+
+    const result = await readJsonObject(req, res);
+    expect(result).toEqual({ key: "value" });
+  });
+
+  it("should return null and send 400 for invalid JSON body", async () => {
+    const req = createMockRequest();
+    req[Symbol.asyncIterator] = async function* () {
+      yield Buffer.from("not json");
+    };
+    const { res, getStatusCode } = createMockResponse();
+
+    const result = await readJsonObject(req, res);
+    expect(result).toBeNull();
+    expect(getStatusCode()).toBe(400);
+  });
+
+  it("should return parsed array body as-is (arrays are objects in JS)", async () => {
+    const req = createMockRequest();
+    req[Symbol.asyncIterator] = async function* () {
+      yield Buffer.from("[1,2,3]");
+    };
+    const { res } = createMockResponse();
+
+    const result = await readJsonObject(req, res);
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should return null and send 400 for null body", async () => {
+    const req = createMockRequest();
+    req[Symbol.asyncIterator] = async function* () {
+      yield Buffer.from("not json");
+    };
+    const { res, getStatusCode } = createMockResponse();
+
+    const result = await readJsonObject(req, res);
+    expect(result).toBeNull();
+    expect(getStatusCode()).toBe(400);
+  });
+});
+
+describe("requireBodyStrings", () => {
+  it("should extract string values for given keys", () => {
+    const body = { name: "test", token: "abc", count: 42 };
+    const result = requireBodyStrings(body, ["name", "token", "count"]);
+    expect(result).toEqual({ name: "test", token: "abc", count: undefined });
+  });
+
+  it("should return undefined for missing keys", () => {
+    const body = { name: "test" };
+    const result = requireBodyStrings(body, ["name", "missing"]);
+    expect(result).toEqual({ name: "test", missing: undefined });
+  });
+
+  it("should return undefined for all missing keys", () => {
+    const body = { other: 123 };
+    const result = requireBodyStrings(body, ["name", "token"]);
+    expect(result).toEqual({ name: undefined, token: undefined });
   });
 });

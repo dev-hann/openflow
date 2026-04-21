@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { createPushTokenStore, type PushTokenStore } from "./token-store.js";
 
 describe("createPushTokenStore", () => {
@@ -69,5 +69,38 @@ describe("createPushTokenStore", () => {
   it("should not touch lastUsed for nonexistent token", () => {
     store.touchLastUsed("nonexistent");
     expect(store.getAll()).toHaveLength(0);
+  });
+
+  it("should reset to defaults when file contains invalid data", () => {
+    rmSync(testDir, { recursive: true, force: true });
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(storePath, JSON.stringify({ tokens: "not an array" }));
+
+    const corruptedStore = createPushTokenStore(storePath);
+    expect(corruptedStore.getAll()).toHaveLength(0);
+
+    corruptedStore.register("tok_after_reset", "ios", "Phone");
+    expect(corruptedStore.getAll()).toHaveLength(1);
+  });
+
+  it("should reset to defaults when file contains non-object data", () => {
+    rmSync(testDir, { recursive: true, force: true });
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(storePath, JSON.stringify("just a string"));
+
+    const corruptedStore = createPushTokenStore(storePath);
+    expect(corruptedStore.getAll()).toHaveLength(0);
+  });
+
+  it("should reset to defaults when file is empty JSON", () => {
+    rmSync(testDir, { recursive: true, force: true });
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(storePath, JSON.stringify({}));
+
+    const emptyStore = createPushTokenStore(storePath);
+    expect(emptyStore.getAll()).toHaveLength(0);
+
+    emptyStore.register("tok_new", "android", "Tablet");
+    expect(emptyStore.getAll()).toHaveLength(1);
   });
 });

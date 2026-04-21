@@ -1,4 +1,13 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import { createAgentEngine, type AgentConfig } from "./engine.js";
 import type { LlmClient, LlmResponse } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
@@ -7,6 +16,7 @@ import { tmpdir } from "node:os";
 import { mkdirSync, rmSync } from "node:fs";
 import { createMemoryStore } from "../memory/store.js";
 import { mockLlmClient, mockToolExecutor } from "./test-helpers.js";
+import { OpenFlowError } from "../utils/errors.js";
 
 describe("createAgentEngine", () => {
   const testDir = join(tmpdir(), "openflow-test-agent-" + Date.now());
@@ -29,7 +39,9 @@ describe("createAgentEngine", () => {
   });
 
   it("should return text response directly", async () => {
-    const llm = mockLlmClient([{ type: "text", content: "Hello! How can I help?" }]);
+    const llm = mockLlmClient([
+      { type: "text", content: "Hello! How can I help?" },
+    ]);
     const tools = mockToolExecutor({});
     const config: AgentConfig = {
       systemPrompt: "",
@@ -96,7 +108,11 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([toolCallResponse, toolCallResponse, toolCallResponse]);
+    const llm = mockLlmClient([
+      toolCallResponse,
+      toolCallResponse,
+      toolCallResponse,
+    ]);
     const tools = mockToolExecutor({ test_tool: "looping" });
     const config: AgentConfig = {
       systemPrompt: "",
@@ -157,7 +173,10 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "Both done" }]);
+    const llm = mockLlmClient([
+      toolCallResponse,
+      { type: "text", content: "Both done" },
+    ]);
     const tools = mockToolExecutor({ tool_a: "result a", tool_b: "result b" });
     const config: AgentConfig = {
       systemPrompt: "",
@@ -188,7 +207,10 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "Recovered" }]);
+    const llm = mockLlmClient([
+      toolCallResponse,
+      { type: "text", content: "Recovered" },
+    ]);
     const tools = mockToolExecutor({ test_tool: "should not run" });
     const config: AgentConfig = {
       systemPrompt: "",
@@ -236,4 +258,161 @@ describe("createAgentEngine", () => {
     expect(result.type).toBe("error");
   });
 
+  it("should return error when signal is aborted before LLM call", async () => {
+    const llm = mockLlmClient([{ type: "text", content: "should not reach" }]);
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Abort Test");
+
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "abort test",
+      signal: controller.signal,
+    });
+
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error.code).toBe("LLM_TIMEOUT");
+    }
+  });
+
+  it("should accept lazy LLM factory function", async () => {
+    const llmInstance = mockLlmClient([
+      { type: "text", content: "Lazy response" },
+    ]);
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({
+      llm: () => llmInstance,
+      memory,
+      tools,
+      config,
+    });
+    const session = memory.createSession("Lazy LLM Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "test",
+    });
+
+    expect(result.type).toBe("text");
+    if (result.type === "text") {
+      expect(result.content).toBe("Lazy response");
+    }
+  });
+
+  it("should return error when context build fails", async () => {
+    const llm = mockLlmClient([{ type: "text", content: "should not reach" }]);
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+
+    const result = await engine.handleMessage({
+      sessionId: "nonexistent-session-id",
+      userMessage: "test",
+    });
+
+    expect(result.type).toBe("error");
+  });
+
+  it("should pass systemPromptOverride to context resolver", async () => {
+    const llm = mockLlmClient([
+      { type: "text", content: "Custom prompt response" },
+    ]);
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "default prompt",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Override Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "test",
+      systemPromptOverride: "custom system prompt",
+    });
+
+    expect(result.type).toBe("text");
+    expect(llm.chat).toHaveBeenCalledTimes(1);
+    const callArgs = vi.mocked(llm.chat).mock.calls[0]![0];
+    expect(callArgs.messages[0]).toEqual({
+      role: "system",
+      content: "custom system prompt",
+    });
+  });
+
+  it("should return error with LLM_REQUEST_FAILED on non-OpenFlowError from LLM", async () => {
+    const llm: LlmClient = {
+      chat: vi.fn().mockRejectedValue("string error"),
+      complete: vi.fn(),
+    };
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("String Error Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "test",
+    });
+
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error.code).toBe("LLM_REQUEST_FAILED");
+    }
+  });
+
+  it("should wrap and return OpenFlowError from LLM as-is", async () => {
+    const originalError = new OpenFlowError("custom error", "LLM_STREAM_ERROR");
+    const llm: LlmClient = {
+      chat: vi.fn().mockRejectedValue(originalError),
+      complete: vi.fn(),
+    };
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("OFError Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "test",
+    });
+
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error.code).toBe("LLM_STREAM_ERROR");
+    }
+  });
 });
