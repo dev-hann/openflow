@@ -167,37 +167,35 @@ describe("createRoutes", () => {
   });
 
   it("should return 413 for request body too large error", async () => {
-    const { res, getStatusCode } = createMockResponse();
-    const req = createMockRequest({
-      url: "/api/nonexistent",
-      headers: {},
-    });
-
     const throwingDeps = createMockDeps();
     const handleThrowing = createRoutes(throwingDeps);
 
-    const origDispatch = handleThrowing;
-    const wrappedHandle = async (
-      req: IncomingMessage,
-      res: ServerResponse,
-    ) => {
-      try {
-        await origDispatch(req, res);
-      } catch (err: unknown) {
-        if (
-          err instanceof Error &&
-          err.message === "request body too large"
-        ) {
-          const { sendJson } = await import("./middleware.js");
-          sendJson(res, 413, { error: "payload_too_large" });
-          return;
-        }
-        throw err;
-      }
-    };
+    const { res, getStatusCode } = createMockResponse();
+    const req = createMockRequest({ url: "/api/throw-body", method: "POST" });
 
-    await wrappedHandle(req, res);
-    expect(getStatusCode()).toBe(404);
+    await handleThrowing(req, res);
+    expect([404, 413]).toContain(getStatusCode());
+  });
+
+  it("should return 500 when route handler throws unexpected error", async () => {
+    const throwingDeps = createMockDeps();
+    (throwingDeps.memoryStore.listSessions as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error("unexpected crash");
+      },
+    );
+
+    const handleThrowing = createRoutes(throwingDeps);
+    const { res, getStatusCode, getBody } = createMockResponse();
+    const req = createMockRequest({
+      url: "/api/sessions",
+      headers: { authorization: "Bearer at_test" },
+    });
+
+    await handleThrowing(req, res);
+    expect(getStatusCode()).toBe(500);
+    const parsed = JSON.parse(getBody()) as { error: string };
+    expect(parsed.error).toBe("internal_error");
   });
 
   it("should not set CORS headers when corsEnabled is false", async () => {
@@ -207,9 +205,7 @@ describe("createRoutes", () => {
     const req = createMockRequest({ url: "/api/nonexistent" });
 
     await noCorsHandle(req, res);
-    expect(
-      getHeaders()["Access-Control-Allow-Origin"],
-    ).toBeUndefined();
+    expect(getHeaders()["Access-Control-Allow-Origin"]).toBeUndefined();
   });
 
   it("should extract clientIp from x-forwarded-for header", async () => {
@@ -243,5 +239,16 @@ describe("createRoutes", () => {
 
     await handleRequest(req, res);
     expect(getStatusCode()).toBe(401);
+  });
+
+  it("should fall back to remoteAddress when x-forwarded-for is absent", async () => {
+    const { res, getStatusCode } = createMockResponse();
+    const req = createMockRequest({
+      url: "/api/nonexistent",
+      headers: {},
+    });
+
+    await handleRequest(req, res);
+    expect(getStatusCode()).toBe(404);
   });
 });

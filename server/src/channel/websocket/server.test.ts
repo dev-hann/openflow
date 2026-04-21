@@ -139,4 +139,49 @@ describe("createWebSocketChannel", () => {
 
     await channel.stop();
   });
+
+  it("should not set CORS headers when disabled", async () => {
+    channel = createWebSocketChannel(
+      { host: "127.0.0.1", port: TEST_PORT + 4, cors: false },
+      createMockDeps(),
+    );
+
+    await channel.start();
+
+    const resp = await fetch(`http://127.0.0.1:${TEST_PORT + 4}/api/sessions`);
+    expect(resp.headers.get("Access-Control-Allow-Origin")).toBeNull();
+
+    await channel.stop();
+  });
+
+  it("should handle double stop gracefully", async () => {
+    channel = createWebSocketChannel(
+      { host: "127.0.0.1", port: TEST_PORT + 5, cors: false },
+      createMockDeps(),
+    );
+
+    await channel.start();
+    await channel.stop();
+    await channel.stop();
+  });
+
+  it("should handle stop without start", async () => {
+    channel = createWebSocketChannel(
+      { host: "127.0.0.1", port: 0, cors: false },
+      createMockDeps(),
+    );
+
+    await channel.stop();
+  });
+
+  describe("broadcastMessage", () => {
+    it("should be callable without errors when no clients connected", () => {
+      channel = createWebSocketChannel(
+        { host: "127.0.0.1", port: 0, cors: false },
+        createMockDeps(),
+      );
+
+      expect(() => channel.broadcastMessage("hello")).not.toThrow();
+    });
+  });
 });

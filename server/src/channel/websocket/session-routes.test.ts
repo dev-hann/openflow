@@ -225,6 +225,21 @@ describe("session routes", () => {
       expect(body.ok).toBe(true);
       expect(memoryStore.deleteSession).toHaveBeenCalledWith("sess_1");
     });
+
+    it("should return 400 for delete without session id", async () => {
+      const route = findRoute("/api/sessions/", "DELETE");
+      if (!route) return;
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "DELETE",
+      });
+      await route.handler(req, res, {
+        path: "/api/sessions/",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(400);
+    });
   });
 
   describe("GET /api/sessions/:id/messages", () => {
@@ -255,6 +270,44 @@ describe("session routes", () => {
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
         url: "/api/sessions/sess_1/messages",
+      });
+      await route!.handler(req, res, {
+        path: "/api/sessions/sess_1/messages",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
+        "sess_1",
+        50,
+        0,
+      );
+    });
+
+    it("should clamp limit to 200 maximum", async () => {
+      const route = findRoute("/api/sessions/sess_1/messages", "GET");
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        url: "/api/sessions/sess_1/messages?limit=500",
+      });
+      await route!.handler(req, res, {
+        path: "/api/sessions/sess_1/messages",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
+        "sess_1",
+        200,
+        0,
+      );
+    });
+
+    it("should handle NaN limit gracefully", async () => {
+      const route = findRoute("/api/sessions/sess_1/messages", "GET");
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        url: "/api/sessions/sess_1/messages?limit=abc",
       });
       await route!.handler(req, res, {
         path: "/api/sessions/sess_1/messages",

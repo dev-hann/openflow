@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import {
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createWorkspaceLoader } from "./workspace.js";
@@ -35,21 +41,33 @@ describe("createWorkspaceLoader", () => {
   });
 
   it("should load PERSONA.md", () => {
-    writeFileSync(join(testDir, "PERSONA.md"), "You are a friendly assistant.", "utf-8");
+    writeFileSync(
+      join(testDir, "PERSONA.md"),
+      "You are a friendly assistant.",
+      "utf-8",
+    );
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     const files = loader.loadAll();
     expect(files.persona).toBe("You are a friendly assistant.");
   });
 
   it("should load USER.md", () => {
-    writeFileSync(join(testDir, "USER.md"), "- Name: Hann\n- Timezone: Asia/Seoul", "utf-8");
+    writeFileSync(
+      join(testDir, "USER.md"),
+      "- Name: Hann\n- Timezone: Asia/Seoul",
+      "utf-8",
+    );
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     const files = loader.loadAll();
     expect(files.user).toContain("Hann");
   });
 
   it("should load MEMORY.md", () => {
-    writeFileSync(join(testDir, "MEMORY.md"), "User prefers Korean language.", "utf-8");
+    writeFileSync(
+      join(testDir, "MEMORY.md"),
+      "User prefers Korean language.",
+      "utf-8",
+    );
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     const files = loader.loadAll();
     expect(files.memory).toContain("Korean");
@@ -58,10 +76,21 @@ describe("createWorkspaceLoader", () => {
   it("should load daily memory files", () => {
     const dailyDir = join(testDir, "daily");
     mkdirSync(dailyDir, { recursive: true });
-    writeFileSync(join(dailyDir, "2026-04-16.md"), "Discussed project architecture.", "utf-8");
-    writeFileSync(join(dailyDir, "2026-04-17.md"), "Fixed notification push service.", "utf-8");
+    writeFileSync(
+      join(dailyDir, "2026-04-16.md"),
+      "Discussed project architecture.",
+      "utf-8",
+    );
+    writeFileSync(
+      join(dailyDir, "2026-04-17.md"),
+      "Fixed notification push service.",
+      "utf-8",
+    );
 
-    const loader = createWorkspaceLoader({ workspaceDir: testDir, dailyMemoryDays: 2 });
+    const loader = createWorkspaceLoader({
+      workspaceDir: testDir,
+      dailyMemoryDays: 2,
+    });
     const files = loader.loadAll();
     expect(files.dailyMemory).toContain("2026-04-17");
     expect(files.dailyMemory).toContain("notification");
@@ -73,7 +102,10 @@ describe("createWorkspaceLoader", () => {
     const longContent = "x".repeat(2000);
     writeFileSync(join(dailyDir, "2026-04-17.md"), longContent, "utf-8");
 
-    const loader = createWorkspaceLoader({ workspaceDir: testDir, dailyMemoryDays: 1 });
+    const loader = createWorkspaceLoader({
+      workspaceDir: testDir,
+      dailyMemoryDays: 1,
+    });
     const files = loader.loadAll();
     expect(files.dailyMemory!.length).toBeLessThan(longContent.length);
   });
@@ -85,7 +117,10 @@ describe("createWorkspaceLoader", () => {
     writeFileSync(join(dailyDir, "2026-04-16.md"), "Day 16", "utf-8");
     writeFileSync(join(dailyDir, "2026-04-17.md"), "Day 17", "utf-8");
 
-    const loader = createWorkspaceLoader({ workspaceDir: testDir, dailyMemoryDays: 1 });
+    const loader = createWorkspaceLoader({
+      workspaceDir: testDir,
+      dailyMemoryDays: 1,
+    });
     const files = loader.loadAll();
     expect(files.dailyMemory).toContain("2026-04-17");
     expect(files.dailyMemory).not.toContain("2026-04-16");
@@ -163,13 +198,47 @@ describe("createWorkspaceLoader", () => {
     expect(loader.hasPersona()).toBe(true);
   });
 
+  it("should return null daily memory when no daily files exist", () => {
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    expect(loader.loadDailyMemory()).toBeNull();
+  });
+
+  it("should return null daily memory when all files are empty", () => {
+    const dailyDir = join(testDir, "daily");
+    mkdirSync(dailyDir, { recursive: true });
+    writeFileSync(join(dailyDir, "2026-04-17.md"), "  ", "utf-8");
+
+    const loader = createWorkspaceLoader({
+      workspaceDir: testDir,
+      dailyMemoryDays: 1,
+    });
+    expect(loader.loadDailyMemory()).toBeNull();
+  });
+
+  it("should load daily memory with default 2 days", () => {
+    const dailyDir = join(testDir, "daily");
+    mkdirSync(dailyDir, { recursive: true });
+    writeFileSync(join(dailyDir, "2026-04-16.md"), "Day 16", "utf-8");
+    writeFileSync(join(dailyDir, "2026-04-17.md"), "Day 17", "utf-8");
+    writeFileSync(join(dailyDir, "2026-04-18.md"), "Day 18", "utf-8");
+
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    const files = loader.loadAll();
+    expect(files.dailyMemory).toContain("2026-04-18");
+    expect(files.dailyMemory).toContain("2026-04-17");
+    expect(files.dailyMemory).not.toContain("Day 16");
+  });
+
   it("should truncate total daily memory when exceeding MAX_DAILY_TOTAL_CHARS", () => {
     const dailyDir = join(testDir, "daily");
     mkdirSync(dailyDir, { recursive: true });
     writeFileSync(join(dailyDir, "2026-04-17.md"), "x".repeat(1500), "utf-8");
     writeFileSync(join(dailyDir, "2026-04-18.md"), "y".repeat(1500), "utf-8");
 
-    const loader = createWorkspaceLoader({ workspaceDir: testDir, dailyMemoryDays: 14 });
+    const loader = createWorkspaceLoader({
+      workspaceDir: testDir,
+      dailyMemoryDays: 14,
+    });
     const files = loader.loadAll();
     expect(files.dailyMemory).not.toBeNull();
     expect(files.dailyMemory!.length).toBeLessThan(3000);
