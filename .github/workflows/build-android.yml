@@ -8,6 +8,7 @@ on:
 
 env:
   FLUTTER_VERSION: '3.41.x'
+  JAVA_VERSION: '17'
 
 permissions:
   contents: write
@@ -26,7 +27,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: zulu
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -35,19 +36,31 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            app/.dart_tool
+            app/.packages
+          key: pub-${{ runner.os }}-${{ hashFiles('app/pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('app/android/**/*.gradle*', 'app/android/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Ensure Android platform
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms android
-          fi
 
       - name: Decode keystore
         run: |
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
-        continue-on-error: true
 
       - name: Create key.properties
         run: |
@@ -55,7 +68,6 @@ jobs:
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=release.keystore" >> android/key.properties
-        continue-on-error: true
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -73,20 +85,9 @@ jobs:
           path: app/build/app/outputs/flutter-apk/*.apk
           retention-days: 90
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: Download APK artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-apk
-          path: apk
-
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: apk/*.apk
+          files: app/build/app/outputs/flutter-apk/*.apk
           generate_release_notes: true
