@@ -12,10 +12,16 @@ class MessageList extends StatefulWidget {
     required this.onScrollStateChange,
     super.key,
     this.onRetry,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
   final List<ChatMessage> messages;
   final ValueChanged<bool> onScrollStateChange;
   final VoidCallback? onRetry;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   @override
   State<MessageList> createState() => MessageListState();
@@ -29,6 +35,15 @@ class MessageListState extends State<MessageList> {
   void initState() {
     super.initState();
     _controller.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.messages.length > oldWidget.messages.length &&
+        oldWidget.messages.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => scrollToBottom());
+    }
   }
 
   @override
@@ -46,6 +61,10 @@ class MessageListState extends State<MessageList> {
     if (nearBottom != _isNearBottom) {
       _isNearBottom = nearBottom;
       widget.onScrollStateChange(!_isNearBottom);
+    }
+
+    if (currentScroll < 100 && widget.hasMore && !widget.isLoadingMore) {
+      widget.onLoadMore?.call();
     }
   }
 
@@ -65,13 +84,26 @@ class MessageListState extends State<MessageList> {
     return ListView.builder(
       controller: _controller,
       padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-      itemCount: widget.messages.length,
+      itemCount: widget.messages.length + (widget.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final message = widget.messages[index];
+        if (index == 0 && widget.isLoadingMore) {
+          return const Padding(
+            padding: EdgeInsets.all(Spacing.md),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+        final adjustedIndex = widget.isLoadingMore ? index - 1 : index;
+        final message = widget.messages[adjustedIndex];
         final prevSame =
-            index > 0 && widget.messages[index - 1].role == message.role;
-        final nextSame = index < widget.messages.length - 1 &&
-            widget.messages[index + 1].role == message.role;
+            adjustedIndex > 0 && widget.messages[adjustedIndex - 1].role == message.role;
+        final nextSame = adjustedIndex < widget.messages.length - 1 &&
+            widget.messages[adjustedIndex + 1].role == message.role;
 
         return MessageBubble(
           message: message,

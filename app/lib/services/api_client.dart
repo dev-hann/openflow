@@ -16,6 +16,12 @@ class ApiError implements Exception {
   String toString() => 'ApiError($status $code): $message';
 }
 
+class MessageListResult {
+  MessageListResult({required this.messages, required this.total});
+  final List<ChatMessage> messages;
+  final int total;
+}
+
 class ApiClient {
   ApiClient(this.baseUrl, {http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
@@ -123,6 +129,33 @@ class ApiClient {
 
   Future<void> deleteSession(String accessToken, String sessionId) async {
     await _delete('/api/sessions/$sessionId', accessToken);
+  }
+
+  Future<MessageListResult> fetchMessages(
+    String accessToken,
+    String sessionId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final json = await _get(
+      '/api/sessions/$sessionId/messages?limit=$limit&offset=$offset',
+      accessToken,
+    );
+    final list = json['messages'] as List<dynamic>;
+    final messages = list
+        .map((e) => ChatMessage(
+              id: '${sessionId}_${(e as Map<String, dynamic>)['createdAt']}_${list.indexOf(e)}',
+              role: e['role'] == 'user' ? MessageRole.user : MessageRole.assistant,
+              content: e['content'] as String? ?? '',
+              timestamp: DateTime.fromMillisecondsSinceEpoch(
+                (e['createdAt'] as num?)?.toInt() ?? 0,
+              ),
+            ))
+        .toList();
+    return MessageListResult(
+      messages: messages,
+      total: json['total'] as int? ?? messages.length,
+    );
   }
 
   Future<Map<String, dynamic>> getStatus() => _get('/api/status');

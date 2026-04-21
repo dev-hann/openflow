@@ -43,7 +43,15 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isConnected: connected));
   }
 
+  String? get currentAccessToken => state.storedAuth?.accessToken;
+
   Future<String?> getValidToken() async {
+    final auth = state.storedAuth;
+    if (auth == null) return null;
+    return auth.accessToken;
+  }
+
+  Future<String?> refreshIfNeeded() async {
     final auth = state.storedAuth;
     if (auth == null) return null;
 

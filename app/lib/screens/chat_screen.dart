@@ -28,12 +28,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _scrolledUp = false;
   Timer? _sendTimeout;
   String? _lastUserMessage;
+  String? _loadedSessionId;
+  int _totalMessages = 0;
+  bool _isLoadingHistory = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _connectWebSocket();
+    unawaited(_loadInitialMessages());
   }
 
   @override
@@ -62,6 +66,53 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     ws.onMessage = _handleWsMessage;
   }
 
+  Future<void> _loadInitialMessages() async {
+    final sessionId = context.read<SessionsCubit>().state.activeSessionId;
+    if (sessionId == null) return;
+    await _loadMessages(sessionId);
+  }
+
+  Future<void> _loadMessages(String sessionId, {int offset = 0}) async {
+    if (_isLoadingHistory) return;
+    final authCubit = context.read<AuthCubit>();
+    final token = await authCubit.getValidToken();
+    if (token == null || !mounted) return;
+
+    setState(() => _isLoadingHistory = true);
+
+    try {
+      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+      final result = await api.fetchMessages(
+        token,
+        sessionId,
+        limit: 50,
+        offset: offset,
+      );
+      if (!mounted) return;
+
+      final chatCubit = context.read<ChatCubit>();
+      if (offset == 0) {
+        chatCubit.setMessages(result.messages.reversed.toList());
+      } else {
+        chatCubit.prependMessages(result.messages.reversed.toList());
+      }
+      _loadedSessionId = sessionId;
+      _totalMessages = result.total;
+    } on Object {
+      // Message load failure is non-critical
+    } finally {
+      if (mounted) setState(() => _isLoadingHistory = false);
+    }
+  }
+
+  Future<void> _loadMoreMessages() async {
+    final sessionId = _loadedSessionId;
+    if (sessionId == null) return;
+    final currentCount = context.read<ChatCubit>().state.messages.length;
+    if (currentCount >= _totalMessages) return;
+    await _loadMessages(sessionId, offset: currentCount);
+  }
+
   void _handleWsMessage(WsServerMessage message) {
     if (!mounted) return;
     final chatCubit = context.read<ChatCubit>();
@@ -69,8 +120,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     switch (message) {
       case WsTokenChunk(:final content):
         chatCubit.appendToLastMessage(content);
-      case WsResponse():
-        chatCubit.finalizeLastMessage();
+      case WsResponse(:final content):
+        chatCubit.finalizeLastMessage(content);
         _sendTimeout?.cancel();
       case WsError(:final message):
         chatCubit.markLastMessageFailed();
@@ -81,6 +132,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       case WsSessionSwitched(:final sessionId):
         context.read<SessionsCubit>().setActiveSessionId(sessionId);
         chatCubit.clearMessages();
+        unawaited(_loadMessages(sessionId));
       case WsAuthRequired():
       case WsAuthOk():
       case WsPong():
@@ -210,6 +262,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       onScrollStateChange: (scrolledUp) =>
                           setState(() => _scrolledUp = scrolledUp),
                       onRetry: _retryLastMessage,
+                      onLoadMore: _loadMoreMessages,
+                      hasMore: chatState.messages.length < _totalMessages,
+                      isLoadingMore: _isLoadingHistory,
                     ),
                     if (_scrolledUp)
                       Positioned(

@@ -100,8 +100,11 @@ class WebSocketService {
         case WsSessionSwitched():
           onMessage?.call(message);
       }
-    } on Object {
-      // Ignore malformed messages
+    } on Object catch (e) {
+      assert(() {
+        print('[WebSocket] parse error: $e');
+        return true;
+      }());
     }
   }
 

@@ -37,12 +37,17 @@ class ChatCubit extends Cubit<ChatState> {
     emit(state.copyWith(messages: messages));
   }
 
-  void finalizeLastMessage() {
+  void finalizeLastMessage([String? content]) {
     final messages = List<ChatMessage>.from(state.messages);
     if (messages.isEmpty) return;
     final last = messages.last;
     if (last.role != MessageRole.assistant) return;
-    messages[messages.length - 1] = last.copyWith(isStreaming: false);
+    messages[messages.length - 1] = last.copyWith(
+      content: content != null && content.isNotEmpty && last.content.isEmpty
+          ? content
+          : null,
+      isStreaming: false,
+    );
     emit(state.copyWith(messages: messages, isSending: false));
   }
 
@@ -79,6 +84,14 @@ class ChatCubit extends Cubit<ChatState> {
 
   void clearMessages() {
     emit(state.copyWith(messages: []));
+  }
+
+  void setMessages(List<ChatMessage> messages) {
+    emit(state.copyWith(messages: messages));
+  }
+
+  void prependMessages(List<ChatMessage> olderMessages) {
+    emit(state.copyWith(messages: [...olderMessages, ...state.messages]));
   }
 
   void setSending(bool sending) {
