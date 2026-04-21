@@ -98,6 +98,14 @@ describe("createAuthService", () => {
       vi.advanceTimersByTime(6 * 60 * 1000);
       expect(service.verifyPinAndIssueTokens(pin, "Late")).toBeNull();
     });
+
+    it("should block all PINs after MAX_PIN_ATTEMPTS wrong guesses", () => {
+      const pin = service.createPairingPin();
+      for (let i = 0; i < 5; i++) {
+        expect(service.verifyPinAndIssueTokens("000000", "Attacker")).toBeNull();
+      }
+      expect(service.verifyPinAndIssueTokens(pin, "Legit")).toBeNull();
+    });
   });
 
   describe("validateAccessToken", () => {

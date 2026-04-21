@@ -129,4 +129,23 @@ describe("createCompaction", () => {
     expect(result).not.toBe(messages);
     expect(localComplete).toHaveBeenCalledOnce();
   });
+
+  it("should truncate conversation when it exceeds MAX_CHARS for summarization", async () => {
+    const localComplete = vi.fn().mockResolvedValue("truncated summary");
+    const localLlm: LlmClient = { chat: vi.fn(), complete: localComplete };
+    const compaction = createCompaction({
+      llm: localLlm,
+      config: { maxContextTokens: 100, compactThreshold: 0.8 },
+    });
+
+    const messages = Array.from({ length: 500 }, (_, i) => ({
+      role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+      content: createLongContent(500),
+    }));
+
+    await compaction.compactIfNeeded("session-1", messages);
+
+    const userMessage = localComplete.mock.calls[0]![0].messages[1].content as string;
+    expect(userMessage).toContain("[Earlier conversation omitted for length]");
+  });
 });

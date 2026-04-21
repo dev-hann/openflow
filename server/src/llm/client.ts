@@ -110,7 +110,8 @@ async function sendRequest(
         const text = await response.text();
         if (response.status >= 500 && attempt < RETRY_DELAYS.length) {
           log.warn({ status: response.status, attempt }, "server error, retrying");
-          await sleep(RETRY_DELAYS[attempt]!);
+          const jitter = Math.random() * 500;
+          await sleep(RETRY_DELAYS[attempt]! + jitter);
           continue;
         }
         const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
@@ -130,13 +131,14 @@ async function sendRequest(
       return json;
     } catch (err: unknown) {
       if (err instanceof OpenFlowError) throw err;
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("abort")) {
+      if (err instanceof Error && err.name === "AbortError") {
         throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
       }
+      const msg = err instanceof Error ? err.message : String(err);
       if (attempt < RETRY_DELAYS.length) {
         log.warn({ err: msg, attempt }, "request failed, retrying");
-        await sleep(RETRY_DELAYS[attempt]!);
+        const jitter = Math.random() * 500;
+        await sleep(RETRY_DELAYS[attempt]! + jitter);
         continue;
       }
       throw new OpenFlowError(`LLM request failed: ${msg}`, "LLM_REQUEST_FAILED", err);

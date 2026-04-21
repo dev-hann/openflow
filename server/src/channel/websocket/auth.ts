@@ -9,6 +9,7 @@ const log = createLogger("ws/auth");
 const PIN_TTL_MS = 5 * 60 * 1000;
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000;
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_PIN_ATTEMPTS = 5;
 
 export type TokenPair = components["schemas"]["TokenPairResponse"];
 
@@ -72,11 +73,14 @@ function decodeAccessToken(token: string): AccessTokenPayload | null {
 export function createAuthService(store?: AuthStore): AuthService {
   const authStore = store ?? createAuthStore();
   const pendingPins = new Map<string, PendingPin>();
+  let totalFailedAttempts = 0;
 
   function cleanExpiredPins(): void {
     const now = Date.now();
     for (const [key, pin] of pendingPins) {
-      if (now > pin.expiresAt) pendingPins.delete(key);
+      if (now > pin.expiresAt) {
+        pendingPins.delete(key);
+      }
     }
   }
 
@@ -131,15 +135,28 @@ export function createAuthService(store?: AuthStore): AuthService {
 
   function verifyPinAndIssueTokens(pin: string, label: string): TokenPair | null {
     cleanExpiredPins();
+    if (totalFailedAttempts >= MAX_PIN_ATTEMPTS) {
+      pendingPins.clear();
+      return null;
+    }
+
     const pending = pendingPins.get(pin);
-    if (!pending) return null;
-    if (pending.claimed) return null;
+    if (!pending) {
+      totalFailedAttempts++;
+      return null;
+    }
+    if (pending.claimed) {
+      totalFailedAttempts++;
+      return null;
+    }
     if (Date.now() > pending.expiresAt) {
       pendingPins.delete(pin);
+      totalFailedAttempts++;
       return null;
     }
     pending.claimed = true;
     pendingPins.delete(pin);
+    totalFailedAttempts = 0;
     log.info({ label }, "PIN verified, tokens issued");
     return issueTokens(label);
   }
