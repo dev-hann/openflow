@@ -111,5 +111,18 @@ void main() {
         ),
       ],
     );
+
+    blocTest<SessionsCubit, SessionsState>(
+      'addSession ignores duplicate id',
+      build: () => cubit,
+      seed: () => SessionsState(
+        sessions: [_session('s1')],
+        activeSessionId: 's1',
+      ),
+      act: (c) {
+        c.addSession(_session('s1', title: 'Updated'));
+      },
+      expect: () => [],
+    );
   });
 }
