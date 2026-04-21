@@ -33,10 +33,12 @@ part 'api/providers_api.dart';
 part 'api/sessions_api.dart';
 part 'api/system_api.dart';
 
+part 'model/chat_message_response.dart';
 part 'model/create_provider_request.dart';
 part 'model/create_session_request.dart';
 part 'model/create_session_response.dart';
 part 'model/error_response.dart';
+part 'model/message_list_response.dart';
 part 'model/ok_response.dart';
 part 'model/pair_init_response.dart';
 part 'model/pair_verify_request.dart';

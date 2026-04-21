@@ -71,16 +71,19 @@ Class | Method | HTTP request | Description
 *ProvidersApi* | [**verifyProvider**](doc//ProvidersApi.md#verifyprovider) | **POST** /api/providers/{providerId}/verify | Verify provider connectivity
 *SessionsApi* | [**createSession**](doc//SessionsApi.md#createsession) | **POST** /api/sessions | Create a new session
 *SessionsApi* | [**deleteSession**](doc//SessionsApi.md#deletesession) | **DELETE** /api/sessions/{sessionId} | Delete a session
+*SessionsApi* | [**getSessionMessages**](doc//SessionsApi.md#getsessionmessages) | **GET** /api/sessions/{sessionId}/messages | Get messages for a session
 *SessionsApi* | [**listSessions**](doc//SessionsApi.md#listsessions) | **GET** /api/sessions | List chat sessions
 *SystemApi* | [**getStatus**](doc//SystemApi.md#getstatus) | **GET** /api/status | Check server status
 
 
 ## Documentation For Models
 
+ - [ChatMessageResponse](doc//ChatMessageResponse.md)
  - [CreateProviderRequest](doc//CreateProviderRequest.md)
  - [CreateSessionRequest](doc//CreateSessionRequest.md)
  - [CreateSessionResponse](doc//CreateSessionResponse.md)
  - [ErrorResponse](doc//ErrorResponse.md)
+ - [MessageListResponse](doc//MessageListResponse.md)
  - [OkResponse](doc//OkResponse.md)
  - [PairInitResponse](doc//PairInitResponse.md)
  - [PairVerifyRequest](doc//PairVerifyRequest.md)

@@ -11,6 +11,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createSession**](SessionsApi.md#createsession) | **POST** /api/sessions | Create a new session
 [**deleteSession**](SessionsApi.md#deletesession) | **DELETE** /api/sessions/{sessionId} | Delete a session
+[**getSessionMessages**](SessionsApi.md#getsessionmessages) | **GET** /api/sessions/{sessionId}/messages | Get messages for a session
 [**listSessions**](SessionsApi.md#listsessions) | **GET** /api/sessions | List chat sessions
 
 
@@ -96,6 +97,57 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**OkResponse**](OkResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getSessionMessages**
+> MessageListResponse getSessionMessages(sessionId, limit, offset)
+
+Get messages for a session
+
+### Example
+```dart
+import 'package:openapi/api.dart';
+// TODO Configure HTTP Bearer authorization: BearerAuth
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('BearerAuth').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('BearerAuth').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = SessionsApi();
+final sessionId = sessionId_example; // String | 
+final limit = 56; // int | 
+final offset = 56; // int | 
+
+try {
+    final result = api_instance.getSessionMessages(sessionId, limit, offset);
+    print(result);
+} catch (e) {
+    print('Exception when calling SessionsApi->getSessionMessages: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **sessionId** | **String**|  | 
+ **limit** | **int**|  | [optional] [default to 50]
+ **offset** | **int**|  | [optional] [default to 0]
+
+### Return type
+
+[**MessageListResponse**](MessageListResponse.md)
 
 ### Authorization
 

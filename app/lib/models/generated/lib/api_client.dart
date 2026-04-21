@@ -182,6 +182,8 @@ class ApiClient {
           return valueString == 'true' || valueString == '1';
         case 'DateTime':
           return value is DateTime ? value : DateTime.tryParse(value);
+        case 'ChatMessageResponse':
+          return ChatMessageResponse.fromJson(value);
         case 'CreateProviderRequest':
           return CreateProviderRequest.fromJson(value);
         case 'CreateSessionRequest':
@@ -190,6 +192,8 @@ class ApiClient {
           return CreateSessionResponse.fromJson(value);
         case 'ErrorResponse':
           return ErrorResponse.fromJson(value);
+        case 'MessageListResponse':
+          return MessageListResponse.fromJson(value);
         case 'OkResponse':
           return OkResponse.fromJson(value);
         case 'PairInitResponse':
