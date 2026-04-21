@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createProviderRoutes } from "./provider-routes.js";
 import type { AuthService } from "./auth.js";
@@ -343,6 +343,182 @@ describe("provider routes", () => {
       });
       await route!.handler(req, res, {
         path: "/api/providers/current",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(404);
+    });
+  });
+
+  describe("POST /api/providers/:id/verify", () => {
+    const verifySetup = createTestSetup();
+
+    beforeEach(() => {
+      vi.stubGlobal("fetch", vi.fn());
+    });
+
+    it("should return ok:true when provider is reachable", async () => {
+      const route = verifySetup.findRoute("/api/providers/prov_1/verify", "POST");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/verify",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as { ok: boolean };
+      expect(body.ok).toBe(true);
+    });
+
+    it("should return ok:false when provider returns error", async () => {
+      const route = verifySetup.findRoute("/api/providers/prov_1/verify", "POST");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/verify",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as { ok: boolean; error: string };
+      expect(body.ok).toBe(false);
+      expect(body.error).toContain("401");
+    });
+
+    it("should return ok:false on network error", async () => {
+      const route = verifySetup.findRoute("/api/providers/prov_1/verify", "POST");
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/verify",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as { ok: boolean; error: string };
+      expect(body.ok).toBe(false);
+      expect(body.error).toContain("network down");
+    });
+
+    it("should return 404 for non-existent provider", async () => {
+      const route = verifySetup.findRoute("/api/providers/prov_999/verify", "POST");
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_999/verify",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(404);
+    });
+  });
+
+  describe("GET /api/providers/:id/models", () => {
+    const modelsSetup = createTestSetup();
+
+    beforeEach(() => {
+      vi.stubGlobal("fetch", vi.fn());
+    });
+
+    it("should return sorted model list", async () => {
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [{ id: "gpt-4" }, { id: "gpt-3.5-turbo" }] }),
+      }));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "GET",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/models",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as { models: string[] };
+      expect(body.models).toEqual(["gpt-3.5-turbo", "gpt-4"]);
+    });
+
+    it("should handle missing data field", async () => {
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({}),
+      }));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "GET",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/models",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as { models: string[] };
+      expect(body.models).toEqual([]);
+    });
+
+    it("should return error when provider API fails", async () => {
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+      }));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "GET",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/models",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(403);
+      const body = JSON.parse(getBody()) as { error: string };
+      expect(body.error).toContain("403");
+    });
+
+    it("should return 500 on network error", async () => {
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("timeout")));
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "GET",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_1/models",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(500);
+      const body = JSON.parse(getBody()) as { error: string };
+      expect(body.error).toContain("timeout");
+    });
+
+    it("should return 404 for non-existent provider", async () => {
+      const route = modelsSetup.findRoute("/api/providers/prov_999/models", "GET");
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "GET",
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers/prov_999/models",
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(404);
