@@ -51,44 +51,47 @@ export interface ToolExecutor {
   updateSender(sender: ChannelSender): void;
 }
 
-const shellTool: InternalTool = {
-  name: "shell",
-  definition: {
-    type: "function",
-    function: {
-      name: "shell",
-      description: "Execute a shell command and return stdout and stderr",
-      parameters: {
-        type: "object",
-        properties: {
-          command: { type: "string", description: "Shell command to execute" },
-          timeout: { type: "number", description: "Timeout in milliseconds (default 30000)" },
+function createShellTool(workspace: string): InternalTool {
+  return {
+    name: "shell",
+    definition: {
+      type: "function",
+      function: {
+        name: "shell",
+        description: "Execute a shell command and return stdout and stderr",
+        parameters: {
+          type: "object",
+          properties: {
+            command: { type: "string", description: "Shell command to execute" },
+            timeout: { type: "number", description: "Timeout in milliseconds (default 30000)" },
+          },
+          required: ["command"],
         },
-        required: ["command"],
       },
     },
-  },
-  async execute(args: Record<string, unknown>): Promise<string> {
-    const command = args.command as string;
-    const timeout = (args.timeout as number) || 30_000;
-    try {
-      const result = execSync(command, {
-        timeout,
-        maxBuffer: 1024 * 1024,
-        encoding: "utf-8",
-        shell: "/bin/bash",
-      });
-      return truncate(result || "(no output)", 10_000);
-    } catch (err: unknown) {
-      if (!isExecError(err)) throw err;
-      if (err.killed || err.signal === "SIGTERM" || err.signal === "SIGKILL") {
-        throw new Error(`Command timed out after ${timeout}ms`);
+    async execute(args: Record<string, unknown>): Promise<string> {
+      const command = args.command as string;
+      const timeout = (args.timeout as number) || 30_000;
+      try {
+        const result = execSync(command, {
+          timeout,
+          maxBuffer: 1024 * 1024,
+          encoding: "utf-8",
+          shell: "/bin/bash",
+          cwd: workspace,
+        });
+        return truncate(result || "(no output)", 10_000);
+      } catch (err: unknown) {
+        if (!isExecError(err)) throw err;
+        if (err.killed || err.signal === "SIGTERM" || err.signal === "SIGKILL") {
+          throw new Error(`Command timed out after ${timeout}ms`);
+        }
+        const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
+        throw new Error(output || "Command failed with no output");
       }
-      const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
-      throw new Error(output || "Command failed with no output");
-    }
-  },
-};
+    },
+  };
+}
 
 function registerDefaultTools(
   config: ToolsConfig,
@@ -97,10 +100,11 @@ function registerDefaultTools(
   register: (tool: InternalTool) => void,
 ): void {
   if (config.shell.enabled) {
+    const baseShellTool = createShellTool(workspace);
     const shellWithConfig: InternalTool = {
-      ...shellTool,
+      ...baseShellTool,
       async execute(args: Record<string, unknown>): Promise<string> {
-        return shellTool.execute({
+        return baseShellTool.execute({
           ...args,
           timeout: (args.timeout as number) || config.shell.timeout,
         });

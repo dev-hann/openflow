@@ -46,6 +46,10 @@ describe("validateUrl", () => {
     expect(() => validateUrl("http://10.0.0.1/")).toThrow("private/internal networks");
   });
 
+  it("should allow hostnames starting with 10.", () => {
+    expect(() => validateUrl("http://10.example.com/")).not.toThrow();
+  });
+
   it("should block 192.168.x private range", () => {
     expect(() => validateUrl("http://192.168.1.1/")).toThrow("private/internal networks");
   });

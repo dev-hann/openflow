@@ -37,14 +37,25 @@ export function validateUrl(url: string): void {
     hostname === "0.0.0.0" ||
     hostname === "::1" ||
     hostname.endsWith(".local") ||
-    hostname.endsWith(".internal") ||
-    hostname.startsWith("10.") ||
-    hostname.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
-    hostname.startsWith("169.254.") ||
-    hostname.startsWith("fc") ||
-    hostname.startsWith("fe80")
+    hostname.endsWith(".internal")
   ) {
+    throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+  }
+
+  const isIPv4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
+  if (isIPv4) {
+    const octets = hostname.split(".").map(Number);
+    if (
+      octets[0]! === 10 ||
+      (octets[0]! === 172 && octets[1]! >= 16 && octets[1]! <= 31) ||
+      (octets[0]! === 192 && octets[1]! === 168) ||
+      (octets[0]! === 169 && octets[1]! === 254)
+    ) {
+      throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+    }
+  }
+
+  if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
     throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
   }
 }
@@ -73,7 +84,18 @@ export const webFetchTool: InternalTool = {
     try {
       const html = await withRetry(
         async () => {
-          const resp = await fetch(url, { redirect: "follow" } as RequestInit);
+          let currentUrl = url;
+          let redirects = 0;
+          let resp = await fetch(currentUrl, { redirect: "manual" } as RequestInit);
+          while ([301, 302, 303, 307, 308].includes(resp.status) && redirects < 5) {
+            const location = resp.headers.get("location");
+            if (!location) break;
+            const redirectUrl = new URL(location, currentUrl).href;
+            validateUrl(redirectUrl);
+            currentUrl = redirectUrl;
+            resp = await fetch(currentUrl, { redirect: "manual" } as RequestInit);
+            redirects++;
+          }
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           return await resp.text();
         },
@@ -184,7 +206,18 @@ export const httpClientTool: InternalTool = {
     try {
       const text = await withRetry(
         async () => {
-          const resp = await fetch(url, { method, headers, body, redirect: "follow" } as RequestInit);
+          let currentUrl = url;
+          let redirects = 0;
+          let resp = await fetch(currentUrl, { method, headers, body, redirect: "manual" } as RequestInit);
+          while ([301, 302, 303, 307, 308].includes(resp.status) && redirects < 5) {
+            const location = resp.headers.get("location");
+            if (!location) break;
+            const redirectUrl = new URL(location, currentUrl).href;
+            validateUrl(redirectUrl);
+            currentUrl = redirectUrl;
+            resp = await fetch(currentUrl, { method, headers, redirect: "manual" } as RequestInit);
+            redirects++;
+          }
           const respText = await resp.text();
           return `Status: ${resp.status}\n${truncate(respText, 10_000)}`;
         },
