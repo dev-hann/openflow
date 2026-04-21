@@ -3,7 +3,12 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createLogger } from "../../utils/logger.js";
 import type { MemoryStore } from "../../memory/index.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
-import { sendJson, readJsonBody, readJsonObject, requireAuth } from "./middleware.js";
+import {
+  sendJson,
+  readJsonBody,
+  readJsonObject,
+  requireAuth,
+} from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
 import { route, routePattern, type Route } from "./routes.js";
@@ -33,7 +38,10 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { sessions: result });
   }
 
-  async function handleSessionCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async function handleSessionCreate(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonBody(req);
@@ -42,7 +50,11 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 201, { id: session.id, title: session.title });
   }
 
-  function handleSessionDelete(req: IncomingMessage, res: ServerResponse, path: string): void {
+  function handleSessionDelete(
+    req: IncomingMessage,
+    res: ServerResponse,
+    path: string,
+  ): void {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const sessionId = path.slice("/api/sessions/".length);
@@ -54,7 +66,11 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { ok: true });
   }
 
-  function handleSessionMessages(req: IncomingMessage, res: ServerResponse, path: string): void {
+  function handleSessionMessages(
+    req: IncomingMessage,
+    res: ServerResponse,
+    path: string,
+  ): void {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const match = path.match(/^\/api\/sessions\/([^/]+)\/messages$/);
@@ -63,11 +79,20 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
       return;
     }
     const sessionId = match[1]!;
-    const parsedUrl = new URL(req.url ?? path, `http://${req.headers.host ?? "localhost"}`);
-    const limit = Math.min(parseInt(parsedUrl.searchParams.get("limit") ?? "50", 10), 200);
-    const offset = parseInt(parsedUrl.searchParams.get("offset") ?? "0", 10);
+    const parsedUrl = new URL(
+      req.url ?? path,
+      `http://${req.headers.host ?? "localhost"}`,
+    );
+    const rawLimit = parseInt(parsedUrl.searchParams.get("limit") ?? "50", 10);
+    const rawOffset = parseInt(parsedUrl.searchParams.get("offset") ?? "0", 10);
+    const limit = Math.min(Number.isNaN(rawLimit) ? 50 : rawLimit, 200);
+    const offset = Number.isNaN(rawOffset) ? 0 : rawOffset;
 
-    const { messages: rawMessages, total } = memoryStore.getVisibleMessages(sessionId, limit, offset);
+    const { messages: rawMessages, total } = memoryStore.getVisibleMessages(
+      sessionId,
+      limit,
+      offset,
+    );
     const messages = rawMessages.map((m) => ({
       role: m.role,
       content: m.content ?? "",
@@ -77,7 +102,10 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { messages, total });
   }
 
-  async function handlePushTokenRegister(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async function handlePushTokenRegister(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonObject(req, res);
@@ -98,7 +126,10 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { ok: true });
   }
 
-  async function handlePushTokenUnregister(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async function handlePushTokenUnregister(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonObject(req, res);
@@ -115,9 +146,17 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   return [
     route("/api/sessions", "GET", (req, res) => handleSessionsList(req, res)),
     route("/api/sessions", "POST", (req, res) => handleSessionCreate(req, res)),
-    routePattern(/^\/api\/sessions\/[^/]+$/, "DELETE", (req, res, ctx) => handleSessionDelete(req, res, ctx.path)),
-    routePattern(/^\/api\/sessions\/[^/]+\/messages$/, "GET", (req, res, ctx) => handleSessionMessages(req, res, ctx.path)),
-    route("/api/push-tokens", "POST", (req, res) => handlePushTokenRegister(req, res)),
-    route("/api/push-tokens", "DELETE", (req, res) => handlePushTokenUnregister(req, res)),
+    routePattern(/^\/api\/sessions\/[^/]+$/, "DELETE", (req, res, ctx) =>
+      handleSessionDelete(req, res, ctx.path),
+    ),
+    routePattern(/^\/api\/sessions\/[^/]+\/messages$/, "GET", (req, res, ctx) =>
+      handleSessionMessages(req, res, ctx.path),
+    ),
+    route("/api/push-tokens", "POST", (req, res) =>
+      handlePushTokenRegister(req, res),
+    ),
+    route("/api/push-tokens", "DELETE", (req, res) =>
+      handlePushTokenUnregister(req, res),
+    ),
   ];
 }
