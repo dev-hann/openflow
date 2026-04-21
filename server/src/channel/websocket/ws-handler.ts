@@ -13,6 +13,9 @@ import { SETUP_SYSTEM_PROMPT } from "../../agent/setup-prompt.js";
 
 const log = createLogger("ws/handler");
 
+const AUTH_TIMEOUT_MS = 10_000;
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
 export interface WsHandlerDeps {
   authService: AuthService;
   agentEngine: AgentEngine;
@@ -49,7 +52,7 @@ export function createWsHandler(deps: WsHandlerDeps) {
       if (!authenticated) {
         ws.close(4001, "authentication timeout");
       }
-    }, 10_000);
+    }, AUTH_TIMEOUT_MS);
     authTimeout.unref();
 
     function onAuthMessage(raw: Buffer): void {
@@ -80,7 +83,7 @@ export function createWsHandler(deps: WsHandlerDeps) {
         if (ws.readyState === ws.OPEN) {
           ws.ping();
         }
-      }, 30_000);
+      }, HEARTBEAT_INTERVAL_MS);
       heartbeat.unref();
     }
 

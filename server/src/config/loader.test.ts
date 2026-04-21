@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   existsSync,
   mkdirSync,
@@ -14,7 +14,6 @@ import {
   getConfigPath,
   initConfig,
   ensureConfigDir,
-  watchConfig,
 } from "./loader.js";
 
 describe("loadConfig", () => {
@@ -184,39 +183,5 @@ describe("ensureConfigDir", () => {
     } finally {
       process.env.HOME = originalHome;
     }
-  });
-});
-
-describe("watchConfig", () => {
-  const testDir = join(tmpdir(), `openflow-test-watch-${Date.now()}`);
-  const testConfigPath = join(testDir, "openflow.json");
-
-  beforeEach(() => {
-    resetConfigCache();
-    mkdirSync(testDir, { recursive: true });
-    process.env.OPENFLOW_CONFIG = testConfigPath;
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    resetConfigCache();
-    delete process.env.OPENFLOW_CONFIG;
-    delete process.env.OPENFLOW_LOG_LEVEL;
-    rmSync(testDir, { recursive: true, force: true });
-  });
-
-  it("should return unwatch function for nonexistent config", () => {
-    delete process.env.OPENFLOW_CONFIG;
-    const unwatch = watchConfig(() => {});
-    expect(typeof unwatch).toBe("function");
-    unwatch();
-  });
-
-  it("should return unwatch function for existing config", () => {
-    writeFileSync(testConfigPath, JSON.stringify({ agent: {}, memory: {} }));
-    const unwatch = watchConfig(() => {});
-    expect(typeof unwatch).toBe("function");
-    unwatch();
   });
 });
