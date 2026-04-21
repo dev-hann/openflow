@@ -21,7 +21,9 @@ function estimateTokens(text: string): number {
 function messageToText(msg: ChatMessage): string {
   if (msg.role === "tool") return `[Tool ${msg.tool_call_id}]: ${msg.content}`;
   if (msg.role === "assistant" && msg.tool_calls) {
-    const calls = msg.tool_calls.map((tc) => `${tc.function.name}(${tc.function.arguments})`).join(", ");
+    const calls = msg.tool_calls
+      .map((tc) => `${tc.function.name}(${tc.function.arguments})`)
+      .join(", ");
     return `[Assistant called: ${calls}]${msg.content ? ` ${msg.content}` : ""}`;
   }
   if (msg.role === "assistant") return `[Assistant]: ${msg.content ?? ""}`;
@@ -38,9 +40,17 @@ export interface CompactionDeps {
   config: CompactionConfig;
 }
 
-export function createCompaction(deps: CompactionDeps) {
+export interface CompactionService {
+  compactIfNeeded(
+    sessionId: string,
+    contextMessages: ChatMessage[],
+  ): Promise<ChatMessage[]>;
+}
+
+export function createCompaction(deps: CompactionDeps): CompactionService {
   const { config } = deps;
-  const resolveLlm = typeof deps.llm === "function" ? deps.llm : () => deps.llm as LlmClient;
+  const resolveLlm =
+    typeof deps.llm === "function" ? deps.llm : () => deps.llm as LlmClient;
 
   async function compactIfNeeded(
     sessionId: string,
@@ -70,12 +80,17 @@ export function createCompaction(deps: CompactionDeps) {
     );
 
     return [
-      { role: "system" as const, content: `[Previous conversation summary]\n${summary}` },
+      {
+        role: "system" as const,
+        content: `[Previous conversation summary]\n${summary}`,
+      },
       ...contextMessages.slice(-Math.floor(contextMessages.length * 0.3)),
     ];
   }
 
-  async function generateSummary(messages: ChatMessage[]): Promise<string | null> {
+  async function generateSummary(
+    messages: ChatMessage[],
+  ): Promise<string | null> {
     const MAX_CHARS = 80_000;
     let conversation = messages.map(messageToText).join("\n\n");
 
@@ -88,7 +103,9 @@ export function createCompaction(deps: CompactionDeps) {
         if (totalLen > MAX_CHARS) break;
         recentTexts.unshift(texts[i]!);
       }
-      conversation = `[Earlier conversation omitted for length]\n\n` + recentTexts.join("\n\n");
+      conversation =
+        `[Earlier conversation omitted for length]\n\n` +
+        recentTexts.join("\n\n");
     }
 
     try {

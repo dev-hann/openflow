@@ -5,7 +5,6 @@ import { OpenFlowError } from "../utils/errors.js";
 import type {
   LlmClient,
   ChatMessage,
-  ToolCall,
   LlmResponse,
   ToolDefinition,
 } from "../llm/index.js";
@@ -15,8 +14,8 @@ import type { ConfirmationHandler } from "../tools/confirmation.js";
 import { createCompaction } from "./compaction.js";
 import { createToolProcessor } from "./tool-processor.js";
 import { createWorkspaceLoader, type WorkspaceLoader } from "./workspace.js";
-import { buildSystemPrompt } from "./prompt-builder.js";
 import { createSkillLoader, type SkillsConfig } from "./skill-loader.js";
+import { createContextResolver } from "./context-resolver.js";
 
 const log = createLogger("agent");
 
@@ -90,75 +89,14 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     confirmationTimeout,
   });
 
-  function persistMessage(
-    sessionId: string,
-    params: {
-      role: "user" | "assistant" | "system";
-      content: string;
-      toolCalls?: ToolCall[];
-    },
-  ): void {
-    try {
-      memory.addMessage({ sessionId, ...params });
-    } catch (err: unknown) {
-      log.error({ sessionId, err }, `failed to save ${params.role} message`);
-    }
-  }
-
-  function resolveSystemPrompt(): string {
-    if (config.systemPrompt) return config.systemPrompt;
-    const files = workspace.loadAll();
-    return buildSystemPrompt(
-      files,
-      { workspace: workspace.getWorkspaceDir() },
-      skills,
-    );
-  }
-
-  function saveUserMessage(
-    sessionId: string,
-    content: string,
-  ): OpenFlowError | null {
-    try {
-      memory.addMessage({ sessionId, role: "user", content });
-      return null;
-    } catch (err: unknown) {
-      const error =
-        err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("Failed to save user message", "DB_ERROR", err);
-      log.error(
-        { sessionId, err: error.message },
-        "failed to save user message",
-      );
-      return error;
-    }
-  }
-
-  async function buildConversationContext(
-    sessionId: string,
-    systemPromptOverride?: string,
-  ): Promise<ChatMessage[]> {
-    const systemPrompt = systemPromptOverride || resolveSystemPrompt();
-    try {
-      const rawContext = memory.buildContext(
-        sessionId,
-        config.contextSize ?? 50,
-      );
-      const contextMessages = await compaction.compactIfNeeded(
-        sessionId,
-        rawContext,
-      );
-      return [{ role: "system", content: systemPrompt }, ...contextMessages];
-    } catch (err: unknown) {
-      const error =
-        err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("Failed to build context", "DB_ERROR", err);
-      log.error({ sessionId, err: error.message }, "failed to build context");
-      throw error;
-    }
-  }
+  const contextResolver = createContextResolver({
+    memory,
+    compaction,
+    workspace,
+    systemPrompt: config.systemPrompt,
+    skills,
+    config: { contextSize: config.contextSize ?? 50 },
+  });
 
   async function callLlmOnce(
     messages: ChatMessage[],
@@ -228,7 +166,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       }
 
       if (response.type === "text") {
-        persistMessage(sessionId, {
+        contextResolver.persistMessage(sessionId, {
           role: "assistant",
           content: response.content,
         });
@@ -250,7 +188,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         content: null,
         tool_calls: response.toolCalls,
       });
-      persistMessage(sessionId, {
+      contextResolver.persistMessage(sessionId, {
         role: "assistant",
         content: "",
         toolCalls: response.toolCalls,
@@ -267,7 +205,10 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
     const overflowMsg =
       "Maximum tool call rounds reached. Please continue the conversation.";
-    persistMessage(sessionId, { role: "assistant", content: overflowMsg });
+    contextResolver.persistMessage(sessionId, {
+      role: "assistant",
+      content: overflowMsg,
+    });
     log.info(
       {
         sessionId,
@@ -295,12 +236,12 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       "handling message",
     );
 
-    const saveErr = saveUserMessage(sessionId, userMessage);
+    const saveErr = contextResolver.saveUserMessage(sessionId, userMessage);
     if (saveErr) return { type: "error", error: saveErr };
 
     let messages: ChatMessage[];
     try {
-      messages = await buildConversationContext(
+      messages = await contextResolver.buildConversationContext(
         sessionId,
         systemPromptOverride,
       );
