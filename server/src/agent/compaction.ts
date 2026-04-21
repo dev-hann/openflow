@@ -76,7 +76,20 @@ export function createCompaction(deps: CompactionDeps) {
   }
 
   async function generateSummary(messages: ChatMessage[]): Promise<string | null> {
-    const conversation = messages.map(messageToText).join("\n\n");
+    const MAX_CHARS = 80_000;
+    let conversation = messages.map(messageToText).join("\n\n");
+
+    if (conversation.length > MAX_CHARS) {
+      const texts = messages.map(messageToText);
+      const recentTexts: string[] = [];
+      let totalLen = 0;
+      for (let i = texts.length - 1; i >= 0; i--) {
+        totalLen += texts[i]!.length + 2;
+        if (totalLen > MAX_CHARS) break;
+        recentTexts.unshift(texts[i]!);
+      }
+      conversation = `[Earlier conversation omitted for length]\n\n` + recentTexts.join("\n\n");
+    }
 
     try {
       const result = await resolveLlm().complete({
