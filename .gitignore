@@ -27,3 +27,4 @@ openapi-generator/
 # IDE
 .idea/
 node_modules/
+server/coverage/
