@@ -1,5 +1,5 @@
 import type { InternalTool } from "./types.js";
-import { truncate } from "./utils.js";
+import { truncate, fetchWithRedirects, parseHeadersJson } from "./utils.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 
@@ -25,12 +25,16 @@ export function validateUrl(url: string): void {
     throw new OpenFlowError(`Invalid URL: ${url}`, "TOOL_EXECUTION_FAILED");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new OpenFlowError(`Unsupported protocol: ${parsed.protocol}`, "TOOL_EXECUTION_FAILED");
+    throw new OpenFlowError(
+      `Unsupported protocol: ${parsed.protocol}`,
+      "TOOL_EXECUTION_FAILED",
+    );
   }
   const rawHostname = parsed.hostname.toLowerCase();
-  const hostname = rawHostname.startsWith("[") && rawHostname.endsWith("]")
-    ? rawHostname.slice(1, -1)
-    : rawHostname;
+  const hostname =
+    rawHostname.startsWith("[") && rawHostname.endsWith("]")
+      ? rawHostname.slice(1, -1)
+      : rawHostname;
   if (
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
@@ -39,7 +43,10 @@ export function validateUrl(url: string): void {
     hostname.endsWith(".local") ||
     hostname.endsWith(".internal")
   ) {
-    throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+    throw new OpenFlowError(
+      "Requests to private/internal networks are blocked",
+      "PERMISSION_DENIED",
+    );
   }
 
   const isIPv4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
@@ -51,13 +58,19 @@ export function validateUrl(url: string): void {
       (octets[0]! === 192 && octets[1]! === 168) ||
       (octets[0]! === 169 && octets[1]! === 254)
     ) {
-      throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+      throw new OpenFlowError(
+        "Requests to private/internal networks are blocked",
+        "PERMISSION_DENIED",
+      );
     }
   }
 
   if (hostname.includes(":")) {
     if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
-      throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+      throw new OpenFlowError(
+        "Requests to private/internal networks are blocked",
+        "PERMISSION_DENIED",
+      );
     }
   }
 }
@@ -73,7 +86,10 @@ export const webFetchTool: InternalTool = {
         type: "object",
         properties: {
           url: { type: "string", description: "URL to fetch" },
-          maxLength: { type: "number", description: "Max characters to return (default 10000)" },
+          maxLength: {
+            type: "number",
+            description: "Max characters to return (default 10000)",
+          },
         },
         required: ["url"],
       },
@@ -86,18 +102,7 @@ export const webFetchTool: InternalTool = {
     try {
       const html = await withRetry(
         async () => {
-          let currentUrl = url;
-          let redirects = 0;
-          let resp = await fetch(currentUrl, { redirect: "manual" } as RequestInit);
-          while ([301, 302, 303, 307, 308].includes(resp.status) && redirects < 5) {
-            const location = resp.headers.get("location");
-            if (!location) break;
-            const redirectUrl = new URL(location, currentUrl).href;
-            validateUrl(redirectUrl);
-            currentUrl = redirectUrl;
-            resp = await fetch(currentUrl, { redirect: "manual" } as RequestInit);
-            redirects++;
-          }
+          const resp = await fetchWithRedirects(url, {}, validateUrl);
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           return await resp.text();
         },
@@ -106,7 +111,11 @@ export const webFetchTool: InternalTool = {
       const text = htmlToPlainText(html);
       return truncate(text, maxLen);
     } catch (err: unknown) {
-      throw new OpenFlowError(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`, "TOOL_EXECUTION_FAILED", err);
+      throw new OpenFlowError(
+        `Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`,
+        "TOOL_EXECUTION_FAILED",
+        err,
+      );
     }
   },
 };
@@ -122,7 +131,10 @@ export const webSearchTool: InternalTool = {
         type: "object",
         properties: {
           query: { type: "string", description: "Search query" },
-          maxResults: { type: "number", description: "Max results (default 5)" },
+          maxResults: {
+            type: "number",
+            description: "Max results (default 5)",
+          },
         },
         required: ["query"],
       },
@@ -141,10 +153,15 @@ export const webSearchTool: InternalTool = {
         },
         { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
       );
-      const results: Array<{ title: string; snippet: string; href: string }> = [];
-      const resultRegex = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+      const results: Array<{ title: string; snippet: string; href: string }> =
+        [];
+      const resultRegex =
+        /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
       let match: RegExpExecArray | null;
-      while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
+      while (
+        (match = resultRegex.exec(html)) !== null &&
+        results.length < maxResults
+      ) {
         results.push({
           href: match[1]!,
           title: match[2]!.replace(/<[^>]+>/g, "").trim(),
@@ -152,9 +169,15 @@ export const webSearchTool: InternalTool = {
         });
       }
       if (results.length === 0) return "No results found.";
-      return results.map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.href}`).join("\n\n");
+      return results
+        .map((r, i) => `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.href}`)
+        .join("\n\n");
     } catch (err: unknown) {
-      throw new OpenFlowError(`Search failed: ${err instanceof Error ? err.message : String(err)}`, "TOOL_EXECUTION_FAILED", err);
+      throw new OpenFlowError(
+        `Search failed: ${err instanceof Error ? err.message : String(err)}`,
+        "TOOL_EXECUTION_FAILED",
+        err,
+      );
     }
   },
 };
@@ -170,7 +193,10 @@ export const httpClientTool: InternalTool = {
         type: "object",
         properties: {
           url: { type: "string", description: "Request URL" },
-          method: { type: "string", description: "HTTP method (GET, POST, PUT, DELETE)" },
+          method: {
+            type: "string",
+            description: "HTTP method (GET, POST, PUT, DELETE)",
+          },
           headers: { type: "string", description: "JSON string of headers" },
           body: { type: "string", description: "Request body" },
         },
@@ -181,45 +207,18 @@ export const httpClientTool: InternalTool = {
   async execute(args: Record<string, unknown>): Promise<string> {
     const url = args.url as string;
     const method = (args.method as string).toUpperCase();
-    const headersRaw = args.headers as string | undefined;
+    const headers = parseHeadersJson(args.headers as string | undefined);
     const body = args.body as string | undefined;
     validateUrl(url);
-
-    let headers: Record<string, string> = {};
-    if (headersRaw) {
-      try {
-        const parsed = JSON.parse(headersRaw);
-        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-          throw new OpenFlowError("Invalid headers JSON", "TOOL_EXECUTION_FAILED");
-        }
-        for (const [key, val] of Object.entries(parsed)) {
-          if (typeof key !== "string" || typeof val !== "string") {
-            throw new OpenFlowError("Invalid headers: keys and values must be strings", "TOOL_EXECUTION_FAILED");
-          }
-        }
-        headers = parsed as Record<string, string>;
-      } catch (err: unknown) {
-        throw err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("Invalid headers JSON", "TOOL_EXECUTION_FAILED", err);
-      }
-    }
 
     try {
       const text = await withRetry(
         async () => {
-          let currentUrl = url;
-          let redirects = 0;
-          let resp = await fetch(currentUrl, { method, headers, body, redirect: "manual" } as RequestInit);
-          while ([301, 302, 303, 307, 308].includes(resp.status) && redirects < 5) {
-            const location = resp.headers.get("location");
-            if (!location) break;
-            const redirectUrl = new URL(location, currentUrl).href;
-            validateUrl(redirectUrl);
-            currentUrl = redirectUrl;
-            resp = await fetch(currentUrl, { method, headers, redirect: "manual" } as RequestInit);
-            redirects++;
-          }
+          const resp = await fetchWithRedirects(
+            url,
+            { method, headers, body },
+            validateUrl,
+          );
           const respText = await resp.text();
           return `Status: ${resp.status}\n${truncate(respText, 10_000)}`;
         },
@@ -227,7 +226,11 @@ export const httpClientTool: InternalTool = {
       );
       return text;
     } catch (err: unknown) {
-      throw new OpenFlowError(`HTTP request failed: ${err instanceof Error ? err.message : String(err)}`, "TOOL_EXECUTION_FAILED", err);
+      throw new OpenFlowError(
+        `HTTP request failed: ${err instanceof Error ? err.message : String(err)}`,
+        "TOOL_EXECUTION_FAILED",
+        err,
+      );
     }
   },
 };

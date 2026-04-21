@@ -1,23 +1,20 @@
 import { execSync, execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, writeFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  writeFileSync,
+  rmSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
 import { ensureDirSync } from "../utils/fs.js";
 import type { InternalTool } from "./types.js";
+import { isExecError } from "./types.js";
 
 const log = createLogger("browser");
-
-interface ExecError extends Error {
-  stdout?: string;
-  stderr?: string;
-  killed?: boolean;
-}
-
-function isExecError(err: unknown): err is ExecError {
-  return err instanceof Error;
-}
 
 export interface BrowserConfig {
   enabled: boolean;
@@ -28,7 +25,10 @@ export interface BrowserConfig {
 const SCREENSHOT_DIR = ".browser";
 
 function getBrowsersPath(): string {
-  return process.env.PLAYWRIGHT_BROWSERS_PATH ?? join(homedir(), ".cache/ms-playwright");
+  return (
+    process.env.PLAYWRIGHT_BROWSERS_PATH ??
+    join(homedir(), ".cache/ms-playwright")
+  );
 }
 
 function isChromiumInstalled(): boolean {
@@ -69,22 +69,29 @@ function ensureScreenshotDir(workspace: string): string {
 }
 
 function runPlaywrightScript(script: string, timeout: number): string {
-  const tmpDir = mkdtempSync(join(process.env.RUNNER_TEMP ?? "/tmp", "openflow-browser-"));
+  const tmpDir = mkdtempSync(
+    join(process.env.RUNNER_TEMP ?? "/tmp", "openflow-browser-"),
+  );
   const scriptPath = join(tmpDir, "script.mjs");
   writeFileSync(scriptPath, script, "utf-8");
 
   try {
-    const result = execFileSync("npx", ["-y", "playwright", "test", "--config", "null", scriptPath], {
-      timeout,
-      maxBuffer: 2 * 1024 * 1024,
-      encoding: "utf-8",
-      shell: "/bin/bash",
-      env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: "0" },
-    });
+    const result = execFileSync(
+      "npx",
+      ["-y", "playwright", "test", "--config", "null", scriptPath],
+      {
+        timeout,
+        maxBuffer: 2 * 1024 * 1024,
+        encoding: "utf-8",
+        shell: "/bin/bash",
+        env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: "0" },
+      },
+    );
     return result || "(no output)";
   } catch (err: unknown) {
     if (!isExecError(err)) throw err;
-    if (err.killed) throw new Error(`Browser script timed out after ${timeout}ms`);
+    if (err.killed)
+      throw new Error(`Browser script timed out after ${timeout}ms`);
     const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
     throw new Error(output || "Browser script failed");
   } finally {
@@ -102,7 +109,10 @@ export interface BrowserTools {
   resetInstalled(): void;
 }
 
-export function createBrowserTools(workspace: string, config: BrowserConfig): BrowserTools {
+export function createBrowserTools(
+  workspace: string,
+  config: BrowserConfig,
+): BrowserTools {
   let installed = false;
 
   function ensureInstalled(): void {
@@ -130,10 +140,22 @@ export function createBrowserTools(workspace: string, config: BrowserConfig): Br
           type: "object",
           properties: {
             url: { type: "string", description: "URL to capture" },
-            fullPage: { type: "boolean", description: "Capture full scrollable page (default: true)" },
-            width: { type: "number", description: "Viewport width in pixels (default: 1280)" },
-            height: { type: "number", description: "Viewport height in pixels (default: 720)" },
-            selector: { type: "string", description: "CSS selector to capture a specific element only" },
+            fullPage: {
+              type: "boolean",
+              description: "Capture full scrollable page (default: true)",
+            },
+            width: {
+              type: "number",
+              description: "Viewport width in pixels (default: 1280)",
+            },
+            height: {
+              type: "number",
+              description: "Viewport height in pixels (default: 720)",
+            },
+            selector: {
+              type: "string",
+              description: "CSS selector to capture a specific element only",
+            },
           },
           required: ["url"],
         },
@@ -205,8 +227,10 @@ import { chromium } from 'playwright';
     async execute(args: Record<string, unknown>): Promise<string> {
       ensureInstalled();
 
-      const script = (args.script as string)
-        .replace(/\{WORKSPACE\}/g, JSON.stringify(workspace).slice(1, -1));
+      const script = (args.script as string).replace(
+        /\{WORKSPACE\}/g,
+        JSON.stringify(workspace).slice(1, -1),
+      );
 
       const result = runPlaywrightScript(script, config.timeout);
       log.info("browser script executed");

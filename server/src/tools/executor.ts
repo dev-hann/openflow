@@ -2,25 +2,24 @@ import { execSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
 import { createBrowserTools } from "./browser.js";
-import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
+import type {
+  InternalTool,
+  ToolDefinition,
+  ChannelSender,
+} from "./types.js";
+import { isExecError } from "./types.js";
 import { truncate } from "./utils.js";
 import { webFetchTool, webSearchTool, httpClientTool } from "./web-tools.js";
-import { createFileReadTool, createFileWriteTool, createListDirTool } from "./file-tools.js";
+import {
+  createFileReadTool,
+  createFileWriteTool,
+  createListDirTool,
+} from "./file-tools.js";
 import { createSendMessageTool, createSendImageTool } from "./channel-tools.js";
-export type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
+export type { InternalTool, ToolDefinition, ChannelSender, ExecError } from "./types.js";
+export { isExecError } from "./types.js";
 
 const log = createLogger("tools");
-
-interface ExecError extends Error {
-  stdout?: string;
-  stderr?: string;
-  killed?: boolean;
-  signal?: string;
-}
-
-function isExecError(err: unknown): err is ExecError {
-  return err instanceof Error;
-}
 
 export interface ToolCall {
   id: string;
@@ -62,8 +61,14 @@ function createShellTool(workspace: string): InternalTool {
         parameters: {
           type: "object",
           properties: {
-            command: { type: "string", description: "Shell command to execute" },
-            timeout: { type: "number", description: "Timeout in milliseconds (default 30000)" },
+            command: {
+              type: "string",
+              description: "Shell command to execute",
+            },
+            timeout: {
+              type: "number",
+              description: "Timeout in milliseconds (default 30000)",
+            },
           },
           required: ["command"],
         },
@@ -83,7 +88,11 @@ function createShellTool(workspace: string): InternalTool {
         return truncate(result || "(no output)", 10_000);
       } catch (err: unknown) {
         if (!isExecError(err)) throw err;
-        if (err.killed || err.signal === "SIGTERM" || err.signal === "SIGKILL") {
+        if (
+          err.killed ||
+          err.signal === "SIGTERM" ||
+          err.signal === "SIGKILL"
+        ) {
           throw new Error(`Command timed out after ${timeout}ms`);
         }
         const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
@@ -183,7 +192,10 @@ export function createToolExecutor(
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const duration = Date.now() - startedAt;
-        log.error({ toolName: call.name, duration, err: msg }, "tool execution failed");
+        log.error(
+          { toolName: call.name, duration, err: msg },
+          "tool execution failed",
+        );
         return {
           toolCallId: call.id,
           content: `Tool error: ${msg}`,
