@@ -12,11 +12,7 @@ interface StreamState {
   }>;
 }
 
-function processSseLine(
-  line: string,
-  state: StreamState,
-  onToken: (token: string) => void,
-): void {
+function processSseLine(line: string, state: StreamState, onToken: (token: string) => void): void {
   const trimmed = line.trim();
   if (!trimmed || trimmed === "data: [DONE]" || !trimmed.startsWith("data: ")) return;
 

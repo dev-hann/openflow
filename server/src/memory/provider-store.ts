@@ -1,13 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 
 import { createLogger } from "../utils/logger.js";
-import {
-  wrapDb,
-  generateId,
-  nowMs,
-  runMigrations,
-  withTransaction,
-} from "./db-helpers.js";
+import { wrapDb, generateId, nowMs, runMigrations, withTransaction } from "./db-helpers.js";
 
 const log = createLogger("memory/provider");
 
@@ -75,9 +69,7 @@ function prepareProviderStatements(db: DatabaseSync) {
     ),
     deleteProvider: db.prepare("DELETE FROM providers WHERE id = ?"),
     clearDefault: db.prepare("UPDATE providers SET is_default = 0"),
-    setDefault: db.prepare(
-      "UPDATE providers SET is_default = 1, updated_at = ? WHERE id = ?",
-    ),
+    setDefault: db.prepare("UPDATE providers SET is_default = 1, updated_at = ? WHERE id = ?"),
   };
 }
 
@@ -88,26 +80,20 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
   return {
     listProviders(): Provider[] {
       return wrapDb("listProviders", () =>
-        (stmts.listProviders.all() as Array<Record<string, unknown>>).map(
-          rowToProvider,
-        ),
+        (stmts.listProviders.all() as Array<Record<string, unknown>>).map(rowToProvider),
       );
     },
 
     getProvider(id: string): Provider | null {
       return wrapDb("getProvider", () => {
-        const row = stmts.getProvider.get(id) as
-          | Record<string, unknown>
-          | undefined;
+        const row = stmts.getProvider.get(id) as Record<string, unknown> | undefined;
         return row ? rowToProvider(row) : null;
       });
     },
 
     getDefaultProvider(): Provider | null {
       return wrapDb("getDefaultProvider", () => {
-        const row = stmts.getDefaultProvider.get() as
-          | Record<string, unknown>
-          | undefined;
+        const row = stmts.getDefaultProvider.get() as Record<string, unknown> | undefined;
         return row ? rowToProvider(row) : null;
       });
     },

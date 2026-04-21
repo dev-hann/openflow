@@ -189,7 +189,8 @@ describe("runServer", () => {
   it("should send start notification when enabled", async () => {
     process.exit = vi.fn() as unknown as typeof process.exit;
     const mockNotifyAll = vi.fn().mockResolvedValue(undefined);
-    const { createNotificationService } = await import("../notification/index.js");
+    const { createNotificationService } =
+      await import("../notification/index.js");
     vi.mocked(createNotificationService).mockImplementation(
       () =>
         ({

@@ -30,7 +30,9 @@ class CodeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = (language?.trim().isNotEmpty ?? false) ? language!.trim().toUpperCase() : null;
+    final lang = (language?.trim().isNotEmpty ?? false)
+        ? language!.trim().toUpperCase()
+        : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -60,7 +62,8 @@ class CodeBlock extends StatelessWidget {
                   tooltip: '복사',
                   onPressed: () => _handleCopy(context),
                   visualDensity: VisualDensity.compact,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   padding: EdgeInsets.zero,
                   splashRadius: 14,
                 ),

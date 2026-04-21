@@ -75,9 +75,7 @@ function prepareSessionStatements(db: DatabaseSync) {
     listSessions: db.prepare(
       "SELECT id, title, created_at, updated_at FROM sessions ORDER BY updated_at DESC, id DESC",
     ),
-    getSession: db.prepare(
-      "SELECT id, title, created_at, updated_at FROM sessions WHERE id = ?",
-    ),
+    getSession: db.prepare("SELECT id, title, created_at, updated_at FROM sessions WHERE id = ?"),
     deleteSession: db.prepare("DELETE FROM sessions WHERE id = ?"),
     insertMessage: db.prepare(
       "INSERT INTO messages (session_id, role, content, tool_call_id, tool_calls_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -85,9 +83,7 @@ function prepareSessionStatements(db: DatabaseSync) {
     getMessages: db.prepare(
       "SELECT role, content, tool_call_id, tool_calls_json FROM messages WHERE session_id = ? ORDER BY created_at DESC LIMIT ?",
     ),
-    countMessages: db.prepare(
-      "SELECT COUNT(*) as count FROM messages WHERE session_id = ?",
-    ),
+    countMessages: db.prepare("SELECT COUNT(*) as count FROM messages WHERE session_id = ?"),
     getMessagesOffset: db.prepare(
       "SELECT role, content, tool_call_id, tool_calls_json FROM messages WHERE session_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?",
     ),
@@ -117,9 +113,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     createSession(title?: string): Session {
       const id = generateId();
       const now = nowMs();
-      wrapDb("createSession", () =>
-        stmts.insertSession.run(id, title ?? "New Session", now, now),
-      );
+      wrapDb("createSession", () => stmts.insertSession.run(id, title ?? "New Session", now, now));
       log.info({ sessionId: id }, "session created");
       return {
         id,
@@ -131,17 +125,13 @@ export function createMemoryStore(dbPath: string): MemoryStore {
 
     listSessions(): Session[] {
       return wrapDb("listSessions", () =>
-        (stmts.listSessions.all() as Array<Record<string, unknown>>).map(
-          rowToSession,
-        ),
+        (stmts.listSessions.all() as Array<Record<string, unknown>>).map(rowToSession),
       );
     },
 
     getSession(id: string): Session | null {
       return wrapDb("getSession", () => {
-        const row = stmts.getSession.get(id) as
-          | Record<string, unknown>
-          | undefined;
+        const row = stmts.getSession.get(id) as Record<string, unknown> | undefined;
         if (!row) return null;
         return rowToSession(row);
       });
@@ -154,9 +144,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
 
     addMessage(params: AddMessageParams): void {
       const now = nowMs();
-      const toolCallsJson = params.toolCalls
-        ? JSON.stringify(params.toolCalls)
-        : null;
+      const toolCallsJson = params.toolCalls ? JSON.stringify(params.toolCalls) : null;
       wrapDb("addMessage", () => {
         withTransaction(db, () => {
           stmts.insertMessage.run(
@@ -174,19 +162,14 @@ export function createMemoryStore(dbPath: string): MemoryStore {
 
     getMessages(sessionId: string, limit = 50): ChatMessage[] {
       return wrapDb("getMessages", () => {
-        const rows = stmts.getMessages.all(sessionId, limit) as Array<
-          Record<string, unknown>
-        >;
+        const rows = stmts.getMessages.all(sessionId, limit) as Array<Record<string, unknown>>;
         return rows.reverse().map(rowToMessage);
       });
     },
 
     getMessageCount(sessionId: string): number {
       return wrapDb("getMessageCount", () => {
-        const row = stmts.countMessages.get(sessionId) as Record<
-          string,
-          unknown
-        >;
+        const row = stmts.countMessages.get(sessionId) as Record<string, unknown>;
         return (row?.count ?? 0) as number;
       });
     },
@@ -197,16 +180,11 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       offset = 0,
     ): { messages: VisibleMessage[]; total: number } {
       return wrapDb("getVisibleMessages", () => {
-        const countRow = stmts.countVisibleMessages.get(sessionId) as Record<
-          string,
-          unknown
-        >;
+        const countRow = stmts.countVisibleMessages.get(sessionId) as Record<string, unknown>;
         const total = (countRow?.count ?? 0) as number;
-        const rows = stmts.getVisibleMessages.all(
-          sessionId,
-          limit,
-          offset,
-        ) as Array<Record<string, unknown>>;
+        const rows = stmts.getVisibleMessages.all(sessionId, limit, offset) as Array<
+          Record<string, unknown>
+        >;
         return { messages: rows.map(rowToApiMessage), total };
       });
     },
@@ -223,17 +201,12 @@ export function createMemoryStore(dbPath: string): MemoryStore {
 
     buildContext(sessionId: string, maxSize: number): ChatMessage[] {
       return wrapDb("buildContext", () => {
-        const countRow = stmts.countMessages.get(sessionId) as Record<
-          string,
-          unknown
-        >;
+        const countRow = stmts.countMessages.get(sessionId) as Record<string, unknown>;
         const total = (countRow?.count ?? 0) as number;
         const offset = Math.max(0, total - maxSize);
-        const rows = stmts.getMessagesOffset.all(
-          sessionId,
-          maxSize,
-          offset,
-        ) as Array<Record<string, unknown>>;
+        const rows = stmts.getMessagesOffset.all(sessionId, maxSize, offset) as Array<
+          Record<string, unknown>
+        >;
         return rows.map(rowToMessage);
       });
     },

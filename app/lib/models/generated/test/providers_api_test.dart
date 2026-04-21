@@ -11,7 +11,6 @@
 import 'package:openapi/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for ProvidersApi
 void main() {
   // final instance = ProvidersApi();
@@ -65,6 +64,5 @@ void main() {
     test('test verifyProvider', () async {
       // TODO
     });
-
   });
 }

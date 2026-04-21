@@ -1,6 +1,10 @@
 import type { WebSocket } from "ws";
 
-import { parseWsClientMessage, serializeWsServerMessage, type WsServerMessage } from "./protocol.js";
+import {
+  parseWsClientMessage,
+  serializeWsServerMessage,
+  type WsServerMessage,
+} from "./protocol.js";
 import { createStreamingTokenHandler, sendError, sendFinalResponse } from "./streaming.js";
 import type { AuthService } from "./auth.js";
 import type { AgentEngine } from "../../agent/index.js";

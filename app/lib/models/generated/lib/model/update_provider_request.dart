@@ -52,22 +52,25 @@ class UpdateProviderRequest {
   String? model;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is UpdateProviderRequest &&
-    other.name == name &&
-    other.baseUrl == baseUrl &&
-    other.apiKey == apiKey &&
-    other.model == model;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UpdateProviderRequest &&
+          other.name == name &&
+          other.baseUrl == baseUrl &&
+          other.apiKey == apiKey &&
+          other.model == model;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (name == null ? 0 : name!.hashCode) +
-    (baseUrl == null ? 0 : baseUrl!.hashCode) +
-    (apiKey == null ? 0 : apiKey!.hashCode) +
-    (model == null ? 0 : model!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (name == null ? 0 : name!.hashCode) +
+      (baseUrl == null ? 0 : baseUrl!.hashCode) +
+      (apiKey == null ? 0 : apiKey!.hashCode) +
+      (model == null ? 0 : model!.hashCode);
 
   @override
-  String toString() => 'UpdateProviderRequest[name=$name, baseUrl=$baseUrl, apiKey=$apiKey, model=$model]';
+  String toString() =>
+      'UpdateProviderRequest[name=$name, baseUrl=$baseUrl, apiKey=$apiKey, model=$model]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -118,7 +121,10 @@ class UpdateProviderRequest {
     return null;
   }
 
-  static List<UpdateProviderRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<UpdateProviderRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <UpdateProviderRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -146,20 +152,24 @@ class UpdateProviderRequest {
   }
 
   // maps a json object with a list of UpdateProviderRequest-objects as value to a dart map
-  static Map<String, List<UpdateProviderRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<UpdateProviderRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<UpdateProviderRequest>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = UpdateProviderRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = UpdateProviderRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

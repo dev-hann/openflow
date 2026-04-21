@@ -33,32 +33,35 @@ class TokenPairResponse {
   int refreshExpiresAt;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is TokenPairResponse &&
-    other.accessToken == accessToken &&
-    other.refreshToken == refreshToken &&
-    other.sessionKey == sessionKey &&
-    other.accessExpiresAt == accessExpiresAt &&
-    other.refreshExpiresAt == refreshExpiresAt;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TokenPairResponse &&
+          other.accessToken == accessToken &&
+          other.refreshToken == refreshToken &&
+          other.sessionKey == sessionKey &&
+          other.accessExpiresAt == accessExpiresAt &&
+          other.refreshExpiresAt == refreshExpiresAt;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (accessToken.hashCode) +
-    (refreshToken.hashCode) +
-    (sessionKey.hashCode) +
-    (accessExpiresAt.hashCode) +
-    (refreshExpiresAt.hashCode);
+      // ignore: unnecessary_parenthesis
+      (accessToken.hashCode) +
+      (refreshToken.hashCode) +
+      (sessionKey.hashCode) +
+      (accessExpiresAt.hashCode) +
+      (refreshExpiresAt.hashCode);
 
   @override
-  String toString() => 'TokenPairResponse[accessToken=$accessToken, refreshToken=$refreshToken, sessionKey=$sessionKey, accessExpiresAt=$accessExpiresAt, refreshExpiresAt=$refreshExpiresAt]';
+  String toString() =>
+      'TokenPairResponse[accessToken=$accessToken, refreshToken=$refreshToken, sessionKey=$sessionKey, accessExpiresAt=$accessExpiresAt, refreshExpiresAt=$refreshExpiresAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'accessToken'] = this.accessToken;
-      json[r'refreshToken'] = this.refreshToken;
-      json[r'sessionKey'] = this.sessionKey;
-      json[r'accessExpiresAt'] = this.accessExpiresAt;
-      json[r'refreshExpiresAt'] = this.refreshExpiresAt;
+    json[r'accessToken'] = this.accessToken;
+    json[r'refreshToken'] = this.refreshToken;
+    json[r'sessionKey'] = this.sessionKey;
+    json[r'accessExpiresAt'] = this.accessExpiresAt;
+    json[r'refreshExpiresAt'] = this.refreshExpiresAt;
     return json;
   }
 
@@ -73,16 +76,26 @@ class TokenPairResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'accessToken'), 'Required key "TokenPairResponse[accessToken]" is missing from JSON.');
-        assert(json[r'accessToken'] != null, 'Required key "TokenPairResponse[accessToken]" has a null value in JSON.');
-        assert(json.containsKey(r'refreshToken'), 'Required key "TokenPairResponse[refreshToken]" is missing from JSON.');
-        assert(json[r'refreshToken'] != null, 'Required key "TokenPairResponse[refreshToken]" has a null value in JSON.');
-        assert(json.containsKey(r'sessionKey'), 'Required key "TokenPairResponse[sessionKey]" is missing from JSON.');
-        assert(json[r'sessionKey'] != null, 'Required key "TokenPairResponse[sessionKey]" has a null value in JSON.');
-        assert(json.containsKey(r'accessExpiresAt'), 'Required key "TokenPairResponse[accessExpiresAt]" is missing from JSON.');
-        assert(json[r'accessExpiresAt'] != null, 'Required key "TokenPairResponse[accessExpiresAt]" has a null value in JSON.');
-        assert(json.containsKey(r'refreshExpiresAt'), 'Required key "TokenPairResponse[refreshExpiresAt]" is missing from JSON.');
-        assert(json[r'refreshExpiresAt'] != null, 'Required key "TokenPairResponse[refreshExpiresAt]" has a null value in JSON.');
+        assert(json.containsKey(r'accessToken'),
+            'Required key "TokenPairResponse[accessToken]" is missing from JSON.');
+        assert(json[r'accessToken'] != null,
+            'Required key "TokenPairResponse[accessToken]" has a null value in JSON.');
+        assert(json.containsKey(r'refreshToken'),
+            'Required key "TokenPairResponse[refreshToken]" is missing from JSON.');
+        assert(json[r'refreshToken'] != null,
+            'Required key "TokenPairResponse[refreshToken]" has a null value in JSON.');
+        assert(json.containsKey(r'sessionKey'),
+            'Required key "TokenPairResponse[sessionKey]" is missing from JSON.');
+        assert(json[r'sessionKey'] != null,
+            'Required key "TokenPairResponse[sessionKey]" has a null value in JSON.');
+        assert(json.containsKey(r'accessExpiresAt'),
+            'Required key "TokenPairResponse[accessExpiresAt]" is missing from JSON.');
+        assert(json[r'accessExpiresAt'] != null,
+            'Required key "TokenPairResponse[accessExpiresAt]" has a null value in JSON.');
+        assert(json.containsKey(r'refreshExpiresAt'),
+            'Required key "TokenPairResponse[refreshExpiresAt]" is missing from JSON.');
+        assert(json[r'refreshExpiresAt'] != null,
+            'Required key "TokenPairResponse[refreshExpiresAt]" has a null value in JSON.');
         return true;
       }());
 
@@ -97,7 +110,10 @@ class TokenPairResponse {
     return null;
   }
 
-  static List<TokenPairResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<TokenPairResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <TokenPairResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -125,13 +141,19 @@ class TokenPairResponse {
   }
 
   // maps a json object with a list of TokenPairResponse-objects as value to a dart map
-  static Map<String, List<TokenPairResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<TokenPairResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<TokenPairResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = TokenPairResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = TokenPairResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -146,4 +168,3 @@ class TokenPairResponse {
     'refreshExpiresAt',
   };
 }
-

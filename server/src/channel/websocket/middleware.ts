@@ -40,11 +40,7 @@ export function requireAuth(
   return { sessionKey: payload.sessionKey };
 }
 
-export function sendJson(
-  res: ServerResponse,
-  status: number,
-  body: unknown,
-): void {
+export function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const json = JSON.stringify(body);
   res.writeHead(status, {
     "Content-Type": "application/json",
@@ -91,17 +87,11 @@ export async function readJsonObject(
 export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
   if (!enabled) return;
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS",
-  );
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-export function requireBodyString(
-  body: Record<string, unknown>,
-  key: string,
-): string | undefined {
+export function requireBodyString(body: Record<string, unknown>, key: string): string | undefined {
   const val = body[key];
   return typeof val === "string" ? val : undefined;
 }

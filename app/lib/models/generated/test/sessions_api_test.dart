@@ -11,7 +11,6 @@
 import 'package:openapi/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for SessionsApi
 void main() {
   // final instance = SessionsApi();
@@ -37,6 +36,5 @@ void main() {
     test('test listSessions', () async {
       // TODO
     });
-
   });
 }

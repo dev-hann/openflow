@@ -47,7 +47,8 @@ class OpenFlowApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) => AuthCubit(authStorage)..loadAuth().catchError((_) {}),
+            create: (_) =>
+                AuthCubit(authStorage)..loadAuth().catchError((_) {}),
           ),
           BlocProvider(create: (_) => ChatCubit()),
           BlocProvider(create: (_) => SessionsCubit()),

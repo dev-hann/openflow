@@ -55,9 +55,7 @@ class ActiveProviderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      provider.model.isNotEmpty
-                          ? provider.model
-                          : '모델 미선택',
+                      provider.model.isNotEmpty ? provider.model : '모델 미선택',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: provider.model.isNotEmpty
                             ? theme.colorScheme.onSurfaceVariant

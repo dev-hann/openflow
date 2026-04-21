@@ -52,19 +52,22 @@ describe("db-helpers", () => {
       const dbPath = join(TEST_DIR, "test.db");
       const db = openDatabase(dbPath);
       try {
-        const journalMode = db
-          .prepare("PRAGMA journal_mode")
-          .get() as Record<string, unknown>;
+        const journalMode = db.prepare("PRAGMA journal_mode").get() as Record<
+          string,
+          unknown
+        >;
         expect(String(journalMode["journal_mode"])).toBe("wal");
 
-        const foreignKeys = db
-          .prepare("PRAGMA foreign_keys")
-          .get() as Record<string, unknown>;
+        const foreignKeys = db.prepare("PRAGMA foreign_keys").get() as Record<
+          string,
+          unknown
+        >;
         expect(Number(foreignKeys["foreign_keys"])).toBe(1);
 
-        const busyTimeout = db
-          .prepare("PRAGMA busy_timeout")
-          .get() as Record<string, unknown>;
+        const busyTimeout = db.prepare("PRAGMA busy_timeout").get() as Record<
+          string,
+          unknown
+        >;
         expect(Number(busyTimeout["timeout"])).toBe(5000);
       } finally {
         db.close();

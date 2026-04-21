@@ -5,18 +5,18 @@ import type { AuthService } from "./auth.js";
 import type { MemoryStore, ProviderStore } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
-import {
-  sendJson,
-  setCorsHeaders,
-  handleOptions,
-} from "./middleware.js";
+import { sendJson, setCorsHeaders, handleOptions } from "./middleware.js";
 import { createAuthRoutes } from "./auth-routes.js";
 import { createProviderRoutes } from "./provider-routes.js";
 import { createSessionRoutes } from "./session-routes.js";
 
 const log = createLogger("ws/routes");
 
-export type RouteHandler = (req: IncomingMessage, res: ServerResponse, ctx: { path: string; clientIp: string }) => Promise<void> | void;
+export type RouteHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  ctx: { path: string; clientIp: string },
+) => Promise<void> | void;
 
 export interface Route {
   match: (path: string, method: string) => boolean;
@@ -41,23 +41,23 @@ export interface RoutesDeps {
 }
 
 export function createRoutes(deps: RoutesDeps) {
-  const { authService, memoryStore, providerStore, providerPool, pushTokenStore, corsEnabled } = deps;
+  const { authService, memoryStore, providerStore, providerPool, pushTokenStore, corsEnabled } =
+    deps;
 
   const authRoutes = createAuthRoutes({ authService });
   const sessionRoutes = createSessionRoutes({ authService, memoryStore, pushTokenStore });
   const providerRoutes = createProviderRoutes({ authService, providerStore, providerPool });
 
-  const routes: Route[] = [
-    ...authRoutes,
-    ...sessionRoutes,
-    ...providerRoutes,
-  ];
+  const routes: Route[] = [...authRoutes, ...sessionRoutes, ...providerRoutes];
 
   async function dispatchRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = url.pathname;
     const method = req.method ?? "GET";
-    const clientIp = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? "unknown";
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ??
+      req.socket.remoteAddress ??
+      "unknown";
 
     for (const route of routes) {
       if (route.match(path, method)) {
@@ -68,10 +68,7 @@ export function createRoutes(deps: RoutesDeps) {
     sendJson(res, 404, { error: "not_found" });
   }
 
-  return async function handleRequest(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
+  return async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     setCorsHeaders(res, corsEnabled);
     if (handleOptions(req, res, corsEnabled)) return;
 

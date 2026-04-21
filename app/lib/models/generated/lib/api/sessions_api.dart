@@ -10,9 +10,9 @@
 
 part of openapi.api;
 
-
 class SessionsApi {
-  SessionsApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  SessionsApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -23,7 +23,9 @@ class SessionsApi {
   /// Parameters:
   ///
   /// * [CreateSessionRequest] createSessionRequest:
-  Future<Response> createSessionWithHttpInfo({ CreateSessionRequest? createSessionRequest, }) async {
+  Future<Response> createSessionWithHttpInfo({
+    CreateSessionRequest? createSessionRequest,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/api/sessions';
 
@@ -35,7 +37,6 @@ class SessionsApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -53,17 +54,24 @@ class SessionsApi {
   /// Parameters:
   ///
   /// * [CreateSessionRequest] createSessionRequest:
-  Future<CreateSessionResponse?> createSession({ CreateSessionRequest? createSessionRequest, }) async {
-    final response = await createSessionWithHttpInfo( createSessionRequest: createSessionRequest, );
+  Future<CreateSessionResponse?> createSession({
+    CreateSessionRequest? createSessionRequest,
+  }) async {
+    final response = await createSessionWithHttpInfo(
+      createSessionRequest: createSessionRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'CreateSessionResponse',) as CreateSessionResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'CreateSessionResponse',
+      ) as CreateSessionResponse;
     }
     return null;
   }
@@ -75,10 +83,12 @@ class SessionsApi {
   /// Parameters:
   ///
   /// * [String] sessionId (required):
-  Future<Response> deleteSessionWithHttpInfo(String sessionId,) async {
+  Future<Response> deleteSessionWithHttpInfo(
+    String sessionId,
+  ) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/sessions/{sessionId}'
-      .replaceAll('{sessionId}', sessionId);
+    final path =
+        r'/api/sessions/{sessionId}'.replaceAll('{sessionId}', sessionId);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -88,7 +98,6 @@ class SessionsApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -106,17 +115,24 @@ class SessionsApi {
   /// Parameters:
   ///
   /// * [String] sessionId (required):
-  Future<OkResponse?> deleteSession(String sessionId,) async {
-    final response = await deleteSessionWithHttpInfo(sessionId,);
+  Future<OkResponse?> deleteSession(
+    String sessionId,
+  ) async {
+    final response = await deleteSessionWithHttpInfo(
+      sessionId,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'OkResponse',) as OkResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'OkResponse',
+      ) as OkResponse;
     }
     return null;
   }
@@ -132,10 +148,14 @@ class SessionsApi {
   /// * [int] limit:
   ///
   /// * [int] offset:
-  Future<Response> getSessionMessagesWithHttpInfo(String sessionId, { int? limit, int? offset, }) async {
+  Future<Response> getSessionMessagesWithHttpInfo(
+    String sessionId, {
+    int? limit,
+    int? offset,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/api/sessions/{sessionId}/messages'
-      .replaceAll('{sessionId}', sessionId);
+        .replaceAll('{sessionId}', sessionId);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -152,7 +172,6 @@ class SessionsApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -174,17 +193,28 @@ class SessionsApi {
   /// * [int] limit:
   ///
   /// * [int] offset:
-  Future<MessageListResponse?> getSessionMessages(String sessionId, { int? limit, int? offset, }) async {
-    final response = await getSessionMessagesWithHttpInfo(sessionId,  limit: limit, offset: offset, );
+  Future<MessageListResponse?> getSessionMessages(
+    String sessionId, {
+    int? limit,
+    int? offset,
+  }) async {
+    final response = await getSessionMessagesWithHttpInfo(
+      sessionId,
+      limit: limit,
+      offset: offset,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'MessageListResponse',) as MessageListResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'MessageListResponse',
+      ) as MessageListResponse;
     }
     return null;
   }
@@ -204,7 +234,6 @@ class SessionsApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -226,9 +255,12 @@ class SessionsApi {
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'SessionListResponse',) as SessionListResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'SessionListResponse',
+      ) as SessionListResponse;
     }
     return null;
   }

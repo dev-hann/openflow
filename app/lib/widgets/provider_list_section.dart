@@ -72,9 +72,7 @@ class ProviderListSection extends StatelessWidget {
             provider: provider,
             isActive: isActive,
             isSwitching: isSwitching,
-            onTap: isActive
-                ? null
-                : () => onSwitchProvider(provider.id),
+            onTap: isActive ? null : () => onSwitchProvider(provider.id),
             onModels: isActive ? () => onShowModels(provider) : null,
             onEdit: () => onEdit(provider),
             onDelete: isActive ? null : () => onDelete(provider.id),

@@ -59,10 +59,15 @@ function decodeAccessToken(token: string): AccessTokenPayload | null {
     const encoded = token.slice(3, dotIdx);
     const sig = token.slice(dotIdx + 1);
     const json = Buffer.from(encoded, "base64url").toString("utf-8");
-    const expectedSig = createHash("sha256").update(SIGNING_KEY).update(json).digest("hex").slice(0, 32);
+    const expectedSig = createHash("sha256")
+      .update(SIGNING_KEY)
+      .update(json)
+      .digest("hex")
+      .slice(0, 32);
     if (sig !== expectedSig) return null;
     const payload = JSON.parse(json) as AccessTokenPayload;
-    if (typeof payload.sessionKey !== "string" || typeof payload.expiresAt !== "number") return null;
+    if (typeof payload.sessionKey !== "string" || typeof payload.expiresAt !== "number")
+      return null;
     return payload;
   } catch {
     log.debug("failed to decode access token");

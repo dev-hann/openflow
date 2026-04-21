@@ -20,11 +20,7 @@ function buildSearchSnippet(content: string, query: string): string {
   const idx = content.toLowerCase().indexOf(query.toLowerCase());
   const start = Math.max(0, idx - 40);
   const end = Math.min(content.length, idx + query.length + 40);
-  return (
-    (start > 0 ? "..." : "") +
-    content.slice(start, end) +
-    (end < content.length ? "..." : "")
-  );
+  return (start > 0 ? "..." : "") + content.slice(start, end) + (end < content.length ? "..." : "");
 }
 
 export function rowToMessage(row: Record<string, unknown>): ChatMessage {
@@ -59,10 +55,7 @@ export function rowToApiMessage(row: Record<string, unknown>) {
   return { ...base, createdAt: row.created_at as number };
 }
 
-export function rowToSearchResult(
-  row: Record<string, unknown>,
-  query: string,
-) {
+export function rowToSearchResult(row: Record<string, unknown>, query: string) {
   return {
     sessionId: row.session_id as string,
     sessionTitle: row.session_title as string,

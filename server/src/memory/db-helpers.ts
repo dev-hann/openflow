@@ -56,11 +56,7 @@ export function wrapDb<T>(label: string, fn: () => T): T {
     });
   } catch (err: unknown) {
     log.error({ label, err }, "database operation failed");
-    throw new OpenFlowError(
-      `Database operation failed: ${label}`,
-      "DB_ERROR",
-      err,
-    );
+    throw new OpenFlowError(`Database operation failed: ${label}`, "DB_ERROR", err);
   }
 }
 
@@ -74,11 +70,7 @@ export function openDatabase(dbPath: string): DatabaseSync {
     return db;
   } catch (err: unknown) {
     log.error({ dbPath, err }, "failed to open database");
-    throw new OpenFlowError(
-      `Failed to open database: ${dbPath}`,
-      "DB_ERROR",
-      err,
-    );
+    throw new OpenFlowError(`Failed to open database: ${dbPath}`, "DB_ERROR", err);
   }
 }
 
@@ -104,10 +96,6 @@ export function runMigrations(db: DatabaseSync): void {
   } catch (err: unknown) {
     db.exec("ROLLBACK");
     log.error({ err }, "database migration failed");
-    throw new OpenFlowError(
-      "Database migration failed",
-      "DB_MIGRATION_FAILED",
-      err,
-    );
+    throw new OpenFlowError("Database migration failed", "DB_MIGRATION_FAILED", err);
   }
 }

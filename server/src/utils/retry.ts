@@ -13,10 +13,7 @@ export function sleep(ms: number): Promise<void> {
   });
 }
 
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options?: RetryOptions,
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
   const delays = options?.delays ?? DEFAULT_DELAYS;
   const maxAttempts = options?.maxAttempts ?? delays.length + 1;
   const shouldRetry = options?.shouldRetry ?? (() => true);
@@ -65,10 +62,7 @@ export function isSqliteBusy(err: unknown): boolean {
 
 const SYNC_RETRY_DELAYS = [100, 200, 400];
 
-export function withSyncRetry<T>(
-  fn: () => T,
-  shouldRetry: (err: unknown) => boolean,
-): T {
+export function withSyncRetry<T>(fn: () => T, shouldRetry: (err: unknown) => boolean): T {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= SYNC_RETRY_DELAYS.length; attempt++) {
     try {

@@ -10,9 +10,9 @@
 
 part of openapi.api;
 
-
 class ProvidersApi {
-  ProvidersApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  ProvidersApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -23,7 +23,9 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [CreateProviderRequest] createProviderRequest (required):
-  Future<Response> createProviderWithHttpInfo(CreateProviderRequest createProviderRequest,) async {
+  Future<Response> createProviderWithHttpInfo(
+    CreateProviderRequest createProviderRequest,
+  ) async {
     // ignore: prefer_const_declarations
     final path = r'/api/providers';
 
@@ -35,7 +37,6 @@ class ProvidersApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -53,17 +54,24 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [CreateProviderRequest] createProviderRequest (required):
-  Future<ProviderResponse?> createProvider(CreateProviderRequest createProviderRequest,) async {
-    final response = await createProviderWithHttpInfo(createProviderRequest,);
+  Future<ProviderResponse?> createProvider(
+    CreateProviderRequest createProviderRequest,
+  ) async {
+    final response = await createProviderWithHttpInfo(
+      createProviderRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ProviderResponse',) as ProviderResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'ProviderResponse',
+      ) as ProviderResponse;
     }
     return null;
   }
@@ -75,10 +83,12 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [String] providerId (required):
-  Future<Response> deleteProviderWithHttpInfo(String providerId,) async {
+  Future<Response> deleteProviderWithHttpInfo(
+    String providerId,
+  ) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/providers/{providerId}'
-      .replaceAll('{providerId}', providerId);
+    final path =
+        r'/api/providers/{providerId}'.replaceAll('{providerId}', providerId);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -88,7 +98,6 @@ class ProvidersApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -106,17 +115,24 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [String] providerId (required):
-  Future<OkResponse?> deleteProvider(String providerId,) async {
-    final response = await deleteProviderWithHttpInfo(providerId,);
+  Future<OkResponse?> deleteProvider(
+    String providerId,
+  ) async {
+    final response = await deleteProviderWithHttpInfo(
+      providerId,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'OkResponse',) as OkResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'OkResponse',
+      ) as OkResponse;
     }
     return null;
   }
@@ -128,10 +144,12 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [String] providerId (required):
-  Future<Response> fetchProviderModelsWithHttpInfo(String providerId,) async {
+  Future<Response> fetchProviderModelsWithHttpInfo(
+    String providerId,
+  ) async {
     // ignore: prefer_const_declarations
     final path = r'/api/providers/{providerId}/models'
-      .replaceAll('{providerId}', providerId);
+        .replaceAll('{providerId}', providerId);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -141,7 +159,6 @@ class ProvidersApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -159,17 +176,24 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [String] providerId (required):
-  Future<ProviderModelsResponse?> fetchProviderModels(String providerId,) async {
-    final response = await fetchProviderModelsWithHttpInfo(providerId,);
+  Future<ProviderModelsResponse?> fetchProviderModels(
+    String providerId,
+  ) async {
+    final response = await fetchProviderModelsWithHttpInfo(
+      providerId,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ProviderModelsResponse',) as ProviderModelsResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'ProviderModelsResponse',
+      ) as ProviderModelsResponse;
     }
     return null;
   }
@@ -189,7 +213,6 @@ class ProvidersApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -211,9 +234,12 @@ class ProvidersApi {
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ProviderListResponse',) as ProviderListResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'ProviderListResponse',
+      ) as ProviderListResponse;
     }
     return null;
   }
@@ -225,7 +251,9 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [SwitchProviderRequest] switchProviderRequest (required):
-  Future<Response> switchProviderWithHttpInfo(SwitchProviderRequest switchProviderRequest,) async {
+  Future<Response> switchProviderWithHttpInfo(
+    SwitchProviderRequest switchProviderRequest,
+  ) async {
     // ignore: prefer_const_declarations
     final path = r'/api/providers/current';
 
@@ -238,7 +266,6 @@ class ProvidersApi {
 
     const contentTypes = <String>['application/json'];
 
-
     return apiClient.invokeAPI(
       path,
       'PUT',
@@ -255,17 +282,24 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [SwitchProviderRequest] switchProviderRequest (required):
-  Future<SwitchProviderResponse?> switchProvider(SwitchProviderRequest switchProviderRequest,) async {
-    final response = await switchProviderWithHttpInfo(switchProviderRequest,);
+  Future<SwitchProviderResponse?> switchProvider(
+    SwitchProviderRequest switchProviderRequest,
+  ) async {
+    final response = await switchProviderWithHttpInfo(
+      switchProviderRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'SwitchProviderResponse',) as SwitchProviderResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'SwitchProviderResponse',
+      ) as SwitchProviderResponse;
     }
     return null;
   }
@@ -279,10 +313,13 @@ class ProvidersApi {
   /// * [String] providerId (required):
   ///
   /// * [UpdateProviderRequest] updateProviderRequest (required):
-  Future<Response> updateProviderWithHttpInfo(String providerId, UpdateProviderRequest updateProviderRequest,) async {
+  Future<Response> updateProviderWithHttpInfo(
+    String providerId,
+    UpdateProviderRequest updateProviderRequest,
+  ) async {
     // ignore: prefer_const_declarations
-    final path = r'/api/providers/{providerId}'
-      .replaceAll('{providerId}', providerId);
+    final path =
+        r'/api/providers/{providerId}'.replaceAll('{providerId}', providerId);
 
     // ignore: prefer_final_locals
     Object? postBody = updateProviderRequest;
@@ -292,7 +329,6 @@ class ProvidersApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -312,17 +348,26 @@ class ProvidersApi {
   /// * [String] providerId (required):
   ///
   /// * [UpdateProviderRequest] updateProviderRequest (required):
-  Future<ProviderResponse?> updateProvider(String providerId, UpdateProviderRequest updateProviderRequest,) async {
-    final response = await updateProviderWithHttpInfo(providerId, updateProviderRequest,);
+  Future<ProviderResponse?> updateProvider(
+    String providerId,
+    UpdateProviderRequest updateProviderRequest,
+  ) async {
+    final response = await updateProviderWithHttpInfo(
+      providerId,
+      updateProviderRequest,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'ProviderResponse',) as ProviderResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'ProviderResponse',
+      ) as ProviderResponse;
     }
     return null;
   }
@@ -334,10 +379,12 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [String] providerId (required):
-  Future<Response> verifyProviderWithHttpInfo(String providerId,) async {
+  Future<Response> verifyProviderWithHttpInfo(
+    String providerId,
+  ) async {
     // ignore: prefer_const_declarations
     final path = r'/api/providers/{providerId}/verify'
-      .replaceAll('{providerId}', providerId);
+        .replaceAll('{providerId}', providerId);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -347,7 +394,6 @@ class ProvidersApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -365,17 +411,24 @@ class ProvidersApi {
   /// Parameters:
   ///
   /// * [String] providerId (required):
-  Future<VerifyProviderResponse?> verifyProvider(String providerId,) async {
-    final response = await verifyProviderWithHttpInfo(providerId,);
+  Future<VerifyProviderResponse?> verifyProvider(
+    String providerId,
+  ) async {
+    final response = await verifyProviderWithHttpInfo(
+      providerId,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'VerifyProviderResponse',) as VerifyProviderResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'VerifyProviderResponse',
+      ) as VerifyProviderResponse;
     }
     return null;
   }

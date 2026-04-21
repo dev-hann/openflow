@@ -19,20 +19,21 @@ class PairInitResponse {
   int expiresInMs;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is PairInitResponse &&
-    other.expiresInMs == expiresInMs;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PairInitResponse && other.expiresInMs == expiresInMs;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (expiresInMs.hashCode);
+      // ignore: unnecessary_parenthesis
+      (expiresInMs.hashCode);
 
   @override
   String toString() => 'PairInitResponse[expiresInMs=$expiresInMs]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'expiresInMs'] = this.expiresInMs;
+    json[r'expiresInMs'] = this.expiresInMs;
     return json;
   }
 
@@ -47,8 +48,10 @@ class PairInitResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'expiresInMs'), 'Required key "PairInitResponse[expiresInMs]" is missing from JSON.');
-        assert(json[r'expiresInMs'] != null, 'Required key "PairInitResponse[expiresInMs]" has a null value in JSON.');
+        assert(json.containsKey(r'expiresInMs'),
+            'Required key "PairInitResponse[expiresInMs]" is missing from JSON.');
+        assert(json[r'expiresInMs'] != null,
+            'Required key "PairInitResponse[expiresInMs]" has a null value in JSON.');
         return true;
       }());
 
@@ -59,7 +62,10 @@ class PairInitResponse {
     return null;
   }
 
-  static List<PairInitResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<PairInitResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <PairInitResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -87,13 +93,19 @@ class PairInitResponse {
   }
 
   // maps a json object with a list of PairInitResponse-objects as value to a dart map
-  static Map<String, List<PairInitResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<PairInitResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<PairInitResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = PairInitResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = PairInitResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -104,4 +116,3 @@ class PairInitResponse {
     'expiresInMs',
   };
 }
-

@@ -19,20 +19,21 @@ class SwitchProviderResponse {
   String providerId;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is SwitchProviderResponse &&
-    other.providerId == providerId;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SwitchProviderResponse && other.providerId == providerId;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (providerId.hashCode);
+      // ignore: unnecessary_parenthesis
+      (providerId.hashCode);
 
   @override
   String toString() => 'SwitchProviderResponse[providerId=$providerId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'providerId'] = this.providerId;
+    json[r'providerId'] = this.providerId;
     return json;
   }
 
@@ -47,8 +48,10 @@ class SwitchProviderResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'providerId'), 'Required key "SwitchProviderResponse[providerId]" is missing from JSON.');
-        assert(json[r'providerId'] != null, 'Required key "SwitchProviderResponse[providerId]" has a null value in JSON.');
+        assert(json.containsKey(r'providerId'),
+            'Required key "SwitchProviderResponse[providerId]" is missing from JSON.');
+        assert(json[r'providerId'] != null,
+            'Required key "SwitchProviderResponse[providerId]" has a null value in JSON.');
         return true;
       }());
 
@@ -59,7 +62,10 @@ class SwitchProviderResponse {
     return null;
   }
 
-  static List<SwitchProviderResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<SwitchProviderResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <SwitchProviderResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -87,13 +93,19 @@ class SwitchProviderResponse {
   }
 
   // maps a json object with a list of SwitchProviderResponse-objects as value to a dart map
-  static Map<String, List<SwitchProviderResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<SwitchProviderResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<SwitchProviderResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = SwitchProviderResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = SwitchProviderResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -104,4 +116,3 @@ class SwitchProviderResponse {
     'providerId',
   };
 }
-

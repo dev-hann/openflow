@@ -220,7 +220,9 @@ describe("createToolExecutor", () => {
       };
       executor.updateSender(newSender);
 
-      const updatedNames = executor.getDefinitions().map((d) => d.function.name);
+      const updatedNames = executor
+        .getDefinitions()
+        .map((d) => d.function.name);
       expect(updatedNames).toContain("send_message");
       expect(updatedNames).toContain("send_image");
     });

@@ -41,7 +41,11 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
   const { authService } = deps;
   const { checkRateLimit } = createRateLimiter();
 
-  async function handlePairInit(_req: IncomingMessage, res: ServerResponse, clientIp: string): Promise<void> {
+  async function handlePairInit(
+    _req: IncomingMessage,
+    res: ServerResponse,
+    clientIp: string,
+  ): Promise<void> {
     if (!checkRateLimit(`pair_init:${clientIp}`)) {
       sendJson(res, 429, { error: "rate_limited" });
       return;
@@ -50,7 +54,11 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     sendJson(res, 200, { expiresInMs: 300_000 });
   }
 
-  async function handlePairVerify(req: IncomingMessage, res: ServerResponse, clientIp: string): Promise<void> {
+  async function handlePairVerify(
+    req: IncomingMessage,
+    res: ServerResponse,
+    clientIp: string,
+  ): Promise<void> {
     if (!checkRateLimit(`pair_verify:${clientIp}`)) {
       sendJson(res, 429, { error: "rate_limited" });
       return;
@@ -71,7 +79,11 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     sendJson(res, 200, tokens);
   }
 
-  async function handleRefresh(req: IncomingMessage, res: ServerResponse, clientIp: string): Promise<void> {
+  async function handleRefresh(
+    req: IncomingMessage,
+    res: ServerResponse,
+    clientIp: string,
+  ): Promise<void> {
     if (!checkRateLimit(`refresh:${clientIp}`)) {
       sendJson(res, 429, { error: "rate_limited" });
       return;
@@ -106,7 +118,9 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
 
   return [
     route("/api/auth/pair/init", "POST", (req, res, ctx) => handlePairInit(req, res, ctx.clientIp)),
-    route("/api/auth/pair/verify", "POST", (req, res, ctx) => handlePairVerify(req, res, ctx.clientIp)),
+    route("/api/auth/pair/verify", "POST", (req, res, ctx) =>
+      handlePairVerify(req, res, ctx.clientIp),
+    ),
     route("/api/auth/refresh", "POST", (req, res, ctx) => handleRefresh(req, res, ctx.clientIp)),
     route("/api/auth/unpair", "DELETE", (req, res) => handleUnpair(req, res)),
     route("/api/status", "GET", (req, res) => handleStatus(req, res)),

@@ -50,9 +50,8 @@ class ApiClient {
       };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response = await _client
-        .get(_uri(path), headers: _headers())
-        .timeout(_timeout);
+    final response =
+        await _client.get(_uri(path), headers: _headers()).timeout(_timeout);
     return _parse(response);
   }
 
@@ -77,16 +76,16 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> _delete(String path) async {
-    final response = await _client
-        .delete(_uri(path), headers: _headers())
-        .timeout(_timeout);
+    final response =
+        await _client.delete(_uri(path), headers: _headers()).timeout(_timeout);
     return _parse(response);
   }
 
   Map<String, dynamic> _parse(http.Response response) {
     if (response.statusCode >= 400) {
-      final message =
-          response.body.length > 200 ? response.body.substring(0, 200) : response.body;
+      final message = response.body.length > 200
+          ? response.body.substring(0, 200)
+          : response.body;
       throw ApiException(response.statusCode, message);
     }
     try {
@@ -147,9 +146,8 @@ class ApiClient {
     final uri = _uri('/api/sessions/$sessionId/messages').replace(
       queryParameters: {'limit': '$limit', 'offset': '$offset'},
     );
-    final response = await _client
-        .get(uri, headers: _headers())
-        .timeout(_timeout);
+    final response =
+        await _client.get(uri, headers: _headers()).timeout(_timeout);
     final json = _parse(response);
     final list = json['messages'] as List<dynamic>;
     final messages = <ChatMessage>[];

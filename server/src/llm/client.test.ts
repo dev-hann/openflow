@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createLlmClient, type LlmConfig } from "./client.js";
 
-function mockFetch(response: { ok: boolean; status?: number; json?: () => Promise<unknown>; text?: () => Promise<string> }) {
+function mockFetch(response: {
+  ok: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+}) {
   return vi.fn().mockResolvedValue({
     ok: response.ok,
     status: response.status ?? 200,
@@ -20,12 +25,16 @@ const baseConfig: LlmConfig = {
 
 describe("createLlmClient", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", mockFetch({
-      ok: true,
-      json: () => Promise.resolve({
-        choices: [{ message: { role: "assistant", content: "Hello!" } }],
+    vi.stubGlobal(
+      "fetch",
+      mockFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            choices: [{ message: { role: "assistant", content: "Hello!" } }],
+          }),
       }),
-    }));
+    );
   });
 
   afterEach(() => {
@@ -48,9 +57,13 @@ describe("createLlmClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledOnce();
-      const [url, opts] = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]!;
+      const [url, opts] = (fetch as ReturnType<typeof mockFetch>).mock
+        .calls[0]!;
       expect(url).toBe("https://api.example.com/v1/chat/completions");
-      expect((opts as RequestInit).headers).toHaveProperty("Authorization", "Bearer test-key");
+      expect((opts as RequestInit).headers).toHaveProperty(
+        "Authorization",
+        "Bearer test-key",
+      );
     });
 
     it("should include model and params in body", async () => {
@@ -59,7 +72,8 @@ describe("createLlmClient", () => {
         messages: [{ role: "user", content: "Hi" }],
       });
 
-      const opts = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]![1] as RequestInit;
+      const opts = (fetch as ReturnType<typeof mockFetch>).mock
+        .calls[0]![1] as RequestInit;
       const body = JSON.parse(opts.body as string) as Record<string, unknown>;
       expect(body.model).toBe("test-model");
       expect(body.max_tokens).toBe(1024);
@@ -82,21 +96,32 @@ describe("createLlmClient", () => {
 
   describe("chat() with tool_calls response", () => {
     it("should return tool_calls response", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{
-            message: {
-              role: "assistant",
-              content: null,
-              tool_calls: [{
-                id: "call_1",
-                function: { name: "shell", arguments: '{"command":"ls"}' },
-              }],
-            },
-          }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [
+                {
+                  message: {
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [
+                      {
+                        id: "call_1",
+                        function: {
+                          name: "shell",
+                          arguments: '{"command":"ls"}',
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            }),
         }),
-      }));
+      );
 
       const client = createLlmClient(baseConfig);
       const result = await client.chat({
@@ -112,11 +137,14 @@ describe("createLlmClient", () => {
 
   describe("error handling", () => {
     it("should throw on non-ok response after retries", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: false,
-        status: 401,
-        text: () => Promise.resolve("Unauthorized"),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: false,
+          status: 401,
+          text: () => Promise.resolve("Unauthorized"),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -125,10 +153,13 @@ describe("createLlmClient", () => {
     });
 
     it("should throw on empty choices", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({ choices: [] }),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () => Promise.resolve({ choices: [] }),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -137,10 +168,13 @@ describe("createLlmClient", () => {
     });
 
     it("should throw on null response", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve(null),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () => Promise.resolve(null),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -149,10 +183,13 @@ describe("createLlmClient", () => {
     });
 
     it("should throw on missing message in choice", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({ choices: [{ message: null }] }),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () => Promise.resolve({ choices: [{ message: null }] }),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -161,12 +198,16 @@ describe("createLlmClient", () => {
     });
 
     it("should return empty string on null content in complete", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{ message: { role: "assistant", content: null } }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [{ message: { role: "assistant", content: null } }],
+            }),
         }),
-      }));
+      );
 
       const client = createLlmClient(baseConfig);
       const result = await client.complete({
@@ -178,12 +219,16 @@ describe("createLlmClient", () => {
 
   describe("retry behavior", () => {
     it("should throw on abort signal", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{ message: { role: "assistant", content: "hi" } }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [{ message: { role: "assistant", content: "hi" } }],
+            }),
         }),
-      }));
+      );
 
       const controller = new AbortController();
       controller.abort();
@@ -198,11 +243,14 @@ describe("createLlmClient", () => {
     });
 
     it("should not retry on 4xx client error", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: false,
-        status: 400,
-        text: () => Promise.resolve("Bad Request"),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: false,
+          status: 400,
+          text: () => Promise.resolve("Bad Request"),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -225,11 +273,14 @@ describe("createLlmClient", () => {
 
   describe("server error retry", () => {
     it("should retry on 5xx and eventually fail", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: false,
-        status: 500,
-        text: () => Promise.resolve("Internal Server Error"),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve("Internal Server Error"),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -258,10 +309,13 @@ describe("createLlmClient", () => {
 
   describe("complete() edge cases", () => {
     it("should return empty string for empty choices", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({ choices: [] }),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () => Promise.resolve({ choices: [] }),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       const result = await client.complete({
@@ -271,10 +325,13 @@ describe("createLlmClient", () => {
     });
 
     it("should return empty string for null message in choice", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({ choices: [{ message: null }] }),
-      }));
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () => Promise.resolve({ choices: [{ message: null }] }),
+        }),
+      );
 
       const client = createLlmClient(baseConfig);
       const result = await client.complete({
@@ -284,12 +341,16 @@ describe("createLlmClient", () => {
     });
 
     it("should return empty string for non-string content", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{ message: { role: "assistant", content: 123 } }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [{ message: { role: "assistant", content: 123 } }],
+            }),
         }),
-      }));
+      );
 
       const client = createLlmClient(baseConfig);
       const result = await client.complete({
@@ -301,18 +362,24 @@ describe("createLlmClient", () => {
 
   describe("chat() tool_calls validation", () => {
     it("should throw on invalid tool_call format (non-object)", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{
-            message: {
-              role: "assistant",
-              content: null,
-              tool_calls: ["not-an-object"],
-            },
-          }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [
+                {
+                  message: {
+                    role: "assistant",
+                    content: null,
+                    tool_calls: ["not-an-object"],
+                  },
+                },
+              ],
+            }),
         }),
-      }));
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -321,18 +388,24 @@ describe("createLlmClient", () => {
     });
 
     it("should throw on missing function in tool_call", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{
-            message: {
-              role: "assistant",
-              content: null,
-              tool_calls: [{ id: "call_1" }],
-            },
-          }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [
+                {
+                  message: {
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [{ id: "call_1" }],
+                  },
+                },
+              ],
+            }),
         }),
-      }));
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -341,18 +414,24 @@ describe("createLlmClient", () => {
     });
 
     it("should throw on missing required fields in tool_call", async () => {
-      vi.stubGlobal("fetch", mockFetch({
-        ok: true,
-        json: () => Promise.resolve({
-          choices: [{
-            message: {
-              role: "assistant",
-              content: null,
-              tool_calls: [{ id: 123, function: { name: "shell" } }],
-            },
-          }],
+      vi.stubGlobal(
+        "fetch",
+        mockFetch({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              choices: [
+                {
+                  message: {
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [{ id: 123, function: { name: "shell" } }],
+                  },
+                },
+              ],
+            }),
         }),
-      }));
+      );
 
       const client = createLlmClient(baseConfig);
       await expect(
@@ -370,16 +449,19 @@ describe("createLlmClient", () => {
           ok: true,
           status: 200,
           body: null,
-          json: () => Promise.resolve({
-            choices: [{ message: { role: "assistant", content: "Hello!" } }],
-          }),
+          json: () =>
+            Promise.resolve({
+              choices: [{ message: { role: "assistant", content: "Hello!" } }],
+            }),
         }),
       );
 
       const client = createLlmClient(baseConfig);
       const result = await client.chat({
         messages: [{ role: "user", content: "Hi" }],
-        onToken: (token) => { tokens.push(token); },
+        onToken: (token) => {
+          tokens.push(token);
+        },
       });
       expect(result.type).toBe("text");
     });
@@ -391,14 +473,25 @@ describe("createLlmClient", () => {
       await client.chat({
         messages: [{ role: "user", content: "Hi" }],
         toolDefinitions: [
-          { type: "function", function: { name: "shell", description: "Run command", parameters: { type: "object", properties: {} } } },
+          {
+            type: "function",
+            function: {
+              name: "shell",
+              description: "Run command",
+              parameters: { type: "object", properties: {} },
+            },
+          },
         ],
       });
 
-      const opts = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]![1] as RequestInit;
+      const opts = (fetch as ReturnType<typeof mockFetch>).mock
+        .calls[0]![1] as RequestInit;
       const body = JSON.parse(opts.body as string) as Record<string, unknown>;
       expect(body.tools).toBeDefined();
-      const tools = body.tools as Array<{ type: string; function: { name: string } }>;
+      const tools = body.tools as Array<{
+        type: string;
+        function: { name: string };
+      }>;
       expect(tools[0]!.function.name).toBe("shell");
     });
   });

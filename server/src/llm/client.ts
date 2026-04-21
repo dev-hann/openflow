@@ -34,10 +34,17 @@ function parseToolCalls(raw: unknown[]): ToolCall[] {
     const t = tc as Record<string, unknown>;
     const fn = t.function;
     if (typeof fn !== "object" || fn === null) {
-      throw new OpenFlowError("Invalid tool_call.function format in LLM response", "LLM_STREAM_ERROR");
+      throw new OpenFlowError(
+        "Invalid tool_call.function format in LLM response",
+        "LLM_STREAM_ERROR",
+      );
     }
     const fnObj = fn as Record<string, unknown>;
-    if (typeof t.id !== "string" || typeof fnObj.name !== "string" || typeof fnObj.arguments !== "string") {
+    if (
+      typeof t.id !== "string" ||
+      typeof fnObj.name !== "string" ||
+      typeof fnObj.arguments !== "string"
+    ) {
       throw new OpenFlowError("Missing required fields in tool_call", "LLM_STREAM_ERROR");
     }
     return {
@@ -93,7 +100,10 @@ async function sendSingleAttempt(
       const text = await response.text();
       if (response.status >= 500) return { __retry: true, status: response.status, body: text };
       const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
-      throw new OpenFlowError(`LLM API error ${response.status}: ${safeText}`, "LLM_REQUEST_FAILED");
+      throw new OpenFlowError(
+        `LLM API error ${response.status}: ${safeText}`,
+        "LLM_REQUEST_FAILED",
+      );
     }
 
     if (onToken && response.body) {
@@ -104,7 +114,11 @@ async function sendSingleAttempt(
         return result;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        throw new OpenFlowError(`Stream error after partial delivery: ${msg}`, "LLM_STREAM_ERROR", err);
+        throw new OpenFlowError(
+          `Stream error after partial delivery: ${msg}`,
+          "LLM_STREAM_ERROR",
+          err,
+        );
       }
     }
 
@@ -152,7 +166,13 @@ async function sendRequest(
 
     const result = await sendSingleAttempt(url, headers, payload, config, onToken, signal);
 
-    const retryMarker = result as { __retry?: boolean; status?: number; body?: string; errorMessage?: string; cause?: unknown } | null;
+    const retryMarker = result as {
+      __retry?: boolean;
+      status?: number;
+      body?: string;
+      errorMessage?: string;
+      cause?: unknown;
+    } | null;
     if (!retryMarker?.__retry) return result;
 
     if (attempt < RETRY_DELAYS.length) {
@@ -167,10 +187,20 @@ async function sendRequest(
     }
 
     if (retryMarker.status) {
-      const safeText = (retryMarker.body ?? "").length > 200 ? (retryMarker.body ?? "").slice(0, 200) + "..." : retryMarker.body ?? "";
-      throw new OpenFlowError(`LLM API error ${retryMarker.status}: ${safeText}`, "LLM_REQUEST_FAILED");
+      const safeText =
+        (retryMarker.body ?? "").length > 200
+          ? (retryMarker.body ?? "").slice(0, 200) + "..."
+          : (retryMarker.body ?? "");
+      throw new OpenFlowError(
+        `LLM API error ${retryMarker.status}: ${safeText}`,
+        "LLM_REQUEST_FAILED",
+      );
     }
-    throw new OpenFlowError(`LLM request failed: ${retryMarker.errorMessage}`, "LLM_REQUEST_FAILED", retryMarker.cause);
+    throw new OpenFlowError(
+      `LLM request failed: ${retryMarker.errorMessage}`,
+      "LLM_REQUEST_FAILED",
+      retryMarker.cause,
+    );
   }
 
   throw new OpenFlowError("Max retries exceeded", "LLM_REQUEST_FAILED");
@@ -221,7 +251,8 @@ function parseCompleteResponse(raw: unknown): string {
   if (!Array.isArray(choices) || choices.length === 0) return "";
 
   const firstChoice = choices[0] as Record<string, unknown> | undefined;
-  if (!firstChoice || typeof firstChoice.message !== "object" || firstChoice.message === null) return "";
+  if (!firstChoice || typeof firstChoice.message !== "object" || firstChoice.message === null)
+    return "";
 
   const message = firstChoice.message as Record<string, unknown>;
   return typeof message.content === "string" ? message.content : "";

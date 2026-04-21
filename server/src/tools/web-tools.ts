@@ -59,10 +59,7 @@ export function validateUrl(url: string): void {
     throw new OpenFlowError(`Invalid URL: ${url}`, "TOOL_EXECUTION_FAILED");
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new OpenFlowError(
-      `Unsupported protocol: ${parsed.protocol}`,
-      "TOOL_EXECUTION_FAILED",
-    );
+    throw new OpenFlowError(`Unsupported protocol: ${parsed.protocol}`, "TOOL_EXECUTION_FAILED");
   }
   const rawHostname = parsed.hostname.toLowerCase();
   const hostname =
@@ -155,15 +152,11 @@ export const webSearchTool: InternalTool = {
         },
         { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
       );
-      const results: Array<{ title: string; snippet: string; href: string }> =
-        [];
+      const results: Array<{ title: string; snippet: string; href: string }> = [];
       const resultRegex =
         /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
       let match: RegExpExecArray | null;
-      while (
-        (match = resultRegex.exec(html)) !== null &&
-        results.length < maxResults
-      ) {
+      while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
         results.push({
           href: match[1]!,
           title: match[2]!.replace(/<[^>]+>/g, "").trim(),
@@ -216,11 +209,7 @@ export const httpClientTool: InternalTool = {
     try {
       const text = await withRetry(
         async () => {
-          const resp = await fetchWithRedirects(
-            url,
-            { method, headers, body },
-            validateUrl,
-          );
+          const resp = await fetchWithRedirects(url, { method, headers, body }, validateUrl);
           const respText = await resp.text();
           return `Status: ${resp.status}\n${truncate(respText, 10_000)}`;
         },

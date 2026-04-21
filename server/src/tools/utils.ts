@@ -28,17 +28,11 @@ export async function fetchWithRedirects(
   return resp;
 }
 
-export function parseHeadersJson(
-  raw: string | undefined,
-): Record<string, string> {
+export function parseHeadersJson(raw: string | undefined): Record<string, string> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) {
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       throw new OpenFlowError("Invalid headers JSON", "TOOL_EXECUTION_FAILED");
     }
     for (const [, val] of Object.entries(parsed)) {

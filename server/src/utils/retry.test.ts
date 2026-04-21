@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { withRetry, withSyncRetry, isRetryableNetworkError, isRetryableHttpError, isSqliteBusy, sleep } from "./retry.js";
+import {
+  withRetry,
+  withSyncRetry,
+  isRetryableNetworkError,
+  isRetryableHttpError,
+  isSqliteBusy,
+  sleep,
+} from "./retry.js";
 
 describe("withRetry", () => {
   it("should return result on first success", async () => {
@@ -23,7 +30,9 @@ describe("withRetry", () => {
 
   it("should throw after max attempts", async () => {
     await expect(
-      withRetry(() => Promise.reject(new Error("always fail")), { delays: [1, 1] }),
+      withRetry(() => Promise.reject(new Error("always fail")), {
+        delays: [1, 1],
+      }),
     ).rejects.toThrow("always fail");
   });
 
@@ -48,7 +57,9 @@ describe("isRetryableNetworkError", () => {
   });
 
   it("should detect ETIMEDOUT", () => {
-    expect(isRetryableNetworkError(new Error("connection ETIMEDOUT"))).toBe(true);
+    expect(isRetryableNetworkError(new Error("connection ETIMEDOUT"))).toBe(
+      true,
+    );
   });
 
   it("should not match non-network errors", () => {
@@ -91,12 +102,22 @@ describe("isSqliteBusy", () => {
 
 describe("withSyncRetry", () => {
   it("should return result on first success", () => {
-    const result = withSyncRetry(() => 42, () => false);
+    const result = withSyncRetry(
+      () => 42,
+      () => false,
+    );
     expect(result).toBe(42);
   });
 
   it("should throw when shouldRetry returns false", () => {
-    expect(() => withSyncRetry(() => { throw new Error("fail"); }, () => false)).toThrow("fail");
+    expect(() =>
+      withSyncRetry(
+        () => {
+          throw new Error("fail");
+        },
+        () => false,
+      ),
+    ).toThrow("fail");
   });
 
   it("should retry when shouldRetry returns true", () => {

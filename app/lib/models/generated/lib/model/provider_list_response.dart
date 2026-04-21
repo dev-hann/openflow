@@ -22,23 +22,25 @@ class ProviderListResponse {
   String activeProviderId;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is ProviderListResponse &&
-    _deepEquality.equals(other.providers, providers) &&
-    other.activeProviderId == activeProviderId;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProviderListResponse &&
+          _deepEquality.equals(other.providers, providers) &&
+          other.activeProviderId == activeProviderId;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (providers.hashCode) +
-    (activeProviderId.hashCode);
+      // ignore: unnecessary_parenthesis
+      (providers.hashCode) + (activeProviderId.hashCode);
 
   @override
-  String toString() => 'ProviderListResponse[providers=$providers, activeProviderId=$activeProviderId]';
+  String toString() =>
+      'ProviderListResponse[providers=$providers, activeProviderId=$activeProviderId]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'providers'] = this.providers;
-      json[r'activeProviderId'] = this.activeProviderId;
+    json[r'providers'] = this.providers;
+    json[r'activeProviderId'] = this.activeProviderId;
     return json;
   }
 
@@ -53,10 +55,14 @@ class ProviderListResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'providers'), 'Required key "ProviderListResponse[providers]" is missing from JSON.');
-        assert(json[r'providers'] != null, 'Required key "ProviderListResponse[providers]" has a null value in JSON.');
-        assert(json.containsKey(r'activeProviderId'), 'Required key "ProviderListResponse[activeProviderId]" is missing from JSON.');
-        assert(json[r'activeProviderId'] != null, 'Required key "ProviderListResponse[activeProviderId]" has a null value in JSON.');
+        assert(json.containsKey(r'providers'),
+            'Required key "ProviderListResponse[providers]" is missing from JSON.');
+        assert(json[r'providers'] != null,
+            'Required key "ProviderListResponse[providers]" has a null value in JSON.');
+        assert(json.containsKey(r'activeProviderId'),
+            'Required key "ProviderListResponse[activeProviderId]" is missing from JSON.');
+        assert(json[r'activeProviderId'] != null,
+            'Required key "ProviderListResponse[activeProviderId]" has a null value in JSON.');
         return true;
       }());
 
@@ -68,7 +74,10 @@ class ProviderListResponse {
     return null;
   }
 
-  static List<ProviderListResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<ProviderListResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <ProviderListResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -96,13 +105,19 @@ class ProviderListResponse {
   }
 
   // maps a json object with a list of ProviderListResponse-objects as value to a dart map
-  static Map<String, List<ProviderListResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<ProviderListResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<ProviderListResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = ProviderListResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = ProviderListResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -114,4 +129,3 @@ class ProviderListResponse {
     'activeProviderId',
   };
 }
-

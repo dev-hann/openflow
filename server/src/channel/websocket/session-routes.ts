@@ -51,10 +51,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { sessions: result });
   }
 
-  async function handleSessionCreate(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
+  async function handleSessionCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonBody(req);
@@ -63,11 +60,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 201, { id: session.id, title: session.title });
   }
 
-  function handleSessionDelete(
-    req: IncomingMessage,
-    res: ServerResponse,
-    path: string,
-  ): void {
+  function handleSessionDelete(req: IncomingMessage, res: ServerResponse, path: string): void {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const sessionId = extractSessionId(path, "/api/sessions/");
@@ -79,11 +72,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { ok: true });
   }
 
-  function handleSessionMessages(
-    req: IncomingMessage,
-    res: ServerResponse,
-    path: string,
-  ): void {
+  function handleSessionMessages(req: IncomingMessage, res: ServerResponse, path: string): void {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const match = path.match(/^\/api\/sessions\/([^/]+)\/messages$/);
@@ -92,10 +81,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
       return;
     }
     const sessionId = match[1]!;
-    const parsedUrl = new URL(
-      req.url ?? path,
-      `http://${req.headers.host ?? "localhost"}`,
-    );
+    const parsedUrl = new URL(req.url ?? path, `http://${req.headers.host ?? "localhost"}`);
     const rawLimit = parseInt(parsedUrl.searchParams.get("limit") ?? "50", 10);
     const rawOffset = parseInt(parsedUrl.searchParams.get("offset") ?? "0", 10);
     const limit = Math.min(Number.isNaN(rawLimit) ? 50 : rawLimit, 200);
@@ -115,10 +101,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     sendJson(res, 200, { messages, total });
   }
 
-  async function handlePushTokenRegister(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
+  async function handlePushTokenRegister(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonObject(req, res);
@@ -165,11 +148,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     routePattern(/^\/api\/sessions\/[^/]+\/messages$/, "GET", (req, res, ctx) =>
       handleSessionMessages(req, res, ctx.path),
     ),
-    route("/api/push-tokens", "POST", (req, res) =>
-      handlePushTokenRegister(req, res),
-    ),
-    route("/api/push-tokens", "DELETE", (req, res) =>
-      handlePushTokenUnregister(req, res),
-    ),
+    route("/api/push-tokens", "POST", (req, res) => handlePushTokenRegister(req, res)),
+    route("/api/push-tokens", "DELETE", (req, res) => handlePushTokenUnregister(req, res)),
   ];
 }

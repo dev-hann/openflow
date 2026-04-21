@@ -40,7 +40,8 @@ export function createSendImageTool(sender: ChannelSender, workspace: string): I
       type: "function",
       function: {
         name: "send_image",
-        description: "Send an image to the connected client. Supports public URLs and local file paths within the workspace.",
+        description:
+          "Send an image to the connected client. Supports public URLs and local file paths within the workspace.",
         parameters: {
           type: "object",
           properties: {
@@ -50,7 +51,8 @@ export function createSendImageTool(sender: ChannelSender, workspace: string): I
             },
             source: {
               type: "string",
-              description: "Image source: a public URL (http/https) or a local file path relative to the workspace",
+              description:
+                "Image source: a public URL (http/https) or a local file path relative to the workspace",
             },
             caption: {
               type: "string",

@@ -39,8 +39,13 @@ class ProvidersState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [providers, activeProviderId, isSwitching, availableModels, isLoadingModels,];
+  List<Object?> get props => [
+        providers,
+        activeProviderId,
+        isSwitching,
+        availableModels,
+        isLoadingModels,
+      ];
 }
 
 class ProvidersCubit extends Cubit<ProvidersState> {

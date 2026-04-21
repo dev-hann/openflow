@@ -28,22 +28,23 @@ class ErrorResponse {
   String? message;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is ErrorResponse &&
-    other.error == error &&
-    other.message == message;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ErrorResponse &&
+          other.error == error &&
+          other.message == message;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (error.hashCode) +
-    (message == null ? 0 : message!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (error.hashCode) + (message == null ? 0 : message!.hashCode);
 
   @override
   String toString() => 'ErrorResponse[error=$error, message=$message]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'error'] = this.error;
+    json[r'error'] = this.error;
     if (this.message != null) {
       json[r'message'] = this.message;
     } else {
@@ -63,8 +64,10 @@ class ErrorResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'error'), 'Required key "ErrorResponse[error]" is missing from JSON.');
-        assert(json[r'error'] != null, 'Required key "ErrorResponse[error]" has a null value in JSON.');
+        assert(json.containsKey(r'error'),
+            'Required key "ErrorResponse[error]" is missing from JSON.');
+        assert(json[r'error'] != null,
+            'Required key "ErrorResponse[error]" has a null value in JSON.');
         return true;
       }());
 
@@ -76,7 +79,10 @@ class ErrorResponse {
     return null;
   }
 
-  static List<ErrorResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<ErrorResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <ErrorResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -104,13 +110,19 @@ class ErrorResponse {
   }
 
   // maps a json object with a list of ErrorResponse-objects as value to a dart map
-  static Map<String, List<ErrorResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<ErrorResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<ErrorResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = ErrorResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = ErrorResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -121,4 +133,3 @@ class ErrorResponse {
     'error',
   };
 }
-

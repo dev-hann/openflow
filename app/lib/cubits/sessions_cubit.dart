@@ -33,7 +33,8 @@ class SessionsState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [sessions, activeSessionId, isLoading, errorMessage];
+  List<Object?> get props =>
+      [sessions, activeSessionId, isLoading, errorMessage];
 }
 
 class SessionsCubit extends Cubit<SessionsState> {
@@ -52,7 +53,8 @@ class SessionsCubit extends Cubit<SessionsState> {
   }
 
   void setSessions(List<SessionInfo> sessions) {
-    emit(state.copyWith(sessions: sessions, isLoading: false, clearError: true));
+    emit(
+        state.copyWith(sessions: sessions, isLoading: false, clearError: true));
   }
 
   void setActiveSessionId(String? id) {

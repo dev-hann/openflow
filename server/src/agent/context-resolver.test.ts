@@ -1,9 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
-import { createContextResolver, type ContextResolverDeps } from "./context-resolver.js";
+import {
+  createContextResolver,
+  type ContextResolverDeps,
+} from "./context-resolver.js";
 import type { ChatMessage, ToolCall } from "../llm/index.js";
 import { OpenFlowError } from "../utils/errors.js";
 
-function createMockDeps(overrides?: Partial<ContextResolverDeps>): ContextResolverDeps {
+function createMockDeps(
+  overrides?: Partial<ContextResolverDeps>,
+): ContextResolverDeps {
   return {
     memory: {
       addMessage: vi.fn(),
@@ -16,7 +21,12 @@ function createMockDeps(overrides?: Partial<ContextResolverDeps>): ContextResolv
       ...overrides?.compaction,
     } as unknown as ContextResolverDeps["compaction"],
     workspace: {
-      loadAll: vi.fn(() => ({ persona: null, user: null, memory: null, dailyMemory: null })),
+      loadAll: vi.fn(() => ({
+        persona: null,
+        user: null,
+        memory: null,
+        dailyMemory: null,
+      })),
       getWorkspaceDir: vi.fn(() => "/workspace"),
       ...overrides?.workspace,
     } as unknown as ContextResolverDeps["workspace"],
@@ -79,7 +89,9 @@ describe("createContextResolver", () => {
       });
       const resolver = createContextResolver(deps);
 
-      expect(() => resolver.persistMessage("s1", { role: "user", content: "hi" })).not.toThrow();
+      expect(() =>
+        resolver.persistMessage("s1", { role: "user", content: "hi" }),
+      ).not.toThrow();
     });
   });
 
@@ -117,7 +129,10 @@ describe("createContextResolver", () => {
     });
 
     it("should preserve existing OpenFlowError when memory fails", () => {
-      const originalError = new OpenFlowError("migration needed", "DB_MIGRATION_FAILED");
+      const originalError = new OpenFlowError(
+        "migration needed",
+        "DB_MIGRATION_FAILED",
+      );
       const deps = createMockDeps({
         memory: {
           addMessage: vi.fn(() => {
@@ -153,7 +168,10 @@ describe("createContextResolver", () => {
       const messages = await resolver.buildConversationContext("s1");
 
       expect(messages).toHaveLength(3);
-      expect(messages[0]).toEqual({ role: "system", content: "You are a helpful assistant." });
+      expect(messages[0]).toEqual({
+        role: "system",
+        content: "You are a helpful assistant.",
+      });
       expect(messages[1]).toEqual({ role: "user", content: "hi" });
     });
 
@@ -161,7 +179,10 @@ describe("createContextResolver", () => {
       const deps = createMockDeps();
       const resolver = createContextResolver(deps);
 
-      const messages = await resolver.buildConversationContext("s1", "Custom prompt");
+      const messages = await resolver.buildConversationContext(
+        "s1",
+        "Custom prompt",
+      );
 
       expect(messages[0]).toEqual({ role: "system", content: "Custom prompt" });
     });
@@ -183,7 +204,9 @@ describe("createContextResolver", () => {
 
       const messages = await resolver.buildConversationContext("s1");
 
-      expect((messages[0] as { role: string; content: string }).content).toContain("Friendly bot");
+      expect(
+        (messages[0] as { role: string; content: string }).content,
+      ).toContain("Friendly bot");
     });
 
     it("should throw OpenFlowError when context build fails", async () => {
@@ -198,7 +221,9 @@ describe("createContextResolver", () => {
       });
       const resolver = createContextResolver(deps);
 
-      await expect(resolver.buildConversationContext("s1")).rejects.toThrow(OpenFlowError);
+      await expect(resolver.buildConversationContext("s1")).rejects.toThrow(
+        OpenFlowError,
+      );
     });
 
     it("should preserve existing OpenFlowError on context build failure", async () => {
@@ -214,7 +239,9 @@ describe("createContextResolver", () => {
       });
       const resolver = createContextResolver(deps);
 
-      await expect(resolver.buildConversationContext("s1")).rejects.toBe(originalError);
+      await expect(resolver.buildConversationContext("s1")).rejects.toBe(
+        originalError,
+      );
     });
   });
 });

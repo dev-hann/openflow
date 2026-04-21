@@ -24,9 +24,8 @@ class ConnectionSection extends StatelessWidget {
         color: connected ? theme.colorScheme.tertiary : theme.colorScheme.error,
       ),
       title: Text(connected ? '연결됨' : '연결 안됨'),
-      subtitle: url != null
-          ? Text(url, style: theme.textTheme.bodySmall)
-          : null,
+      subtitle:
+          url != null ? Text(url, style: theme.textTheme.bodySmall) : null,
       trailing: OutlinedButton(
         onPressed: onServerChanged,
         style: OutlinedButton.styleFrom(

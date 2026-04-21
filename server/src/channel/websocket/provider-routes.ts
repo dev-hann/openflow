@@ -4,12 +4,7 @@ import { createLogger } from "../../utils/logger.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { components } from "../../generated/api.js";
-import {
-  sendJson,
-  readJsonObject,
-  requireAuth,
-  requireBodyString,
-} from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, requireBodyString } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, routePattern, type Route } from "./routes.js";
 
@@ -27,10 +22,7 @@ function maskApiKey(apiKey: string): string {
   return apiKey.slice(0, 4) + "••••" + apiKey.slice(-4);
 }
 
-function providerToJson(
-  p: Provider,
-  isActive: boolean,
-): components["schemas"]["ProviderResponse"] {
+function providerToJson(p: Provider, isActive: boolean): components["schemas"]["ProviderResponse"] {
   return {
     id: p.id,
     name: p.name,
@@ -44,10 +36,7 @@ function providerToJson(
   };
 }
 
-async function fetchProviderModels(
-  baseUrl: string,
-  apiKey: string,
-): Promise<Response> {
+async function fetchProviderModels(baseUrl: string, apiKey: string): Promise<Response> {
   const base = baseUrl.replace(/\/$/, "");
   return fetch(`${base}/models`, {
     headers: { Authorization: `Bearer ${apiKey}` },
@@ -64,10 +53,7 @@ export interface ProviderRoutesDeps {
 export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   const { authService, providerStore, providerPool } = deps;
 
-  async function handleProvidersList(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
+  async function handleProvidersList(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const activeId = providerPool.getActiveProviderId();
@@ -77,10 +63,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
     sendJson(res, 200, { providers, activeProviderId: activeId });
   }
 
-  async function handleProviderCreate(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
+  async function handleProviderCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonObject(req, res);
@@ -117,19 +100,13 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
         }
       })
       .catch((err) => {
-        log.debug(
-          { err, providerId: provider.id },
-          "background connectivity check failed",
-        );
+        log.debug({ err, providerId: provider.id }, "background connectivity check failed");
       });
 
     sendJson(
       res,
       201,
-      providerToJson(
-        provider,
-        provider.id === providerPool.getActiveProviderId(),
-      ),
+      providerToJson(provider, provider.id === providerPool.getActiveProviderId()),
     );
   }
 
@@ -159,14 +136,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
     }
     providerPool.syncFromStore();
     log.info({ providerId }, "provider updated via API");
-    sendJson(
-      res,
-      200,
-      providerToJson(
-        updated,
-        updated.id === providerPool.getActiveProviderId(),
-      ),
-    );
+    sendJson(res, 200, providerToJson(updated, updated.id === providerPool.getActiveProviderId()));
   }
 
   async function handleProviderDelete(
@@ -187,10 +157,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
     sendJson(res, 200, { ok: true });
   }
 
-  async function handleProviderSwitch(
-    req: IncomingMessage,
-    res: ServerResponse,
-  ): Promise<void> {
+  async function handleProviderSwitch(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
     const body = await readJsonObject(req, res);
@@ -275,10 +242,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
     }
   }
 
-  async function verifyProviderConnectivity(
-    baseUrl: string,
-    apiKey: string,
-  ): Promise<boolean> {
+  async function verifyProviderConnectivity(baseUrl: string, apiKey: string): Promise<boolean> {
     try {
       const resp = await fetchProviderModels(baseUrl, apiKey);
       return resp.ok;

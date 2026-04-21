@@ -16,7 +16,9 @@ describe("createJsonFileStore", () => {
   });
 
   it("should return default value when file does not exist", () => {
-    const store = createJsonFileStore(join(testDir, "missing.json"), { count: 0 });
+    const store = createJsonFileStore(join(testDir, "missing.json"), {
+      count: 0,
+    });
     expect(store.getData()).toEqual({ count: 0 });
   });
 
@@ -31,7 +33,9 @@ describe("createJsonFileStore", () => {
 
   it("should persist data via update", () => {
     const filePath = join(testDir, "update.json");
-    const store = createJsonFileStore<{ items: string[] }>(filePath, { items: [] });
+    const store = createJsonFileStore<{ items: string[] }>(filePath, {
+      items: [],
+    });
     store.update((data) => {
       data.items.push("a", "b");
     });
@@ -58,8 +62,15 @@ describe("createJsonFileStore", () => {
     const filePath = join(testDir, "validate.json");
     writeFileSync(filePath, JSON.stringify({ wrong: true }) + "\n", "utf-8");
     const isValid = (d: unknown): d is { count: number } =>
-      typeof d === "object" && d !== null && "count" in d && typeof (d as Record<string, unknown>).count === "number";
-    const store = createJsonFileStore(filePath, { count: 0 }, { validate: isValid });
+      typeof d === "object" &&
+      d !== null &&
+      "count" in d &&
+      typeof (d as Record<string, unknown>).count === "number";
+    const store = createJsonFileStore(
+      filePath,
+      { count: 0 },
+      { validate: isValid },
+    );
     expect(store.getData()).toEqual({ count: 0 });
   });
 
@@ -67,8 +78,15 @@ describe("createJsonFileStore", () => {
     const filePath = join(testDir, "validate-ok.json");
     writeFileSync(filePath, JSON.stringify({ count: 7 }) + "\n", "utf-8");
     const isValid = (d: unknown): d is { count: number } =>
-      typeof d === "object" && d !== null && "count" in d && typeof (d as Record<string, unknown>).count === "number";
-    const store = createJsonFileStore(filePath, { count: 0 }, { validate: isValid });
+      typeof d === "object" &&
+      d !== null &&
+      "count" in d &&
+      typeof (d as Record<string, unknown>).count === "number";
+    const store = createJsonFileStore(
+      filePath,
+      { count: 0 },
+      { validate: isValid },
+    );
     expect(store.getData()).toEqual({ count: 7 });
   });
 

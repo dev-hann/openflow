@@ -55,9 +55,7 @@ class _VerifySectionState extends State<VerifySection> {
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
-              widget.result!.ok
-                  ? '연결 성공!'
-                  : widget.result!.error ?? '연결 실패',
+              widget.result!.ok ? '연결 성공!' : widget.result!.error ?? '연결 실패',
               style: TextStyle(
                 color: widget.result!.ok
                     ? theme.colorScheme.onPrimaryContainer

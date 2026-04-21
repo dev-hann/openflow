@@ -27,11 +27,7 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
     parsedArgs: Record<string, unknown>,
     chatId: number | string | undefined,
   ): Promise<ToolResult> {
-    if (
-      tools.needsConfirmation(toolName) &&
-      confirmationHandler &&
-      chatId !== undefined
-    ) {
+    if (tools.needsConfirmation(toolName) && confirmationHandler && chatId !== undefined) {
       const confirmation = await confirmationHandler.requestConfirmation({
         chatId,
         toolName,
@@ -62,10 +58,7 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
     const toolName = toolCall.function.name;
     let parsedArgs: Record<string, unknown>;
     try {
-      parsedArgs = JSON.parse(toolCall.function.arguments) as Record<
-        string,
-        unknown
-      >;
+      parsedArgs = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
     } catch {
       log.warn(
         {
@@ -88,21 +81,13 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
           toolCallId: toolCall.id,
         });
       } catch (err: unknown) {
-        log.error(
-          { sessionId, toolCallId: toolCall.id, err },
-          "failed to save tool error",
-        );
+        log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool error");
       }
       return errorMsg;
     }
     log.info({ sessionId, toolName, round }, "executing tool");
 
-    const result = await executeWithConfirmation(
-      toolCall.id,
-      toolName,
-      parsedArgs,
-      chatId,
-    );
+    const result = await executeWithConfirmation(toolCall.id, toolName, parsedArgs, chatId);
     if (result.isError && tools.needsConfirmation(toolName)) {
       log.info({ sessionId, toolName, round }, "tool execution denied by user");
     }
@@ -121,16 +106,10 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
         toolCallId: toolCall.id,
       });
     } catch (err: unknown) {
-      log.error(
-        { sessionId, toolCallId: toolCall.id, err },
-        "failed to save tool result",
-      );
+      log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool result");
     }
 
-    log.info(
-      { sessionId, toolName, isError: result.isError, round },
-      "tool execution completed",
-    );
+    log.info({ sessionId, toolName, isError: result.isError, round }, "tool execution completed");
     return toolMessage;
   }
 

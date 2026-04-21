@@ -2,10 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createNotificationService } from "./push-service.js";
 import type { PushTokenStore, PushTokenRecord } from "./token-store.js";
 
-const mockSendPush = vi.fn().mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
+const mockSendPush = vi
+  .fn()
+  .mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
 
 vi.mock("expo-server-sdk", () => {
-  const isValid = vi.fn((token: string) => token.startsWith("ExponentPushToken["));
+  const isValid = vi.fn((token: string) =>
+    token.startsWith("ExponentPushToken["),
+  );
   return {
     Expo: Object.assign(
       vi.fn().mockImplementation(() => ({
@@ -46,7 +50,9 @@ describe("createNotificationService", () => {
       const store = mockTokenStore();
       const service = createNotificationService({ enabled: false }, store);
 
-      const tickets = await service.sendAll([{ to: "test", title: "t", body: "b" }]);
+      const tickets = await service.sendAll([
+        { to: "test", title: "t", body: "b" },
+      ]);
       expect(tickets).toEqual([]);
     });
 
@@ -63,7 +69,11 @@ describe("createNotificationService", () => {
       const store = mockTokenStore();
       const service = createNotificationService({ enabled: true }, store);
 
-      const ticket = await service.send({ to: "invalid-token", title: "t", body: "b" });
+      const ticket = await service.send({
+        to: "invalid-token",
+        title: "t",
+        body: "b",
+      });
       expect(ticket.status).toBe("error");
       expect(ticket.message).toContain("Invalid Expo push token");
     });
@@ -89,8 +99,20 @@ describe("createNotificationService", () => {
 
     it("should broadcast to all registered tokens", async () => {
       const tokens: PushTokenRecord[] = [
-        { token: "ExponentPushToken[a]", platform: "ios", label: "Phone", registeredAt: Date.now(), lastUsedAt: Date.now() },
-        { token: "ExponentPushToken[b]", platform: "android", label: "Tablet", registeredAt: Date.now(), lastUsedAt: Date.now() },
+        {
+          token: "ExponentPushToken[a]",
+          platform: "ios",
+          label: "Phone",
+          registeredAt: Date.now(),
+          lastUsedAt: Date.now(),
+        },
+        {
+          token: "ExponentPushToken[b]",
+          platform: "android",
+          label: "Tablet",
+          registeredAt: Date.now(),
+          lastUsedAt: Date.now(),
+        },
       ];
       const store = mockTokenStore(tokens);
       const service = createNotificationService({ enabled: true }, store);
@@ -114,7 +136,11 @@ describe("createNotificationService", () => {
 
     it("should unregister token on DeviceNotRegistered error", async () => {
       mockSendPush.mockResolvedValueOnce([
-        { status: "error", message: "device not registered", details: { error: "DeviceNotRegistered" } },
+        {
+          status: "error",
+          message: "device not registered",
+          details: { error: "DeviceNotRegistered" },
+        },
       ]);
 
       const store = mockTokenStore();
@@ -126,7 +152,9 @@ describe("createNotificationService", () => {
         body: "B",
       });
       expect(ticket.status).toBe("error");
-      expect(store.unregister).toHaveBeenCalledWith("ExponentPushToken[dead-token]");
+      expect(store.unregister).toHaveBeenCalledWith(
+        "ExponentPushToken[dead-token]",
+      );
     });
 
     it("should return error ticket when Expo send throws", async () => {
@@ -155,7 +183,9 @@ describe("createNotificationService", () => {
         title: "T",
         body: "B",
       });
-      expect(store.touchLastUsed).toHaveBeenCalledWith("ExponentPushToken[touch]");
+      expect(store.touchLastUsed).toHaveBeenCalledWith(
+        "ExponentPushToken[touch]",
+      );
     });
 
     it("should return empty array from sendAll with empty input", async () => {
@@ -168,7 +198,11 @@ describe("createNotificationService", () => {
 
     it("should handle generic error response from Expo", async () => {
       mockSendPush.mockResolvedValueOnce([
-        { status: "error", message: "internal error", details: { error: "InternalServerError" } },
+        {
+          status: "error",
+          message: "internal error",
+          details: { error: "InternalServerError" },
+        },
       ]);
 
       const store = mockTokenStore();

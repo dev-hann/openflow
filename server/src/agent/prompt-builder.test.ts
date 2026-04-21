@@ -6,7 +6,9 @@ const noFiles = { persona: null, user: null, memory: null, dailyMemory: null };
 
 describe("buildSystemPrompt", () => {
   it("should build minimal prompt with no workspace files", () => {
-    const prompt = buildSystemPrompt(noFiles, { workspace: "/home/user/workspace" });
+    const prompt = buildSystemPrompt(noFiles, {
+      workspace: "/home/user/workspace",
+    });
 
     expect(prompt).toContain("OpenFlow");
     expect(prompt).toContain("/home/user/workspace");
@@ -17,7 +19,12 @@ describe("buildSystemPrompt", () => {
 
   it("should include persona section when PERSONA.md exists", () => {
     const prompt = buildSystemPrompt(
-      { persona: "Be friendly and use Korean.", user: null, memory: null, dailyMemory: null },
+      {
+        persona: "Be friendly and use Korean.",
+        user: null,
+        memory: null,
+        dailyMemory: null,
+      },
       { workspace: "/tmp" },
     );
 
@@ -27,7 +34,12 @@ describe("buildSystemPrompt", () => {
 
   it("should include user profile section", () => {
     const prompt = buildSystemPrompt(
-      { persona: null, user: "- Name: Hann\n- Timezone: Asia/Seoul", memory: null, dailyMemory: null },
+      {
+        persona: null,
+        user: "- Name: Hann\n- Timezone: Asia/Seoul",
+        memory: null,
+        dailyMemory: null,
+      },
       { workspace: "/tmp" },
     );
 
@@ -37,7 +49,12 @@ describe("buildSystemPrompt", () => {
 
   it("should include memory and daily memory sections", () => {
     const prompt = buildSystemPrompt(
-      { persona: null, user: null, memory: "User prefers dark mode.", dailyMemory: "### 2026-04-17\nFixed bugs." },
+      {
+        persona: null,
+        user: null,
+        memory: "User prefers dark mode.",
+        dailyMemory: "### 2026-04-17\nFixed bugs.",
+      },
       { workspace: "/tmp" },
     );
 
@@ -55,7 +72,10 @@ describe("buildSystemPrompt", () => {
   });
 
   it("should include timezone when provided", () => {
-    const prompt = buildSystemPrompt(noFiles, { workspace: "/tmp", timezone: "Asia/Seoul" });
+    const prompt = buildSystemPrompt(noFiles, {
+      workspace: "/tmp",
+      timezone: "Asia/Seoul",
+    });
 
     expect(prompt).toContain("Asia/Seoul");
   });
@@ -76,14 +96,20 @@ describe("buildSystemPrompt", () => {
 
   it("should include skills section with XML", () => {
     const skills: SkillMeta[] = [
-      { name: "weather", description: "Get weather forecasts", location: "/skills/weather/SKILL.md" },
+      {
+        name: "weather",
+        description: "Get weather forecasts",
+        location: "/skills/weather/SKILL.md",
+      },
     ];
     const prompt = buildSystemPrompt(noFiles, { workspace: "/tmp" }, skills);
 
     expect(prompt).toContain("Available Skills");
     expect(prompt).toContain("<skills>");
     expect(prompt).toContain("<name>weather</name>");
-    expect(prompt).toContain("<description>Get weather forecasts</description>");
+    expect(prompt).toContain(
+      "<description>Get weather forecasts</description>",
+    );
     expect(prompt).toContain("<location>/skills/weather/SKILL.md</location>");
     expect(prompt).toContain("</skills>");
     expect(prompt).toContain("read_file");
@@ -94,7 +120,12 @@ describe("buildSystemPrompt", () => {
       { name: "test", description: "Test skill", location: "/test/SKILL.md" },
     ];
     const prompt = buildSystemPrompt(
-      { persona: null, user: "User info", memory: "Memory content", dailyMemory: null },
+      {
+        persona: null,
+        user: "User info",
+        memory: "Memory content",
+        dailyMemory: null,
+      },
       { workspace: "/tmp" },
       skills,
     );

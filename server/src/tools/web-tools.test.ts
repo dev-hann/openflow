@@ -296,7 +296,8 @@ describe("webSearchTool", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        text: () => Promise.resolve("<html><body>No results here</body></html>"),
+        text: () =>
+          Promise.resolve("<html><body>No results here</body></html>"),
       }),
     );
 
@@ -341,9 +342,9 @@ describe("webSearchTool", () => {
       }),
     );
 
-    await expect(
-      webSearchTool.execute({ query: "test" }),
-    ).rejects.toThrow("Search failed");
+    await expect(webSearchTool.execute({ query: "test" })).rejects.toThrow(
+      "Search failed",
+    );
   });
 });
 
@@ -423,7 +424,10 @@ describe("httpClientTool", () => {
   });
 
   it("should throw OpenFlowError on failure", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("network down")),
+    );
 
     await expect(
       httpClientTool.execute({

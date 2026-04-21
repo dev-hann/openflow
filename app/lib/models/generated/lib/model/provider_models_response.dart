@@ -19,20 +19,22 @@ class ProviderModelsResponse {
   List<String> models;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is ProviderModelsResponse &&
-    _deepEquality.equals(other.models, models);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProviderModelsResponse &&
+          _deepEquality.equals(other.models, models);
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (models.hashCode);
+      // ignore: unnecessary_parenthesis
+      (models.hashCode);
 
   @override
   String toString() => 'ProviderModelsResponse[models=$models]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'models'] = this.models;
+    json[r'models'] = this.models;
     return json;
   }
 
@@ -47,21 +49,28 @@ class ProviderModelsResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'models'), 'Required key "ProviderModelsResponse[models]" is missing from JSON.');
-        assert(json[r'models'] != null, 'Required key "ProviderModelsResponse[models]" has a null value in JSON.');
+        assert(json.containsKey(r'models'),
+            'Required key "ProviderModelsResponse[models]" is missing from JSON.');
+        assert(json[r'models'] != null,
+            'Required key "ProviderModelsResponse[models]" has a null value in JSON.');
         return true;
       }());
 
       return ProviderModelsResponse(
         models: json[r'models'] is Iterable
-            ? (json[r'models'] as Iterable).cast<String>().toList(growable: false)
+            ? (json[r'models'] as Iterable)
+                .cast<String>()
+                .toList(growable: false)
             : const [],
       );
     }
     return null;
   }
 
-  static List<ProviderModelsResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<ProviderModelsResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <ProviderModelsResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -89,13 +98,19 @@ class ProviderModelsResponse {
   }
 
   // maps a json object with a list of ProviderModelsResponse-objects as value to a dart map
-  static Map<String, List<ProviderModelsResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<ProviderModelsResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<ProviderModelsResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = ProviderModelsResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = ProviderModelsResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -106,4 +121,3 @@ class ProviderModelsResponse {
     'models',
   };
 }
-

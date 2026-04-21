@@ -31,32 +31,35 @@ class CreateProviderRequest {
   bool isDefault;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is CreateProviderRequest &&
-    other.name == name &&
-    other.baseUrl == baseUrl &&
-    other.apiKey == apiKey &&
-    other.model == model &&
-    other.isDefault == isDefault;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CreateProviderRequest &&
+          other.name == name &&
+          other.baseUrl == baseUrl &&
+          other.apiKey == apiKey &&
+          other.model == model &&
+          other.isDefault == isDefault;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (name.hashCode) +
-    (baseUrl.hashCode) +
-    (apiKey.hashCode) +
-    (model.hashCode) +
-    (isDefault.hashCode);
+      // ignore: unnecessary_parenthesis
+      (name.hashCode) +
+      (baseUrl.hashCode) +
+      (apiKey.hashCode) +
+      (model.hashCode) +
+      (isDefault.hashCode);
 
   @override
-  String toString() => 'CreateProviderRequest[name=$name, baseUrl=$baseUrl, apiKey=$apiKey, model=$model, isDefault=$isDefault]';
+  String toString() =>
+      'CreateProviderRequest[name=$name, baseUrl=$baseUrl, apiKey=$apiKey, model=$model, isDefault=$isDefault]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'name'] = this.name;
-      json[r'baseUrl'] = this.baseUrl;
-      json[r'apiKey'] = this.apiKey;
-      json[r'model'] = this.model;
-      json[r'isDefault'] = this.isDefault;
+    json[r'name'] = this.name;
+    json[r'baseUrl'] = this.baseUrl;
+    json[r'apiKey'] = this.apiKey;
+    json[r'model'] = this.model;
+    json[r'isDefault'] = this.isDefault;
     return json;
   }
 
@@ -71,14 +74,22 @@ class CreateProviderRequest {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'name'), 'Required key "CreateProviderRequest[name]" is missing from JSON.');
-        assert(json[r'name'] != null, 'Required key "CreateProviderRequest[name]" has a null value in JSON.');
-        assert(json.containsKey(r'baseUrl'), 'Required key "CreateProviderRequest[baseUrl]" is missing from JSON.');
-        assert(json[r'baseUrl'] != null, 'Required key "CreateProviderRequest[baseUrl]" has a null value in JSON.');
-        assert(json.containsKey(r'apiKey'), 'Required key "CreateProviderRequest[apiKey]" is missing from JSON.');
-        assert(json[r'apiKey'] != null, 'Required key "CreateProviderRequest[apiKey]" has a null value in JSON.');
-        assert(json.containsKey(r'model'), 'Required key "CreateProviderRequest[model]" is missing from JSON.');
-        assert(json[r'model'] != null, 'Required key "CreateProviderRequest[model]" has a null value in JSON.');
+        assert(json.containsKey(r'name'),
+            'Required key "CreateProviderRequest[name]" is missing from JSON.');
+        assert(json[r'name'] != null,
+            'Required key "CreateProviderRequest[name]" has a null value in JSON.');
+        assert(json.containsKey(r'baseUrl'),
+            'Required key "CreateProviderRequest[baseUrl]" is missing from JSON.');
+        assert(json[r'baseUrl'] != null,
+            'Required key "CreateProviderRequest[baseUrl]" has a null value in JSON.');
+        assert(json.containsKey(r'apiKey'),
+            'Required key "CreateProviderRequest[apiKey]" is missing from JSON.');
+        assert(json[r'apiKey'] != null,
+            'Required key "CreateProviderRequest[apiKey]" has a null value in JSON.');
+        assert(json.containsKey(r'model'),
+            'Required key "CreateProviderRequest[model]" is missing from JSON.');
+        assert(json[r'model'] != null,
+            'Required key "CreateProviderRequest[model]" has a null value in JSON.');
         return true;
       }());
 
@@ -93,7 +104,10 @@ class CreateProviderRequest {
     return null;
   }
 
-  static List<CreateProviderRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<CreateProviderRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <CreateProviderRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -121,13 +135,19 @@ class CreateProviderRequest {
   }
 
   // maps a json object with a list of CreateProviderRequest-objects as value to a dart map
-  static Map<String, List<CreateProviderRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<CreateProviderRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<CreateProviderRequest>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = CreateProviderRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = CreateProviderRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -141,4 +161,3 @@ class CreateProviderRequest {
     'model',
   };
 }
-

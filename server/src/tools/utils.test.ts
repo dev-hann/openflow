@@ -26,7 +26,11 @@ describe("fetchWithRedirects", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(null, { status: 200, statusText: "OK" })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(null, { status: 200, statusText: "OK" }),
+        ),
     );
   });
 
@@ -49,7 +53,9 @@ describe("fetchWithRedirects", () => {
           headers: { location: "https://example.com/new" },
         }),
       )
-      .mockResolvedValueOnce(new Response("ok", { status: 200, statusText: "OK" }));
+      .mockResolvedValueOnce(
+        new Response("ok", { status: 200, statusText: "OK" }),
+      );
     vi.stubGlobal("fetch", mockFetch);
 
     const resp = await fetchWithRedirects("https://example.com/old", {});
@@ -66,7 +72,9 @@ describe("fetchWithRedirects", () => {
           headers: { location: "/new-path" },
         }),
       )
-      .mockResolvedValueOnce(new Response("ok", { status: 200, statusText: "OK" }));
+      .mockResolvedValueOnce(
+        new Response("ok", { status: 200, statusText: "OK" }),
+      );
     vi.stubGlobal("fetch", mockFetch);
 
     const resp = await fetchWithRedirects("https://example.com/old", {});
@@ -74,7 +82,10 @@ describe("fetchWithRedirects", () => {
   });
 
   it("should stop redirecting when location header missing", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 301 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 301 })),
+    );
 
     const resp = await fetchWithRedirects("https://example.com", {});
     expect(resp.status).toBe(301);
@@ -91,7 +102,9 @@ describe("fetchWithRedirects", () => {
           headers: { location: "https://other.com/page" },
         }),
       )
-      .mockResolvedValueOnce(new Response("ok", { status: 200, statusText: "OK" }));
+      .mockResolvedValueOnce(
+        new Response("ok", { status: 200, statusText: "OK" }),
+      );
     vi.stubGlobal("fetch", mockFetch);
 
     await fetchWithRedirects("https://example.com", {}, validate);
@@ -144,7 +157,9 @@ describe("parseHeadersJson", () => {
   });
 
   it("should throw on non-string header value", () => {
-    expect(() => parseHeadersJson('{"X-Custom":123}')).toThrow("keys and values must be strings");
+    expect(() => parseHeadersJson('{"X-Custom":123}')).toThrow(
+      "keys and values must be strings",
+    );
   });
 
   it("should accept multiple valid headers", () => {

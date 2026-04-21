@@ -11,7 +11,6 @@
 import 'package:openapi/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for SystemApi
 void main() {
   // final instance = SystemApi();
@@ -23,6 +22,5 @@ void main() {
     test('test getStatus', () async {
       // TODO
     });
-
   });
 }

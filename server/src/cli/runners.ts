@@ -75,7 +75,11 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
     requestConfirmation: async () => ({ approved: true }),
   };
 
-  const { memory, agent, providerPool, providerStore } = createAgentDeps(config, undefined, confirmationHandler);
+  const { memory, agent, providerPool, providerStore } = createAgentDeps(
+    config,
+    undefined,
+    confirmationHandler,
+  );
 
   const pushTokenStore = createPushTokenStore();
   const notification = createNotificationService(

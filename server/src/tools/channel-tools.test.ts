@@ -43,18 +43,33 @@ describe("createSendImageTool", () => {
     const sender = mockSender();
     const tool = createSendImageTool(sender, workspace);
 
-    const result = await tool.execute({ chatId: 1, source: "https://example.com/img.png" });
+    const result = await tool.execute({
+      chatId: 1,
+      source: "https://example.com/img.png",
+    });
     expect(result).toBe("OK");
-    expect(sender.sendPhoto).toHaveBeenCalledWith(1, "https://example.com/img.png", undefined);
+    expect(sender.sendPhoto).toHaveBeenCalledWith(
+      1,
+      "https://example.com/img.png",
+      undefined,
+    );
   });
 
   it("should send image from URL with caption", async () => {
     const sender = mockSender();
     const tool = createSendImageTool(sender, workspace);
 
-    const result = await tool.execute({ chatId: 1, source: "http://img.test/pic.jpg", caption: "A photo" });
+    const result = await tool.execute({
+      chatId: 1,
+      source: "http://img.test/pic.jpg",
+      caption: "A photo",
+    });
     expect(result).toBe("OK");
-    expect(sender.sendPhoto).toHaveBeenCalledWith(1, "http://img.test/pic.jpg", "A photo");
+    expect(sender.sendPhoto).toHaveBeenCalledWith(
+      1,
+      "http://img.test/pic.jpg",
+      "A photo",
+    );
   });
 
   it("should send image from local file in workspace", async () => {
@@ -65,7 +80,11 @@ describe("createSendImageTool", () => {
 
     const result = await tool.execute({ chatId: 1, source: imgPath });
     expect(result).toBe("OK");
-    expect(sender.sendPhoto).toHaveBeenCalledWith(1, expect.any(Buffer), undefined);
+    expect(sender.sendPhoto).toHaveBeenCalledWith(
+      1,
+      expect.any(Buffer),
+      undefined,
+    );
   });
 
   it("should reject path outside workspace", async () => {

@@ -38,7 +38,11 @@ describe("createMemoryStore", () => {
       await new Promise((r) => setTimeout(r, 5));
       const sessionB = store.createSession("B");
       await new Promise((r) => setTimeout(r, 5));
-      store.addMessage({ sessionId: sessionB.id, role: "user", content: "update B" });
+      store.addMessage({
+        sessionId: sessionB.id,
+        role: "user",
+        content: "update B",
+      });
       const sessions = store.listSessions();
       expect(sessions).toHaveLength(2);
       expect(sessions[0]!.title).toBe("B");
@@ -66,8 +70,16 @@ describe("createMemoryStore", () => {
   describe("messages", () => {
     it("should add and retrieve messages", () => {
       const session = store.createSession("Chat");
-      store.addMessage({ sessionId: session.id, role: "user", content: "Hello" });
-      store.addMessage({ sessionId: session.id, role: "assistant", content: "Hi there" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "Hello",
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "assistant",
+        content: "Hi there",
+      });
 
       const messages = store.getMessages(session.id);
       expect(messages).toHaveLength(2);
@@ -78,7 +90,11 @@ describe("createMemoryStore", () => {
     it("should respect limit parameter", () => {
       const session = store.createSession("Limited");
       for (let i = 0; i < 10; i++) {
-        store.addMessage({ sessionId: session.id, role: "user", content: `msg ${i}` });
+        store.addMessage({
+          sessionId: session.id,
+          role: "user",
+          content: `msg ${i}`,
+        });
       }
       const messages = store.getMessages(session.id, 3);
       expect(messages).toHaveLength(3);
@@ -90,11 +106,13 @@ describe("createMemoryStore", () => {
         sessionId: session.id,
         role: "assistant",
         content: "",
-        toolCalls: [{
-          id: "tc_1",
-          type: "function" as const,
-          function: { name: "shell", arguments: '{"command":"ls"}' },
-        }],
+        toolCalls: [
+          {
+            id: "tc_1",
+            type: "function" as const,
+            function: { name: "shell", arguments: '{"command":"ls"}' },
+          },
+        ],
       });
       store.addMessage({
         sessionId: session.id,
@@ -138,8 +156,16 @@ describe("createMemoryStore", () => {
       const session = store.createSession("Count");
       expect(store.getMessageCount(session.id)).toBe(0);
       store.addMessage({ sessionId: session.id, role: "user", content: "one" });
-      store.addMessage({ sessionId: session.id, role: "assistant", content: "two" });
-      store.addMessage({ sessionId: session.id, role: "user", content: "three" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "assistant",
+        content: "two",
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "three",
+      });
       expect(store.getMessageCount(session.id)).toBe(3);
     });
 
@@ -151,15 +177,41 @@ describe("createMemoryStore", () => {
   describe("getVisibleMessages", () => {
     it("should return only user and assistant messages", () => {
       const session = store.createSession("Visible");
-      store.addMessage({ sessionId: session.id, role: "user", content: "hello" });
-      store.addMessage({ sessionId: session.id, role: "assistant", content: "hi", toolCalls: [{ id: "tc1", type: "function" as const, function: { name: "shell", arguments: "{}" } }] });
-      store.addMessage({ sessionId: session.id, role: "tool", content: "result", toolCallId: "tc1" });
-      store.addMessage({ sessionId: session.id, role: "assistant", content: "done" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "hello",
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "assistant",
+        content: "hi",
+        toolCalls: [
+          {
+            id: "tc1",
+            type: "function" as const,
+            function: { name: "shell", arguments: "{}" },
+          },
+        ],
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "tool",
+        content: "result",
+        toolCallId: "tc1",
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "assistant",
+        content: "done",
+      });
 
       const { messages, total } = store.getVisibleMessages(session.id);
       expect(total).toBe(3);
       expect(messages).toHaveLength(3);
-      expect(messages.every((m) => m.role === "user" || m.role === "assistant")).toBe(true);
+      expect(
+        messages.every((m) => m.role === "user" || m.role === "assistant"),
+      ).toBe(true);
       expect(messages[0]!.content).toBe("hello");
       expect(messages[2]!.content).toBe("done");
     });
@@ -167,7 +219,11 @@ describe("createMemoryStore", () => {
     it("should respect limit and offset", () => {
       const session = store.createSession("Page");
       for (let i = 0; i < 10; i++) {
-        store.addMessage({ sessionId: session.id, role: "user", content: `msg ${i}` });
+        store.addMessage({
+          sessionId: session.id,
+          role: "user",
+          content: `msg ${i}`,
+        });
       }
 
       const page1 = store.getVisibleMessages(session.id, 3, 0);
@@ -181,7 +237,11 @@ describe("createMemoryStore", () => {
 
     it("should include createdAt timestamp", () => {
       const session = store.createSession("Timestamps");
-      store.addMessage({ sessionId: session.id, role: "user", content: "hello" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "hello",
+      });
 
       const { messages } = store.getVisibleMessages(session.id);
       expect(messages[0]!.createdAt).toBeGreaterThan(0);
@@ -198,7 +258,11 @@ describe("createMemoryStore", () => {
     it("should return recent messages within maxSize", () => {
       const session = store.createSession("Context");
       for (let i = 0; i < 20; i++) {
-        store.addMessage({ sessionId: session.id, role: "user", content: `msg ${i}` });
+        store.addMessage({
+          sessionId: session.id,
+          role: "user",
+          content: `msg ${i}`,
+        });
       }
       const context = store.buildContext(session.id, 5);
       expect(context).toHaveLength(5);
@@ -207,7 +271,11 @@ describe("createMemoryStore", () => {
     it("should return all messages if less than maxSize", () => {
       const session = store.createSession("Small");
       store.addMessage({ sessionId: session.id, role: "user", content: "hi" });
-      store.addMessage({ sessionId: session.id, role: "assistant", content: "hello" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "assistant",
+        content: "hello",
+      });
 
       const context = store.buildContext(session.id, 50);
       expect(context).toHaveLength(2);
@@ -222,8 +290,16 @@ describe("createMemoryStore", () => {
   describe("searchMessages", () => {
     it("should find messages by keyword", () => {
       const session = store.createSession("Search");
-      store.addMessage({ sessionId: session.id, role: "user", content: "What is TypeScript?" });
-      store.addMessage({ sessionId: session.id, role: "assistant", content: "TypeScript is a language." });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "What is TypeScript?",
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "assistant",
+        content: "TypeScript is a language.",
+      });
 
       const results = store.searchMessages("TypeScript");
       expect(results.length).toBeGreaterThanOrEqual(1);
@@ -232,7 +308,11 @@ describe("createMemoryStore", () => {
 
     it("should return empty for no matches", () => {
       const session = store.createSession("Empty");
-      store.addMessage({ sessionId: session.id, role: "user", content: "hello" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "hello",
+      });
 
       const results = store.searchMessages("xyznonexistent");
       expect(results).toHaveLength(0);
@@ -240,8 +320,16 @@ describe("createMemoryStore", () => {
 
     it("should escape LIKE wildcards in search query", () => {
       const session = store.createSession("Wildcards");
-      store.addMessage({ sessionId: session.id, role: "user", content: "50% discount" });
-      store.addMessage({ sessionId: session.id, role: "user", content: "other message" });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "50% discount",
+      });
+      store.addMessage({
+        sessionId: session.id,
+        role: "user",
+        content: "other message",
+      });
 
       const results = store.searchMessages("50%");
       expect(results).toHaveLength(1);

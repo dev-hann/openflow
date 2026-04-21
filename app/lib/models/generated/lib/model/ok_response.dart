@@ -19,20 +19,20 @@ class OkResponse {
   bool ok;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is OkResponse &&
-    other.ok == ok;
+  bool operator ==(Object other) =>
+      identical(this, other) || other is OkResponse && other.ok == ok;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (ok.hashCode);
+      // ignore: unnecessary_parenthesis
+      (ok.hashCode);
 
   @override
   String toString() => 'OkResponse[ok=$ok]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'ok'] = this.ok;
+    json[r'ok'] = this.ok;
     return json;
   }
 
@@ -47,8 +47,10 @@ class OkResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'ok'), 'Required key "OkResponse[ok]" is missing from JSON.');
-        assert(json[r'ok'] != null, 'Required key "OkResponse[ok]" has a null value in JSON.');
+        assert(json.containsKey(r'ok'),
+            'Required key "OkResponse[ok]" is missing from JSON.');
+        assert(json[r'ok'] != null,
+            'Required key "OkResponse[ok]" has a null value in JSON.');
         return true;
       }());
 
@@ -59,7 +61,10 @@ class OkResponse {
     return null;
   }
 
-  static List<OkResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<OkResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <OkResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -87,13 +92,19 @@ class OkResponse {
   }
 
   // maps a json object with a list of OkResponse-objects as value to a dart map
-  static Map<String, List<OkResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<OkResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<OkResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = OkResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = OkResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -104,4 +115,3 @@ class OkResponse {
     'ok',
   };
 }
-

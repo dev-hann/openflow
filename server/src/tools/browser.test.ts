@@ -25,7 +25,10 @@ const mockedExecSync = vi.mocked(execSync);
 const mockedExistsSync = vi.mocked(existsSync);
 
 function makeTmpDir(): string {
-  const dir = join(tmpdir(), `openflow-browser-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const dir = join(
+    tmpdir(),
+    `openflow-browser-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -52,7 +55,9 @@ describe("createBrowserTools", () => {
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
       expect(screenshot.name).toBe("browser_screenshot");
       expect(screenshot.definition.function.name).toBe("browser_screenshot");
-      expect(screenshot.definition.function.parameters.required).toContain("url");
+      expect(screenshot.definition.function.parameters.required).toContain(
+        "url",
+      );
     });
 
     it("has all expected parameters", () => {
@@ -67,7 +72,9 @@ describe("createBrowserTools", () => {
 
     it("description mentions auto-install", () => {
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
-      expect(screenshot.definition.function.description).toContain("auto-installed");
+      expect(screenshot.definition.function.description).toContain(
+        "auto-installed",
+      );
     });
   });
 
@@ -76,18 +83,23 @@ describe("createBrowserTools", () => {
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
       expect(execute.name).toBe("browser_execute");
       expect(execute.definition.function.name).toBe("browser_execute");
-      expect(execute.definition.function.parameters.required).toContain("script");
+      expect(execute.definition.function.parameters.required).toContain(
+        "script",
+      );
     });
 
     it("description mentions Playwright and auto-install", () => {
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
       expect(execute.definition.function.description).toContain("Playwright");
-      expect(execute.definition.function.description).toContain("auto-installed");
+      expect(execute.definition.function.description).toContain(
+        "auto-installed",
+      );
     });
 
     it("script parameter description mentions workspace placeholder", () => {
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
-      const scriptDesc = execute.definition.function.parameters.properties.script!.description as string;
+      const scriptDesc = execute.definition.function.parameters.properties
+        .script!.description as string;
       expect(scriptDesc).toContain("{WORKSPACE}");
     });
   });
@@ -124,7 +136,9 @@ describe("browser tool execution", () => {
     mockedExecFileSync.mockReturnValue("ok");
     mockedExecSync.mockReturnValue("");
     mockedExistsSync.mockReturnValue(true);
-    vi.mocked(readdirSync).mockReturnValue(["chromium-1234"] as unknown as ReturnType<typeof readdirSync>);
+    vi.mocked(readdirSync).mockReturnValue([
+      "chromium-1234",
+    ] as unknown as ReturnType<typeof readdirSync>);
   });
 
   afterEach(() => {
@@ -159,11 +173,17 @@ describe("browser tool execution", () => {
     });
 
     it("should throw on timeout", async () => {
-      const err = new Error("killed") as Error & { killed: boolean; stdout: string; stderr: string };
+      const err = new Error("killed") as Error & {
+        killed: boolean;
+        stdout: string;
+        stderr: string;
+      };
       err.killed = true;
       err.stdout = "";
       err.stderr = "";
-      mockedExecFileSync.mockImplementation(() => { throw err; });
+      mockedExecFileSync.mockImplementation(() => {
+        throw err;
+      });
 
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
       await expect(
@@ -172,11 +192,17 @@ describe("browser tool execution", () => {
     });
 
     it("should throw on script failure with output", async () => {
-      const err = new Error("failed") as Error & { killed: boolean; stdout: string; stderr: string };
+      const err = new Error("failed") as Error & {
+        killed: boolean;
+        stdout: string;
+        stderr: string;
+      };
       err.killed = false;
       err.stdout = "out";
       err.stderr = "err";
-      mockedExecFileSync.mockImplementation(() => { throw err; });
+      mockedExecFileSync.mockImplementation(() => {
+        throw err;
+      });
 
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
       await expect(
@@ -185,11 +211,17 @@ describe("browser tool execution", () => {
     });
 
     it("should throw generic message when no output", async () => {
-      const err = new Error("failed") as Error & { killed: boolean; stdout: string; stderr: string };
+      const err = new Error("failed") as Error & {
+        killed: boolean;
+        stdout: string;
+        stderr: string;
+      };
       err.killed = false;
       err.stdout = "";
       err.stderr = "";
-      mockedExecFileSync.mockImplementation(() => { throw err; });
+      mockedExecFileSync.mockImplementation(() => {
+        throw err;
+      });
 
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
       await expect(
@@ -227,15 +259,20 @@ describe("browser tool execution", () => {
 
     it("should throw on install failure", async () => {
       mockedExistsSync.mockReturnValue(false);
-      const err = new Error("install failed") as Error & { stdout: string; stderr: string };
+      const err = new Error("install failed") as Error & {
+        stdout: string;
+        stderr: string;
+      };
       err.stdout = "";
       err.stderr = "npm error";
-      mockedExecSync.mockImplementation(() => { throw err; });
+      mockedExecSync.mockImplementation(() => {
+        throw err;
+      });
 
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
-      await expect(
-        execute.execute({ script: "test" }),
-      ).rejects.toThrow("Failed to auto-install Playwright Chromium");
+      await expect(execute.execute({ script: "test" })).rejects.toThrow(
+        "Failed to auto-install Playwright Chromium",
+      );
     });
 
     it("should not reinstall when already installed", async () => {

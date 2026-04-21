@@ -2,12 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
-import type {
-  LlmClient,
-  ChatMessage,
-  LlmResponse,
-  ToolDefinition,
-} from "../llm/index.js";
+import type { LlmClient, ChatMessage, LlmResponse, ToolDefinition } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { ToolExecutor, ChannelSender } from "../tools/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
@@ -57,10 +52,8 @@ export interface AgentEngine {
 }
 
 export function createAgentEngine(deps: AgentDeps): AgentEngine {
-  const { memory, tools, config, confirmationHandler, confirmationTimeout } =
-    deps;
-  const resolveLlm =
-    typeof deps.llm === "function" ? deps.llm : () => deps.llm as LlmClient;
+  const { memory, tools, config, confirmationHandler, confirmationTimeout } = deps;
+  const resolveLlm = typeof deps.llm === "function" ? deps.llm : () => deps.llm as LlmClient;
 
   if (!existsSync(config.workspace)) {
     mkdirSync(config.workspace, { recursive: true });
@@ -108,8 +101,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     try {
       return await resolveLlm().chat({
         messages,
-        toolDefinitions:
-          toolDefinitions.length > 0 ? toolDefinitions : undefined,
+        toolDefinitions: toolDefinitions.length > 0 ? toolDefinitions : undefined,
         onToken,
         signal,
       });
@@ -118,10 +110,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         err instanceof OpenFlowError
           ? err
           : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
-      log.error(
-        { round, err: error.message, code: error.code },
-        "LLM request failed",
-      );
+      log.error({ round, err: error.message, code: error.code }, "LLM request failed");
       throw error;
     }
   }
@@ -146,22 +135,12 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
       let response: LlmResponse;
       try {
-        response = await callLlmOnce(
-          messages,
-          toolDefinitions,
-          onToken,
-          signal,
-          round,
-        );
+        response = await callLlmOnce(messages, toolDefinitions, onToken, signal, round);
       } catch (err: unknown) {
         const error =
           err instanceof OpenFlowError
             ? err
-            : new OpenFlowError(
-                "LLM request failed",
-                "LLM_REQUEST_FAILED",
-                err,
-              );
+            : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
         return { type: "error", error };
       }
 
@@ -203,8 +182,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       }
     }
 
-    const overflowMsg =
-      "Maximum tool call rounds reached. Please continue the conversation.";
+    const overflowMsg = "Maximum tool call rounds reached. Please continue the conversation.";
     contextResolver.persistMessage(sessionId, {
       role: "assistant",
       content: overflowMsg,
@@ -220,51 +198,25 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     return { type: "text", content: overflowMsg };
   }
 
-  async function handleMessage(
-    params: HandleMessageParams,
-  ): Promise<AgentResponse> {
-    const {
-      sessionId,
-      userMessage,
-      onToken,
-      signal,
-      systemPromptOverride,
-      chatId,
-    } = params;
-    log.info(
-      { sessionId, messageLength: userMessage.length },
-      "handling message",
-    );
+  async function handleMessage(params: HandleMessageParams): Promise<AgentResponse> {
+    const { sessionId, userMessage, onToken, signal, systemPromptOverride, chatId } = params;
+    log.info({ sessionId, messageLength: userMessage.length }, "handling message");
 
     const saveErr = contextResolver.saveUserMessage(sessionId, userMessage);
     if (saveErr) return { type: "error", error: saveErr };
 
     let messages: ChatMessage[];
     try {
-      messages = await contextResolver.buildConversationContext(
-        sessionId,
-        systemPromptOverride,
-      );
+      messages = await contextResolver.buildConversationContext(sessionId, systemPromptOverride);
     } catch (err: unknown) {
       const error =
         err instanceof OpenFlowError
           ? err
-          : new OpenFlowError(
-              "Failed to build context",
-              "LLM_REQUEST_FAILED",
-              err,
-            );
+          : new OpenFlowError("Failed to build context", "LLM_REQUEST_FAILED", err);
       return { type: "error", error };
     }
 
-    return runLlmLoop(
-      sessionId,
-      messages,
-      tools.getDefinitions(),
-      chatId,
-      onToken,
-      signal,
-    );
+    return runLlmLoop(sessionId, messages, tools.getDefinitions(), chatId, onToken, signal);
   }
 
   return {

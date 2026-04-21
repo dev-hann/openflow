@@ -150,6 +150,6 @@ export function buildSkillPrompt(skills: SkillMeta[]): string {
     "<skills>",
     lines.join("\n"),
     "</skills>",
-    'When a task matches a skill description, use the read_file tool to load the full SKILL.md content from its location, then follow its instructions.',
+    "When a task matches a skill description, use the read_file tool to load the full SKILL.md content from its location, then follow its instructions.",
   ].join("\n");
 }

@@ -45,12 +45,7 @@ export function sendFinalResponse(ws: WebSocket, sessionId: string, content: str
   );
 }
 
-export function sendError(
-  ws: WebSocket,
-  code: string,
-  message: string,
-  sessionId?: string,
-): void {
+export function sendError(ws: WebSocket, code: string, message: string, sessionId?: string): void {
   if (ws.readyState !== ws.OPEN) return;
   ws.send(
     serializeWsServerMessage({

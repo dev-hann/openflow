@@ -26,26 +26,27 @@ class ChatMessageResponse {
   int createdAt;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is ChatMessageResponse &&
-    other.role == role &&
-    other.content == content &&
-    other.createdAt == createdAt;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatMessageResponse &&
+          other.role == role &&
+          other.content == content &&
+          other.createdAt == createdAt;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (role.hashCode) +
-    (content.hashCode) +
-    (createdAt.hashCode);
+      // ignore: unnecessary_parenthesis
+      (role.hashCode) + (content.hashCode) + (createdAt.hashCode);
 
   @override
-  String toString() => 'ChatMessageResponse[role=$role, content=$content, createdAt=$createdAt]';
+  String toString() =>
+      'ChatMessageResponse[role=$role, content=$content, createdAt=$createdAt]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'role'] = this.role;
-      json[r'content'] = this.content;
-      json[r'createdAt'] = this.createdAt;
+    json[r'role'] = this.role;
+    json[r'content'] = this.content;
+    json[r'createdAt'] = this.createdAt;
     return json;
   }
 
@@ -60,12 +61,18 @@ class ChatMessageResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'role'), 'Required key "ChatMessageResponse[role]" is missing from JSON.');
-        assert(json[r'role'] != null, 'Required key "ChatMessageResponse[role]" has a null value in JSON.');
-        assert(json.containsKey(r'content'), 'Required key "ChatMessageResponse[content]" is missing from JSON.');
-        assert(json[r'content'] != null, 'Required key "ChatMessageResponse[content]" has a null value in JSON.');
-        assert(json.containsKey(r'createdAt'), 'Required key "ChatMessageResponse[createdAt]" is missing from JSON.');
-        assert(json[r'createdAt'] != null, 'Required key "ChatMessageResponse[createdAt]" has a null value in JSON.');
+        assert(json.containsKey(r'role'),
+            'Required key "ChatMessageResponse[role]" is missing from JSON.');
+        assert(json[r'role'] != null,
+            'Required key "ChatMessageResponse[role]" has a null value in JSON.');
+        assert(json.containsKey(r'content'),
+            'Required key "ChatMessageResponse[content]" is missing from JSON.');
+        assert(json[r'content'] != null,
+            'Required key "ChatMessageResponse[content]" has a null value in JSON.');
+        assert(json.containsKey(r'createdAt'),
+            'Required key "ChatMessageResponse[createdAt]" is missing from JSON.');
+        assert(json[r'createdAt'] != null,
+            'Required key "ChatMessageResponse[createdAt]" has a null value in JSON.');
         return true;
       }());
 
@@ -78,7 +85,10 @@ class ChatMessageResponse {
     return null;
   }
 
-  static List<ChatMessageResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<ChatMessageResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <ChatMessageResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -106,13 +116,19 @@ class ChatMessageResponse {
   }
 
   // maps a json object with a list of ChatMessageResponse-objects as value to a dart map
-  static Map<String, List<ChatMessageResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<ChatMessageResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<ChatMessageResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = ChatMessageResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = ChatMessageResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -125,7 +141,6 @@ class ChatMessageResponse {
     'createdAt',
   };
 }
-
 
 class ChatMessageResponseRoleEnum {
   /// Instantiate a new enum with the provided [value].
@@ -148,9 +163,13 @@ class ChatMessageResponseRoleEnum {
     assistant,
   ];
 
-  static ChatMessageResponseRoleEnum? fromJson(dynamic value) => ChatMessageResponseRoleEnumTypeTransformer().decode(value);
+  static ChatMessageResponseRoleEnum? fromJson(dynamic value) =>
+      ChatMessageResponseRoleEnumTypeTransformer().decode(value);
 
-  static List<ChatMessageResponseRoleEnum> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<ChatMessageResponseRoleEnum> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <ChatMessageResponseRoleEnum>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -167,7 +186,8 @@ class ChatMessageResponseRoleEnum {
 /// Transformation class that can [encode] an instance of [ChatMessageResponseRoleEnum] to String,
 /// and [decode] dynamic data back to [ChatMessageResponseRoleEnum].
 class ChatMessageResponseRoleEnumTypeTransformer {
-  factory ChatMessageResponseRoleEnumTypeTransformer() => _instance ??= const ChatMessageResponseRoleEnumTypeTransformer._();
+  factory ChatMessageResponseRoleEnumTypeTransformer() =>
+      _instance ??= const ChatMessageResponseRoleEnumTypeTransformer._();
 
   const ChatMessageResponseRoleEnumTypeTransformer._();
 
@@ -184,8 +204,10 @@ class ChatMessageResponseRoleEnumTypeTransformer {
   ChatMessageResponseRoleEnum? decode(dynamic data, {bool allowNull = true}) {
     if (data != null) {
       switch (data) {
-        case r'user': return ChatMessageResponseRoleEnum.user;
-        case r'assistant': return ChatMessageResponseRoleEnum.assistant;
+        case r'user':
+          return ChatMessageResponseRoleEnum.user;
+        case r'assistant':
+          return ChatMessageResponseRoleEnum.assistant;
         default:
           if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');
@@ -198,5 +220,3 @@ class ChatMessageResponseRoleEnumTypeTransformer {
   /// Singleton [ChatMessageResponseRoleEnumTypeTransformer] instance.
   static ChatMessageResponseRoleEnumTypeTransformer? _instance;
 }
-
-

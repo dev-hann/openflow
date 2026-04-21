@@ -19,20 +19,22 @@ class SessionListResponse {
   List<SessionInfo> sessions;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is SessionListResponse &&
-    _deepEquality.equals(other.sessions, sessions);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SessionListResponse &&
+          _deepEquality.equals(other.sessions, sessions);
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (sessions.hashCode);
+      // ignore: unnecessary_parenthesis
+      (sessions.hashCode);
 
   @override
   String toString() => 'SessionListResponse[sessions=$sessions]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'sessions'] = this.sessions;
+    json[r'sessions'] = this.sessions;
     return json;
   }
 
@@ -47,8 +49,10 @@ class SessionListResponse {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
-        assert(json.containsKey(r'sessions'), 'Required key "SessionListResponse[sessions]" is missing from JSON.');
-        assert(json[r'sessions'] != null, 'Required key "SessionListResponse[sessions]" has a null value in JSON.');
+        assert(json.containsKey(r'sessions'),
+            'Required key "SessionListResponse[sessions]" is missing from JSON.');
+        assert(json[r'sessions'] != null,
+            'Required key "SessionListResponse[sessions]" has a null value in JSON.');
         return true;
       }());
 
@@ -59,7 +63,10 @@ class SessionListResponse {
     return null;
   }
 
-  static List<SessionListResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<SessionListResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <SessionListResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -87,13 +94,19 @@ class SessionListResponse {
   }
 
   // maps a json object with a list of SessionListResponse-objects as value to a dart map
-  static Map<String, List<SessionListResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<SessionListResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<SessionListResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = SessionListResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = SessionListResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
@@ -104,4 +117,3 @@ class SessionListResponse {
     'sessions',
   };
 }
-

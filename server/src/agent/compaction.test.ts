@@ -7,7 +7,9 @@ function createLongContent(length: number): string {
 }
 
 describe("createCompaction", () => {
-  const mockComplete = vi.fn().mockResolvedValue("This is a summary of the conversation.");
+  const mockComplete = vi
+    .fn()
+    .mockResolvedValue("This is a summary of the conversation.");
 
   function createMockLlm(): LlmClient {
     return {
@@ -100,9 +102,19 @@ describe("createCompaction", () => {
       {
         role: "assistant" as const,
         content: null,
-        tool_calls: [{ id: "tc_1", type: "function" as const, function: { name: "shell", arguments: '{"command":"ls"}' } }],
+        tool_calls: [
+          {
+            id: "tc_1",
+            type: "function" as const,
+            function: { name: "shell", arguments: '{"command":"ls"}' },
+          },
+        ],
       },
-      { role: "tool" as const, content: "file1.txt\nfile2.txt", tool_call_id: "tc_1" },
+      {
+        role: "tool" as const,
+        content: "file1.txt\nfile2.txt",
+        tool_call_id: "tc_1",
+      },
       { role: "assistant" as const, content: createLongContent(200) },
       { role: "user" as const, content: createLongContent(200) },
     ];
@@ -145,7 +157,8 @@ describe("createCompaction", () => {
 
     await compaction.compactIfNeeded("session-1", messages);
 
-    const userMessage = localComplete.mock.calls[0]![0].messages[1].content as string;
+    const userMessage = localComplete.mock.calls[0]![0].messages[1]
+      .content as string;
     expect(userMessage).toContain("[Earlier conversation omitted for length]");
   });
 });

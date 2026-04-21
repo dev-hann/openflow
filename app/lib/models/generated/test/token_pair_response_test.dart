@@ -42,8 +42,5 @@ void main() {
     test('to test the property `refreshExpiresAt`', () async {
       // TODO
     });
-
-
   });
-
 }

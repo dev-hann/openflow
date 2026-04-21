@@ -64,8 +64,18 @@ describe("createProviderStore", () => {
   });
 
   it("should list providers", () => {
-    store.addProvider({ name: "A", baseUrl: "https://a.com", apiKey: "key-a", model: "m-a" });
-    store.addProvider({ name: "B", baseUrl: "https://b.com", apiKey: "key-b", model: "m-b" });
+    store.addProvider({
+      name: "A",
+      baseUrl: "https://a.com",
+      apiKey: "key-a",
+      model: "m-a",
+    });
+    store.addProvider({
+      name: "B",
+      baseUrl: "https://b.com",
+      apiKey: "key-b",
+      model: "m-b",
+    });
     const list = store.listProviders();
     expect(list).toHaveLength(2);
     expect(list.map((p) => p.name)).toEqual(["A", "B"]);
@@ -105,8 +115,19 @@ describe("createProviderStore", () => {
   });
 
   it("should get default provider", () => {
-    store.addProvider({ name: "NotDefault", baseUrl: "https://a.com", apiKey: "k", model: "m" });
-    store.addProvider({ name: "Default", baseUrl: "https://b.com", apiKey: "k", model: "m", isDefault: true });
+    store.addProvider({
+      name: "NotDefault",
+      baseUrl: "https://a.com",
+      apiKey: "k",
+      model: "m",
+    });
+    store.addProvider({
+      name: "Default",
+      baseUrl: "https://b.com",
+      apiKey: "k",
+      model: "m",
+      isDefault: true,
+    });
     const def = store.getDefaultProvider();
     expect(def).toBeTruthy();
     expect(def!.name).toBe("Default");
@@ -114,13 +135,29 @@ describe("createProviderStore", () => {
   });
 
   it("should return null when no default provider", () => {
-    store.addProvider({ name: "NotDefault", baseUrl: "https://a.com", apiKey: "k", model: "m" });
+    store.addProvider({
+      name: "NotDefault",
+      baseUrl: "https://a.com",
+      apiKey: "k",
+      model: "m",
+    });
     expect(store.getDefaultProvider()).toBeNull();
   });
 
   it("should set default provider", () => {
-    const a = store.addProvider({ name: "A", baseUrl: "https://a.com", apiKey: "k", model: "m", isDefault: true });
-    const b = store.addProvider({ name: "B", baseUrl: "https://b.com", apiKey: "k", model: "m" });
+    const a = store.addProvider({
+      name: "A",
+      baseUrl: "https://a.com",
+      apiKey: "k",
+      model: "m",
+      isDefault: true,
+    });
+    const b = store.addProvider({
+      name: "B",
+      baseUrl: "https://b.com",
+      apiKey: "k",
+      model: "m",
+    });
     const result = store.setDefault(b.id);
     expect(result).toBeTruthy();
     expect(result!.isDefault).toBe(true);

@@ -16,11 +16,7 @@ interface PushService {
 }
 
 export interface NotificationService extends PushService {
-  notifyAll(
-    title: string,
-    body: string,
-    data?: Record<string, unknown>,
-  ): Promise<void>;
+  notifyAll(title: string, body: string, data?: Record<string, unknown>): Promise<void>;
 }
 
 export function createNotificationService(
@@ -51,15 +47,9 @@ export function createNotificationService(
     details?: { error?: string };
   }
 
-  function processTicket(
-    r: ExpoPushResult,
-    recipientToken: string,
-  ): PushTicket {
+  function processTicket(r: ExpoPushResult, recipientToken: string): PushTicket {
     if (r.status === "error") {
-      log.error(
-        { details: r.details, message: r.message },
-        "push notification error",
-      );
+      log.error({ details: r.details, message: r.message }, "push notification error");
       if (r.details?.error === "DeviceNotRegistered") {
         tokenStore.unregister(recipientToken);
       }
@@ -98,10 +88,7 @@ export function createNotificationService(
 
   async function send(message: PushMessage): Promise<PushTicket> {
     if (!Expo.isExpoPushToken(message.to)) {
-      log.warn(
-        { token: String(message.to).slice(0, 8) + "..." },
-        "invalid Expo push token",
-      );
+      log.warn({ token: String(message.to).slice(0, 8) + "..." }, "invalid Expo push token");
       return {
         id: "invalid",
         status: "error",

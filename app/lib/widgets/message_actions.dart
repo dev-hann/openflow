@@ -129,7 +129,9 @@ class _MessageActionsState extends State<MessageActions>
             color: iconColor,
             onPressed: widget.onEdit!,
           ),
-        if (_isAssistant && widget.isLastAssistant && widget.onRegenerate != null)
+        if (_isAssistant &&
+            widget.isLastAssistant &&
+            widget.onRegenerate != null)
           _ActionButton(
             icon: Icons.refresh,
             tooltip: '재생성',

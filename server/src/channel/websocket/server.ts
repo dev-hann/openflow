@@ -110,10 +110,12 @@ export function createWebSocketChannel(
           }
         }, 5_000);
         shutdownTimeout.unref();
-        await new Promise<void>((resolve) => wss!.close(() => {
-          clearTimeout(shutdownTimeout);
-          resolve();
-        }));
+        await new Promise<void>((resolve) =>
+          wss!.close(() => {
+            clearTimeout(shutdownTimeout);
+            resolve();
+          }),
+        );
         wss = undefined;
       }
       if (server) {

@@ -19,7 +19,12 @@ function contentDelta(text: string): string {
   });
 }
 
-function toolCallDelta(index: number, id: string | null, fnName?: string, fnArgs?: string): string {
+function toolCallDelta(
+  index: number,
+  id: string | null,
+  fnName?: string,
+  fnArgs?: string,
+): string {
   const delta: Record<string, unknown> = { index };
   if (id !== null) delta.id = id;
   if (fnName !== undefined) {
@@ -60,7 +65,9 @@ describe("parseSseStream", () => {
     expect(tcs).toHaveLength(1);
     expect(tcs[0]!.id).toBe("call_1");
     expect((tcs[0]!.function as Record<string, unknown>).name).toBe("shell");
-    expect((tcs[0]!.function as Record<string, unknown>).arguments).toBe('{"command":"ls"}');
+    expect((tcs[0]!.function as Record<string, unknown>).arguments).toBe(
+      '{"command":"ls"}',
+    );
   });
 
   it("should skip malformed JSON lines", async () => {
@@ -81,10 +88,7 @@ describe("parseSseStream", () => {
     const tokens: string[] = [];
     const chunk1 = `data: ${contentDelta("Hel")}\n\n`;
     const chunk2 = `data: ${contentDelta("lo")}\n\ndata: [DONE]\n\n`;
-    await parseSseStream(
-      makeStream([chunk1, chunk2]),
-      (t) => tokens.push(t),
-    );
+    await parseSseStream(makeStream([chunk1, chunk2]), (t) => tokens.push(t));
     expect(tokens).toEqual(["Hel", "lo"]);
   });
 

@@ -56,7 +56,10 @@ function listRecentDailyFiles(dailyDir: string, days: number): string[] {
 }
 
 function safeWrite(filePath: string, content: string): void {
-  withSyncRetry(() => writeFileSync(filePath, content, "utf-8"), () => true);
+  withSyncRetry(
+    () => writeFileSync(filePath, content, "utf-8"),
+    () => true,
+  );
 }
 
 export function createWorkspaceLoader(config: WorkspaceConfig) {
@@ -142,7 +145,16 @@ export function createWorkspaceLoader(config: WorkspaceConfig) {
     return existsSync(join(dir, "PERSONA.md"));
   }
 
-  return { loadAll, loadDailyMemory, writeDailyMemory, writePersona, writeUser, hasPersona, getPersonaPath, getWorkspaceDir };
+  return {
+    loadAll,
+    loadDailyMemory,
+    writeDailyMemory,
+    writePersona,
+    writeUser,
+    hasPersona,
+    getPersonaPath,
+    getWorkspaceDir,
+  };
 }
 
 export type WorkspaceLoader = ReturnType<typeof createWorkspaceLoader>;

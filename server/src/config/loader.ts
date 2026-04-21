@@ -39,21 +39,13 @@ export function loadConfig(): OpenFlowConfig {
   try {
     parsed = JSON.parse(raw) as unknown;
   } catch {
-    throw new OpenFlowError(
-      `Invalid JSON in configuration file: ${configPath}`,
-      "CONFIG_INVALID",
-    );
+    throw new OpenFlowError(`Invalid JSON in configuration file: ${configPath}`, "CONFIG_INVALID");
   }
 
   const result = openFlowConfigSchema.safeParse(parsed);
   if (!result.success) {
-    const issues = result.error.issues
-      .map((i) => `  ${i.path.join(".")}: ${i.message}`)
-      .join("\n");
-    throw new OpenFlowError(
-      `Configuration validation failed:\n${issues}`,
-      "CONFIG_INVALID",
-    );
+    const issues = result.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
+    throw new OpenFlowError(`Configuration validation failed:\n${issues}`, "CONFIG_INVALID");
   }
 
   const config = result.data;
