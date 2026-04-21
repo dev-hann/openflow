@@ -76,7 +76,6 @@ export function createWebSocketChannel(
 
       server.on("upgrade", (req: IncomingMessage, socket, head) => {
         wss!.handleUpgrade(req, socket, head, (ws: WebSocket) => {
-          (ws as unknown as { upgradeReq: typeof req }).upgradeReq = req;
           wss!.emit("connection", ws, req);
         });
       });
