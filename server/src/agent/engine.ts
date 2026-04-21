@@ -188,45 +188,15 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     }
   }
 
-  async function handleMessage(
-    params: HandleMessageParams,
+  async function runLlmLoop(
+    sessionId: string,
+    messages: ChatMessage[],
+    toolDefinitions: ToolDefinition[],
+    chatId: number | string | undefined,
+    onToken?: (token: string) => void,
+    signal?: AbortSignal,
   ): Promise<AgentResponse> {
-    const {
-      sessionId,
-      userMessage,
-      onToken,
-      signal,
-      systemPromptOverride,
-      chatId,
-    } = params;
     const startedAt = Date.now();
-    log.info(
-      { sessionId, messageLength: userMessage.length },
-      "handling message",
-    );
-
-    const saveErr = saveUserMessage(sessionId, userMessage);
-    if (saveErr) return { type: "error", error: saveErr };
-
-    let messages: ChatMessage[];
-    try {
-      messages = await buildConversationContext(
-        sessionId,
-        systemPromptOverride,
-      );
-    } catch (err: unknown) {
-      const error =
-        err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError(
-              "Failed to build context",
-              "LLM_REQUEST_FAILED",
-              err,
-            );
-      return { type: "error", error };
-    }
-
-    const toolDefinitions = tools.getDefinitions();
 
     for (let round = 0; round < config.maxToolRounds; round++) {
       if (signal?.aborted) {
@@ -236,7 +206,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         };
       }
 
-      let response;
+      let response: LlmResponse;
       try {
         response = await callLlmOnce(
           messages,
@@ -307,6 +277,53 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       "message handled (max rounds reached)",
     );
     return { type: "text", content: overflowMsg };
+  }
+
+  async function handleMessage(
+    params: HandleMessageParams,
+  ): Promise<AgentResponse> {
+    const {
+      sessionId,
+      userMessage,
+      onToken,
+      signal,
+      systemPromptOverride,
+      chatId,
+    } = params;
+    log.info(
+      { sessionId, messageLength: userMessage.length },
+      "handling message",
+    );
+
+    const saveErr = saveUserMessage(sessionId, userMessage);
+    if (saveErr) return { type: "error", error: saveErr };
+
+    let messages: ChatMessage[];
+    try {
+      messages = await buildConversationContext(
+        sessionId,
+        systemPromptOverride,
+      );
+    } catch (err: unknown) {
+      const error =
+        err instanceof OpenFlowError
+          ? err
+          : new OpenFlowError(
+              "Failed to build context",
+              "LLM_REQUEST_FAILED",
+              err,
+            );
+      return { type: "error", error };
+    }
+
+    return runLlmLoop(
+      sessionId,
+      messages,
+      tools.getDefinitions(),
+      chatId,
+      onToken,
+      signal,
+    );
   }
 
   return {
