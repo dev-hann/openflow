@@ -15,6 +15,13 @@ import { route, routePattern, type Route } from "./routes.js";
 
 const log = createLogger("ws/provider-routes");
 
+const PROVIDER_ID_REGEX = /^\/api\/providers\/([^/]+)(?:\/(verify|models))?$/;
+
+function extractProviderId(path: string): string | null {
+  const match = path.match(PROVIDER_ID_REGEX);
+  return match?.[1] ?? null;
+}
+
 function maskApiKey(apiKey: string): string {
   if (apiKey.length <= 8) return "••••••••";
   return apiKey.slice(0, 4) + "••••" + apiKey.slice(-4);
@@ -133,7 +140,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const providerId = path.slice("/api/providers/".length);
+    const providerId = extractProviderId(path);
     if (!providerId) {
       sendJson(res, 400, { error: "provider_id_required" });
       return;
@@ -169,7 +176,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const providerId = path.slice("/api/providers/".length);
+    const providerId = extractProviderId(path);
     if (!providerId) {
       sendJson(res, 400, { error: "provider_id_required" });
       return;
@@ -211,7 +218,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const providerId = path.match(/^\/api\/providers\/([^/]+)\/verify$/)?.[1];
+    const providerId = extractProviderId(path);
     if (!providerId) {
       sendJson(res, 400, { error: "provider_id_required" });
       return;
@@ -241,7 +248,7 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   ): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const providerId = path.match(/^\/api\/providers\/([^/]+)\/models$/)?.[1];
+    const providerId = extractProviderId(path);
     if (!providerId) {
       sendJson(res, 400, { error: "provider_id_required" });
       return;
