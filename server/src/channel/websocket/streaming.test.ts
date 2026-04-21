@@ -67,9 +67,7 @@ describe("createStreamingTokenHandler", () => {
     handler("Hello");
     handler(" world");
 
-    const messages = getSent().map(
-      (s) => JSON.parse(s) as Record<string, unknown>,
-    );
+    const messages = getSent().map((s) => JSON.parse(s) as Record<string, unknown>);
     expect(messages).toHaveLength(2);
     expect(messages[0]).toEqual({
       type: "token",

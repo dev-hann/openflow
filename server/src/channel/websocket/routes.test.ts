@@ -1,11 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import {
-  createRoutes,
-  route,
-  routePattern,
-  type RoutesDeps,
-} from "./routes.js";
+import { createRoutes, route, routePattern, type RoutesDeps } from "./routes.js";
 import type { AuthService } from "./auth.js";
 import type { MemoryStore } from "../../memory/index.js";
 import type { ProviderStore } from "../../memory/provider-store.js";
@@ -179,9 +174,7 @@ describe("createRoutes", () => {
 
   it("should return 500 when route handler throws unexpected error", async () => {
     const throwingDeps = createMockDeps();
-    (
-      throwingDeps.memoryStore.listSessions as ReturnType<typeof vi.fn>
-    ).mockImplementation(() => {
+    (throwingDeps.memoryStore.listSessions as ReturnType<typeof vi.fn>).mockImplementation(() => {
       throw new Error("unexpected crash");
     });
 

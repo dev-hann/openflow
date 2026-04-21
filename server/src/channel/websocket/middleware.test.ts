@@ -12,9 +12,7 @@ import {
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 
-function createMockRequest(
-  overrides: Partial<IncomingMessage> = {},
-): IncomingMessage {
+function createMockRequest(overrides: Partial<IncomingMessage> = {}): IncomingMessage {
   return {
     headers: {},
     method: "GET",
@@ -86,9 +84,7 @@ describe("extractBearerToken", () => {
 describe("requireAuth", () => {
   const mockAuthService = {
     validateAccessToken:
-      vi.fn<
-        (token: string) => { sessionKey: string; expiresAt: number } | null
-      >(),
+      vi.fn<(token: string) => { sessionKey: string; expiresAt: number } | null>(),
   } as unknown as AuthService;
 
   beforeEach(() => {

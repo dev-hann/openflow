@@ -1,13 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  mkdirSync,
-  rmSync,
-  writeFileSync,
-  readFileSync,
-  symlinkSync,
-} from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readFileSync, symlinkSync } from "node:fs";
 import {
   validateWorkspacePath,
   createFileReadTool,
@@ -41,9 +35,7 @@ describe("validateWorkspacePath", () => {
 
   it("should reject path traversal with ..", () => {
     const traversal = join(testDir, "..", "..", "etc", "passwd");
-    expect(() => validateWorkspacePath(traversal, testDir)).toThrow(
-      "Path is outside workspace",
-    );
+    expect(() => validateWorkspacePath(traversal, testDir)).toThrow("Path is outside workspace");
   });
 
   it("should allow non-existent path inside workspace", () => {
@@ -53,9 +45,9 @@ describe("validateWorkspacePath", () => {
   });
 
   it("should reject non-existent path outside workspace", () => {
-    expect(() =>
-      validateWorkspacePath("/tmp/outside-test-file.txt", testDir),
-    ).toThrow("Path is outside workspace");
+    expect(() => validateWorkspacePath("/tmp/outside-test-file.txt", testDir)).toThrow(
+      "Path is outside workspace",
+    );
   });
 
   it("should resolve symlink inside workspace", () => {
@@ -77,9 +69,7 @@ describe("validateWorkspacePath", () => {
     const link = join(testDir, "escape.txt");
     symlinkSync(outsideFile, link);
 
-    expect(() => validateWorkspacePath(link, testDir)).toThrow(
-      "Path is outside workspace",
-    );
+    expect(() => validateWorkspacePath(link, testDir)).toThrow("Path is outside workspace");
 
     rmSync(outsideDir, { recursive: true, force: true });
   });
@@ -105,33 +95,25 @@ describe("createFileReadTool", () => {
   });
 
   it("should throw for missing file", async () => {
-    await expect(
-      tool.execute({ path: join(testDir, "missing.txt") }),
-    ).rejects.toThrow("File not found");
+    await expect(tool.execute({ path: join(testDir, "missing.txt") })).rejects.toThrow(
+      "File not found",
+    );
   });
 
   it("should throw for path outside workspace", async () => {
-    await expect(tool.execute({ path: "/etc/passwd" })).rejects.toThrow(
-      "outside workspace",
-    );
+    await expect(tool.execute({ path: "/etc/passwd" })).rejects.toThrow("outside workspace");
   });
 
   it("should throw for missing path argument", async () => {
-    await expect(tool.execute({})).rejects.toThrow(
-      "Missing or invalid argument: path",
-    );
+    await expect(tool.execute({})).rejects.toThrow("Missing or invalid argument: path");
   });
 
   it("should throw for non-string path argument", async () => {
-    await expect(tool.execute({ path: 123 })).rejects.toThrow(
-      "Missing or invalid argument: path",
-    );
+    await expect(tool.execute({ path: 123 })).rejects.toThrow("Missing or invalid argument: path");
   });
 
   it("should throw for empty path argument", async () => {
-    await expect(tool.execute({ path: "" })).rejects.toThrow(
-      "Missing or invalid argument: path",
-    );
+    await expect(tool.execute({ path: "" })).rejects.toThrow("Missing or invalid argument: path");
   });
 
   it("should truncate large content", async () => {
@@ -180,9 +162,9 @@ describe("createFileWriteTool", () => {
   });
 
   it("should throw for path outside workspace", async () => {
-    await expect(
-      tool.execute({ path: "/tmp/outside.txt", content: "nope" }),
-    ).rejects.toThrow("outside workspace");
+    await expect(tool.execute({ path: "/tmp/outside.txt", content: "nope" })).rejects.toThrow(
+      "outside workspace",
+    );
   });
 
   it("should throw for missing path argument", async () => {
@@ -234,14 +216,10 @@ describe("createListDirTool", () => {
   });
 
   it("should throw for path outside workspace", async () => {
-    await expect(tool.execute({ path: "/etc" })).rejects.toThrow(
-      "outside workspace",
-    );
+    await expect(tool.execute({ path: "/etc" })).rejects.toThrow("outside workspace");
   });
 
   it("should throw for missing path argument", async () => {
-    await expect(tool.execute({})).rejects.toThrow(
-      "Missing or invalid argument: path",
-    );
+    await expect(tool.execute({})).rejects.toThrow("Missing or invalid argument: path");
   });
 });

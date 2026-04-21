@@ -19,12 +19,7 @@ function contentDelta(text: string): string {
   });
 }
 
-function toolCallDelta(
-  index: number,
-  id: string | null,
-  fnName?: string,
-  fnArgs?: string,
-): string {
+function toolCallDelta(index: number, id: string | null, fnName?: string, fnArgs?: string): string {
   const delta: Record<string, unknown> = { index };
   if (id !== null) delta.id = id;
   if (fnName !== undefined) {
@@ -65,17 +60,13 @@ describe("parseSseStream", () => {
     expect(tcs).toHaveLength(1);
     expect(tcs[0]!.id).toBe("call_1");
     expect((tcs[0]!.function as Record<string, unknown>).name).toBe("shell");
-    expect((tcs[0]!.function as Record<string, unknown>).arguments).toBe(
-      '{"command":"ls"}',
-    );
+    expect((tcs[0]!.function as Record<string, unknown>).arguments).toBe('{"command":"ls"}');
   });
 
   it("should skip malformed JSON lines", async () => {
     const tokens: string[] = [];
     const result = await parseSseStream(
-      makeStream([
-        `data: ${contentDelta("ok")}\n\ndata: not-json\n\ndata: [DONE]\n\n`,
-      ]),
+      makeStream([`data: ${contentDelta("ok")}\n\ndata: not-json\n\ndata: [DONE]\n\n`]),
       (t) => tokens.push(t),
     );
     expect(tokens).toEqual(["ok"]);
@@ -93,10 +84,7 @@ describe("parseSseStream", () => {
   });
 
   it("should return empty content for empty stream", async () => {
-    const result = await parseSseStream(
-      makeStream(["data: [DONE]\n\n"]),
-      () => {},
-    );
+    const result = await parseSseStream(makeStream(["data: [DONE]\n\n"]), () => {});
     const choices = result.choices as Array<Record<string, unknown>>;
     const msg = choices[0]!.message as Record<string, unknown>;
     expect(msg.content).toBe("");
@@ -125,9 +113,7 @@ describe("parseSseStream", () => {
   it("should skip non-data lines", async () => {
     const tokens: string[] = [];
     await parseSseStream(
-      makeStream([
-        `: comment\n\nevent: ping\n\ndata: ${contentDelta("hi")}\n\ndata: [DONE]\n\n`,
-      ]),
+      makeStream([`: comment\n\nevent: ping\n\ndata: ${contentDelta("hi")}\n\ndata: [DONE]\n\n`]),
       (t) => tokens.push(t),
     );
     expect(tokens).toEqual(["hi"]);

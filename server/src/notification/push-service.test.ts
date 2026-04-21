@@ -2,14 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createNotificationService } from "./push-service.js";
 import type { PushTokenStore, PushTokenRecord } from "./token-store.js";
 
-const mockSendPush = vi
-  .fn()
-  .mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
+const mockSendPush = vi.fn().mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
 
 vi.mock("expo-server-sdk", () => {
-  const isValid = vi.fn((token: string) =>
-    token.startsWith("ExponentPushToken["),
-  );
+  const isValid = vi.fn((token: string) => token.startsWith("ExponentPushToken["));
   return {
     Expo: Object.assign(
       vi.fn().mockImplementation(() => ({
@@ -50,9 +46,7 @@ describe("createNotificationService", () => {
       const store = mockTokenStore();
       const service = createNotificationService({ enabled: false }, store);
 
-      const tickets = await service.sendAll([
-        { to: "test", title: "t", body: "b" },
-      ]);
+      const tickets = await service.sendAll([{ to: "test", title: "t", body: "b" }]);
       expect(tickets).toEqual([]);
     });
 
@@ -152,9 +146,7 @@ describe("createNotificationService", () => {
         body: "B",
       });
       expect(ticket.status).toBe("error");
-      expect(store.unregister).toHaveBeenCalledWith(
-        "ExponentPushToken[dead-token]",
-      );
+      expect(store.unregister).toHaveBeenCalledWith("ExponentPushToken[dead-token]");
     });
 
     it("should return error ticket when Expo send throws", async () => {
@@ -183,9 +175,7 @@ describe("createNotificationService", () => {
         title: "T",
         body: "B",
       });
-      expect(store.touchLastUsed).toHaveBeenCalledWith(
-        "ExponentPushToken[touch]",
-      );
+      expect(store.touchLastUsed).toHaveBeenCalledWith("ExponentPushToken[touch]");
     });
 
     it("should return empty array from sendAll with empty input", async () => {

@@ -150,9 +150,7 @@ describe("rowToSearchResult", () => {
     expect(result.sessionId).toBe("sess_1");
     expect(result.sessionTitle).toBe("Test");
     expect(result.role).toBe("user");
-    expect(result.content).toBe(
-      "Hello world, this is a test message about cats",
-    );
+    expect(result.content).toBe("Hello world, this is a test message about cats");
     expect(result.timestamp).toBe(1000);
     expect(result.snippet).toContain("test");
   });

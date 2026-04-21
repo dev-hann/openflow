@@ -84,9 +84,7 @@ describe("createAuthService", () => {
 
     it("should return null for invalid PIN", () => {
       service.createPairingPin();
-      expect(
-        service.verifyPinAndIssueTokens("000000", "TestDevice"),
-      ).toBeNull();
+      expect(service.verifyPinAndIssueTokens("000000", "TestDevice")).toBeNull();
     });
 
     it("should return null for already claimed PIN", () => {
@@ -104,9 +102,7 @@ describe("createAuthService", () => {
     it("should block all PINs after MAX_PIN_ATTEMPTS wrong guesses", () => {
       const pin = service.createPairingPin();
       for (let i = 0; i < 5; i++) {
-        expect(
-          service.verifyPinAndIssueTokens("000000", "Attacker"),
-        ).toBeNull();
+        expect(service.verifyPinAndIssueTokens("000000", "Attacker")).toBeNull();
       }
       expect(service.verifyPinAndIssueTokens(pin, "Legit")).toBeNull();
     });
@@ -114,9 +110,7 @@ describe("createAuthService", () => {
     it("should reset lockout when new PIN is created", () => {
       service.createPairingPin();
       for (let i = 0; i < 5; i++) {
-        expect(
-          service.verifyPinAndIssueTokens("000000", "Attacker"),
-        ).toBeNull();
+        expect(service.verifyPinAndIssueTokens("000000", "Attacker")).toBeNull();
       }
       const newPin = service.createPairingPin();
       const tokens = service.verifyPinAndIssueTokens(newPin, "Legit");

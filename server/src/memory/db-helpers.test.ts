@@ -26,9 +26,7 @@ describe("db-helpers", () => {
   describe("generateId", () => {
     it("should return a valid UUID", () => {
       const id = generateId();
-      expect(id).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-      );
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
     it("should return unique ids", () => {
@@ -52,22 +50,13 @@ describe("db-helpers", () => {
       const dbPath = join(TEST_DIR, "test.db");
       const db = openDatabase(dbPath);
       try {
-        const journalMode = db.prepare("PRAGMA journal_mode").get() as Record<
-          string,
-          unknown
-        >;
+        const journalMode = db.prepare("PRAGMA journal_mode").get() as Record<string, unknown>;
         expect(String(journalMode["journal_mode"])).toBe("wal");
 
-        const foreignKeys = db.prepare("PRAGMA foreign_keys").get() as Record<
-          string,
-          unknown
-        >;
+        const foreignKeys = db.prepare("PRAGMA foreign_keys").get() as Record<string, unknown>;
         expect(Number(foreignKeys["foreign_keys"])).toBe(1);
 
-        const busyTimeout = db.prepare("PRAGMA busy_timeout").get() as Record<
-          string,
-          unknown
-        >;
+        const busyTimeout = db.prepare("PRAGMA busy_timeout").get() as Record<string, unknown>;
         expect(Number(busyTimeout["timeout"])).toBe(5000);
       } finally {
         db.close();
@@ -75,9 +64,7 @@ describe("db-helpers", () => {
     });
 
     it("should throw OpenFlowError on invalid path", () => {
-      expect(() => openDatabase("/nonexistent/deep/path/db.db")).toThrow(
-        "Failed to open database",
-      );
+      expect(() => openDatabase("/nonexistent/deep/path/db.db")).toThrow("Failed to open database");
     });
   });
 
@@ -121,10 +108,7 @@ describe("db-helpers", () => {
         withTransaction(db, () => {
           db.exec("INSERT INTO t VALUES ('committed')");
         });
-        const row = db.prepare("SELECT v FROM t").get() as Record<
-          string,
-          unknown
-        >;
+        const row = db.prepare("SELECT v FROM t").get() as Record<string, unknown>;
         expect(row.v).toBe("committed");
       } finally {
         db.close();
@@ -143,10 +127,7 @@ describe("db-helpers", () => {
           }),
         ).toThrow("fail");
 
-        const row = db.prepare("SELECT COUNT(*) as cnt FROM t").get() as Record<
-          string,
-          unknown
-        >;
+        const row = db.prepare("SELECT COUNT(*) as cnt FROM t").get() as Record<string, unknown>;
         expect(Number(row.cnt)).toBe(0);
       } finally {
         db.close();
@@ -163,9 +144,7 @@ describe("db-helpers", () => {
 
         const tables = (
           db
-            .prepare(
-              "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
-            )
+            .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
             .all() as Array<Record<string, unknown>>
         ).map((r) => r.name as string);
 
@@ -185,9 +164,7 @@ describe("db-helpers", () => {
 
         const indexes = (
           db
-            .prepare(
-              "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'",
-            )
+            .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'")
             .all() as Array<Record<string, unknown>>
         ).map((r) => r.name as string);
 
@@ -205,9 +182,10 @@ describe("db-helpers", () => {
         runMigrations(db);
         runMigrations(db);
 
-        const row = db
-          .prepare("SELECT COUNT(*) as cnt FROM sessions")
-          .get() as Record<string, unknown>;
+        const row = db.prepare("SELECT COUNT(*) as cnt FROM sessions").get() as Record<
+          string,
+          unknown
+        >;
         expect(Number(row.cnt)).toBe(0);
       } finally {
         db.close();

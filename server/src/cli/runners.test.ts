@@ -189,8 +189,7 @@ describe("runServer", () => {
   it("should send start notification when enabled", async () => {
     process.exit = vi.fn() as unknown as typeof process.exit;
     const mockNotifyAll = vi.fn().mockResolvedValue(undefined);
-    const { createNotificationService } =
-      await import("../notification/index.js");
+    const { createNotificationService } = await import("../notification/index.js");
     vi.mocked(createNotificationService).mockImplementation(
       () =>
         ({
@@ -214,8 +213,7 @@ describe("runServer", () => {
   it("should send stop notification during cleanup when enabled", async () => {
     process.exit = vi.fn() as unknown as typeof process.exit;
     const mockNotifyAll = vi.fn().mockResolvedValue(undefined);
-    const { createNotificationService } =
-      await import("../notification/index.js");
+    const { createNotificationService } = await import("../notification/index.js");
     vi.mocked(createNotificationService).mockImplementation(
       () =>
         ({
@@ -243,8 +241,7 @@ describe("runServer", () => {
   it("should handle notification failure gracefully during cleanup", async () => {
     process.exit = vi.fn() as unknown as typeof process.exit;
     const mockNotifyAll = vi.fn().mockRejectedValue(new Error("push down"));
-    const { createNotificationService } =
-      await import("../notification/index.js");
+    const { createNotificationService } = await import("../notification/index.js");
     vi.mocked(createNotificationService).mockImplementation(
       () =>
         ({

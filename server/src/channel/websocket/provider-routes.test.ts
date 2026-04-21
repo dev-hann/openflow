@@ -267,18 +267,13 @@ describe("provider routes", () => {
       expect(getStatusCode()).toBe(201);
       const body = JSON.parse(getBody()) as { id: string };
       expect(body.id).toBeDefined();
-      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith(
-        body.id,
-      );
+      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith(body.id);
     });
 
     it("should create provider and run background connectivity check", async () => {
       const localSetup = createTestSetup();
       const route = localSetup.findRoute("/api/providers", "POST");
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockRejectedValue(new Error("network error")),
-      );
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
       const { res, getStatusCode } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
@@ -400,9 +395,7 @@ describe("provider routes", () => {
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith(
-        "prov_1",
-      );
+      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith("prov_1");
     });
 
     it("should reject missing providerId", async () => {
@@ -444,14 +437,8 @@ describe("provider routes", () => {
     });
 
     it("should return ok:true when provider is reachable", async () => {
-      const route = verifySetup.findRoute(
-        "/api/providers/prov_1/verify",
-        "POST",
-      );
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockResolvedValue({ ok: true, status: 200 }),
-      );
+      const route = verifySetup.findRoute("/api/providers/prov_1/verify", "POST");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
       const { res, getStatusCode, getBody } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
@@ -467,14 +454,8 @@ describe("provider routes", () => {
     });
 
     it("should return ok:false when provider returns error", async () => {
-      const route = verifySetup.findRoute(
-        "/api/providers/prov_1/verify",
-        "POST",
-      );
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockResolvedValue({ ok: false, status: 401 }),
-      );
+      const route = verifySetup.findRoute("/api/providers/prov_1/verify", "POST");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401 }));
       const { res, getStatusCode, getBody } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
@@ -491,14 +472,8 @@ describe("provider routes", () => {
     });
 
     it("should return ok:false on network error", async () => {
-      const route = verifySetup.findRoute(
-        "/api/providers/prov_1/verify",
-        "POST",
-      );
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockRejectedValue(new Error("network down")),
-      );
+      const route = verifySetup.findRoute("/api/providers/prov_1/verify", "POST");
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
       const { res, getStatusCode, getBody } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
@@ -515,10 +490,7 @@ describe("provider routes", () => {
     });
 
     it("should return 404 for non-existent provider", async () => {
-      const route = verifySetup.findRoute(
-        "/api/providers/prov_999/verify",
-        "POST",
-      );
+      const route = verifySetup.findRoute("/api/providers/prov_999/verify", "POST");
       const { res, getStatusCode } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
@@ -540,10 +512,7 @@ describe("provider routes", () => {
     });
 
     it("should return sorted model list", async () => {
-      const route = modelsSetup.findRoute(
-        "/api/providers/prov_1/models",
-        "GET",
-      );
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue({
@@ -570,10 +539,7 @@ describe("provider routes", () => {
     });
 
     it("should handle missing data field", async () => {
-      const route = modelsSetup.findRoute(
-        "/api/providers/prov_1/models",
-        "GET",
-      );
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue({
@@ -597,10 +563,7 @@ describe("provider routes", () => {
     });
 
     it("should return error when provider API fails", async () => {
-      const route = modelsSetup.findRoute(
-        "/api/providers/prov_1/models",
-        "GET",
-      );
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue({
@@ -623,10 +586,7 @@ describe("provider routes", () => {
     });
 
     it("should return 500 on network error", async () => {
-      const route = modelsSetup.findRoute(
-        "/api/providers/prov_1/models",
-        "GET",
-      );
+      const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("timeout")));
       const { res, getStatusCode, getBody } = createMockResponse();
       const req = createMockRequest({
@@ -643,10 +603,7 @@ describe("provider routes", () => {
     });
 
     it("should return 404 for non-existent provider", async () => {
-      const route = modelsSetup.findRoute(
-        "/api/providers/prov_999/models",
-        "GET",
-      );
+      const route = modelsSetup.findRoute("/api/providers/prov_999/models", "GET");
       const { res, getStatusCode } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },

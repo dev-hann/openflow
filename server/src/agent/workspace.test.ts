@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import {
-  mkdirSync,
-  rmSync,
-  writeFileSync,
-  readFileSync,
-  existsSync,
-} from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createWorkspaceLoader } from "./workspace.js";
@@ -41,33 +35,21 @@ describe("createWorkspaceLoader", () => {
   });
 
   it("should load PERSONA.md", () => {
-    writeFileSync(
-      join(testDir, "PERSONA.md"),
-      "You are a friendly assistant.",
-      "utf-8",
-    );
+    writeFileSync(join(testDir, "PERSONA.md"), "You are a friendly assistant.", "utf-8");
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     const files = loader.loadAll();
     expect(files.persona).toBe("You are a friendly assistant.");
   });
 
   it("should load USER.md", () => {
-    writeFileSync(
-      join(testDir, "USER.md"),
-      "- Name: Hann\n- Timezone: Asia/Seoul",
-      "utf-8",
-    );
+    writeFileSync(join(testDir, "USER.md"), "- Name: Hann\n- Timezone: Asia/Seoul", "utf-8");
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     const files = loader.loadAll();
     expect(files.user).toContain("Hann");
   });
 
   it("should load MEMORY.md", () => {
-    writeFileSync(
-      join(testDir, "MEMORY.md"),
-      "User prefers Korean language.",
-      "utf-8",
-    );
+    writeFileSync(join(testDir, "MEMORY.md"), "User prefers Korean language.", "utf-8");
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     const files = loader.loadAll();
     expect(files.memory).toContain("Korean");
@@ -76,16 +58,8 @@ describe("createWorkspaceLoader", () => {
   it("should load daily memory files", () => {
     const dailyDir = join(testDir, "daily");
     mkdirSync(dailyDir, { recursive: true });
-    writeFileSync(
-      join(dailyDir, "2026-04-16.md"),
-      "Discussed project architecture.",
-      "utf-8",
-    );
-    writeFileSync(
-      join(dailyDir, "2026-04-17.md"),
-      "Fixed notification push service.",
-      "utf-8",
-    );
+    writeFileSync(join(dailyDir, "2026-04-16.md"), "Discussed project architecture.", "utf-8");
+    writeFileSync(join(dailyDir, "2026-04-17.md"), "Fixed notification push service.", "utf-8");
 
     const loader = createWorkspaceLoader({
       workspaceDir: testDir,

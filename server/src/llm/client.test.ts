@@ -57,13 +57,9 @@ describe("createLlmClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledOnce();
-      const [url, opts] = (fetch as ReturnType<typeof mockFetch>).mock
-        .calls[0]!;
+      const [url, opts] = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]!;
       expect(url).toBe("https://api.example.com/v1/chat/completions");
-      expect((opts as RequestInit).headers).toHaveProperty(
-        "Authorization",
-        "Bearer test-key",
-      );
+      expect((opts as RequestInit).headers).toHaveProperty("Authorization", "Bearer test-key");
     });
 
     it("should include model and params in body", async () => {
@@ -72,8 +68,7 @@ describe("createLlmClient", () => {
         messages: [{ role: "user", content: "Hi" }],
       });
 
-      const opts = (fetch as ReturnType<typeof mockFetch>).mock
-        .calls[0]![1] as RequestInit;
+      const opts = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]![1] as RequestInit;
       const body = JSON.parse(opts.body as string) as Record<string, unknown>;
       expect(body.model).toBe("test-model");
       expect(body.max_tokens).toBe(1024);
@@ -162,9 +157,9 @@ describe("createLlmClient", () => {
       );
 
       const client = createLlmClient(baseConfig);
-      await expect(
-        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
-      ).rejects.toThrow("No choices");
+      await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
+        "No choices",
+      );
     });
 
     it("should throw on null response", async () => {
@@ -177,9 +172,9 @@ describe("createLlmClient", () => {
       );
 
       const client = createLlmClient(baseConfig);
-      await expect(
-        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
-      ).rejects.toThrow("Invalid LLM response");
+      await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
+        "Invalid LLM response",
+      );
     });
 
     it("should throw on missing message in choice", async () => {
@@ -192,9 +187,9 @@ describe("createLlmClient", () => {
       );
 
       const client = createLlmClient(baseConfig);
-      await expect(
-        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
-      ).rejects.toThrow("Invalid message");
+      await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
+        "Invalid message",
+      );
     });
 
     it("should return empty string on null content in complete", async () => {
@@ -382,9 +377,9 @@ describe("createLlmClient", () => {
       );
 
       const client = createLlmClient(baseConfig);
-      await expect(
-        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
-      ).rejects.toThrow("Invalid tool_call format");
+      await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
+        "Invalid tool_call format",
+      );
     });
 
     it("should throw on missing function in tool_call", async () => {
@@ -408,9 +403,9 @@ describe("createLlmClient", () => {
       );
 
       const client = createLlmClient(baseConfig);
-      await expect(
-        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
-      ).rejects.toThrow("Invalid tool_call.function format");
+      await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
+        "Invalid tool_call.function format",
+      );
     });
 
     it("should throw on missing required fields in tool_call", async () => {
@@ -434,9 +429,9 @@ describe("createLlmClient", () => {
       );
 
       const client = createLlmClient(baseConfig);
-      await expect(
-        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
-      ).rejects.toThrow("Missing required fields in tool_call");
+      await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
+        "Missing required fields in tool_call",
+      );
     });
   });
 
@@ -465,6 +460,61 @@ describe("createLlmClient", () => {
       });
       expect(result.type).toBe("text");
     });
+
+    it("should throw stream error when SSE parsing fails", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          body: {
+            [Symbol.asyncIterator]() {
+              return {
+                async next() {
+                  throw new Error("stream broke");
+                },
+              };
+            },
+          },
+        }),
+      );
+
+      const client = createLlmClient(baseConfig);
+      await expect(
+        client.chat({
+          messages: [{ role: "user", content: "Hi" }],
+          onToken: () => {},
+        }),
+      ).rejects.toThrow("Stream error after partial delivery");
+    });
+
+    it("should fall back to json when body is null with onToken", async () => {
+      const tokens: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          body: null,
+          json: () =>
+            Promise.resolve({
+              choices: [{ message: { role: "assistant", content: "fallback" } }],
+            }),
+        }),
+      );
+
+      const client = createLlmClient(baseConfig);
+      const result = await client.chat({
+        messages: [{ role: "user", content: "Hi" }],
+        onToken: (token) => {
+          tokens.push(token);
+        },
+      });
+      expect(result.type).toBe("text");
+      if (result.type === "text") {
+        expect(result.content).toBe("fallback");
+      }
+    });
   });
 
   describe("chat() with tool definitions", () => {
@@ -484,8 +534,7 @@ describe("createLlmClient", () => {
         ],
       });
 
-      const opts = (fetch as ReturnType<typeof mockFetch>).mock
-        .calls[0]![1] as RequestInit;
+      const opts = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]![1] as RequestInit;
       const body = JSON.parse(opts.body as string) as Record<string, unknown>;
       expect(body.tools).toBeDefined();
       const tools = body.tools as Array<{

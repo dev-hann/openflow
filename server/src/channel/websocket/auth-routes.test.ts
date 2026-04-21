@@ -150,10 +150,7 @@ describe("auth routes", () => {
       expect(getStatusCode()).toBe(200);
       const body = JSON.parse(getBody()) as { accessToken: string };
       expect(body.accessToken).toBe("at_new");
-      expect(authService.verifyPinAndIssueTokens).toHaveBeenCalledWith(
-        "123456",
-        "iPhone",
-      );
+      expect(authService.verifyPinAndIssueTokens).toHaveBeenCalledWith("123456", "iPhone");
     });
 
     it("should return 401 for invalid pin", async () => {
@@ -191,10 +188,7 @@ describe("auth routes", () => {
         path: "/api/auth/pair/verify",
         clientIp: "127.0.0.1",
       });
-      expect(authService.verifyPinAndIssueTokens).toHaveBeenCalledWith(
-        "123456",
-        "Unknown device",
-      );
+      expect(authService.verifyPinAndIssueTokens).toHaveBeenCalledWith("123456", "Unknown device");
     });
   });
 

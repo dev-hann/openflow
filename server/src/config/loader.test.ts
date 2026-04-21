@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import {
-  existsSync,
-  mkdirSync,
-  rmSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -71,10 +65,7 @@ describe("loadConfig", () => {
   });
 
   it("should throw CONFIG_INVALID for schema validation failure", () => {
-    writeFileSync(
-      testConfigPath,
-      JSON.stringify({ agent: { maxToolRounds: -1 } }),
-    );
+    writeFileSync(testConfigPath, JSON.stringify({ agent: { maxToolRounds: -1 } }));
 
     try {
       loadConfig();
@@ -142,10 +133,7 @@ describe("initConfig", () => {
   it("should create config file if it does not exist", () => {
     initConfig(testConfigPath);
     expect(existsSync(testConfigPath)).toBe(true);
-    const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<
-      string,
-      unknown
-    >;
+    const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<string, unknown>;
     expect(content.websocket).toBeDefined();
     expect(content.notification).toBeDefined();
   });
@@ -155,10 +143,7 @@ describe("initConfig", () => {
     writeFileSync(testConfigPath, JSON.stringify(existing));
 
     initConfig(testConfigPath);
-    const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<
-      string,
-      unknown
-    >;
+    const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<string, unknown>;
     expect((content.websocket as Record<string, unknown>).enabled).toBe(false);
   });
 });

@@ -71,9 +71,7 @@ describe("isRetryableNetworkError", () => {
   });
 
   it("should detect ETIMEDOUT", () => {
-    expect(isRetryableNetworkError(new Error("connection ETIMEDOUT"))).toBe(
-      true,
-    );
+    expect(isRetryableNetworkError(new Error("connection ETIMEDOUT"))).toBe(true);
   });
 
   it("should not match non-network errors", () => {

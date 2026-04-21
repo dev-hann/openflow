@@ -209,9 +209,7 @@ describe("createMemoryStore", () => {
       const { messages, total } = store.getVisibleMessages(session.id);
       expect(total).toBe(3);
       expect(messages).toHaveLength(3);
-      expect(
-        messages.every((m) => m.role === "user" || m.role === "assistant"),
-      ).toBe(true);
+      expect(messages.every((m) => m.role === "user" || m.role === "assistant")).toBe(true);
       expect(messages[0]!.content).toBe("hello");
       expect(messages[2]!.content).toBe("done");
     });

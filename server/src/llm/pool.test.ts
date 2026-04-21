@@ -20,9 +20,7 @@ function createMockStore(providers: Provider[] = []): ProviderStore {
   return {
     listProviders: vi.fn(() => store),
     getProvider: vi.fn((id: string) => store.find((p) => p.id === id) ?? null),
-    getDefaultProvider: vi.fn(
-      () => store.find((p) => p.isDefault) ?? store[0] ?? null,
-    ),
+    getDefaultProvider: vi.fn(() => store.find((p) => p.isDefault) ?? store[0] ?? null),
     addProvider: vi.fn(),
     updateProvider: vi.fn(),
     deleteProvider: vi.fn(),
@@ -173,8 +171,8 @@ describe("createProviderPool", () => {
       const pool = createProviderPool(store);
 
       (store.listProviders as ReturnType<typeof vi.fn>).mockReturnValue([p1]);
-      (store.getProvider as ReturnType<typeof vi.fn>).mockImplementation(
-        (id: string) => (id === "p1" ? p1 : null),
+      (store.getProvider as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+        id === "p1" ? p1 : null,
       );
 
       pool.syncFromStore();
@@ -193,8 +191,8 @@ describe("createProviderPool", () => {
       expect(pool.getActiveProviderId()).toBe("p1");
 
       (store.listProviders as ReturnType<typeof vi.fn>).mockReturnValue([p2]);
-      (store.getProvider as ReturnType<typeof vi.fn>).mockImplementation(
-        (id: string) => (id === "p2" ? p2 : null),
+      (store.getProvider as ReturnType<typeof vi.fn>).mockImplementation((id: string) =>
+        id === "p2" ? p2 : null,
       );
 
       pool.syncFromStore();

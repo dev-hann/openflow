@@ -107,9 +107,7 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("Available Skills");
     expect(prompt).toContain("<skills>");
     expect(prompt).toContain("<name>weather</name>");
-    expect(prompt).toContain(
-      "<description>Get weather forecasts</description>",
-    );
+    expect(prompt).toContain("<description>Get weather forecasts</description>");
     expect(prompt).toContain("<location>/skills/weather/SKILL.md</location>");
     expect(prompt).toContain("</skills>");
     expect(prompt).toContain("read_file");

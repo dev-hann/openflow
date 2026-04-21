@@ -1,13 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { createAgentEngine, type AgentConfig } from "./engine.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
@@ -51,10 +42,7 @@ describe("createAgentEngine > confirmation", () => {
       },
       { type: "text", content: "Done!" },
     ]);
-    const tools = mockToolExecutor(
-      { shell: "file1\nfile2" },
-      (name) => name === "shell",
-    );
+    const tools = mockToolExecutor({ shell: "file1\nfile2" }, (name) => name === "shell");
     const confirmationHandler: ConfirmationHandler = {
       requestConfirmation: vi.fn().mockResolvedValue({ approved: true }),
     };
@@ -100,10 +88,7 @@ describe("createAgentEngine > confirmation", () => {
       },
       { type: "text", content: "Understood, I won't do that." },
     ]);
-    const tools = mockToolExecutor(
-      { shell: "should not run" },
-      (name) => name === "shell",
-    );
+    const tools = mockToolExecutor({ shell: "should not run" }, (name) => name === "shell");
     const confirmationHandler: ConfirmationHandler = {
       requestConfirmation: vi.fn().mockResolvedValue({ approved: false }),
     };
@@ -149,10 +134,7 @@ describe("createAgentEngine > confirmation", () => {
       },
       { type: "text", content: "Here's the file." },
     ]);
-    const tools = mockToolExecutor(
-      { read_file: "file content" },
-      (name) => name === "shell",
-    );
+    const tools = mockToolExecutor({ read_file: "file content" }, (name) => name === "shell");
     const confirmationHandler: ConfirmationHandler = {
       requestConfirmation: vi.fn().mockResolvedValue({ approved: true }),
     };
@@ -196,10 +178,7 @@ describe("createAgentEngine > confirmation", () => {
       },
       { type: "text", content: "Done." },
     ]);
-    const tools = mockToolExecutor(
-      { shell: "test" },
-      (name) => name === "shell",
-    );
+    const tools = mockToolExecutor({ shell: "test" }, (name) => name === "shell");
     const confirmationHandler: ConfirmationHandler = {
       requestConfirmation: vi.fn().mockResolvedValue({ approved: true }),
     };
@@ -242,10 +221,7 @@ describe("createAgentEngine > confirmation", () => {
       },
       { type: "text", content: "Done." },
     ]);
-    const tools = mockToolExecutor(
-      { shell: "test" },
-      (name) => name === "shell",
-    );
+    const tools = mockToolExecutor({ shell: "test" }, (name) => name === "shell");
     const config: AgentConfig = {
       systemPrompt: "",
       maxToolRounds: 5,

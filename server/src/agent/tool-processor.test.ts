@@ -102,11 +102,9 @@ describe("createToolProcessor", () => {
 
   it("should continue when memory.addMessage fails on success path", async () => {
     const failMemory = createMockMemoryStore();
-    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(
-      () => {
-        throw new Error("db locked");
-      },
-    );
+    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      throw new Error("db locked");
+    });
 
     const { processToolCall } = createToolProcessor({
       tools,
@@ -120,11 +118,9 @@ describe("createToolProcessor", () => {
 
   it("should continue when memory.addMessage fails on parse error path", async () => {
     const failMemory = createMockMemoryStore();
-    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(
-      () => {
-        throw new Error("db locked");
-      },
-    );
+    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      throw new Error("db locked");
+    });
 
     const { processToolCall } = createToolProcessor({
       tools,

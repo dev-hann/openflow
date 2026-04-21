@@ -7,12 +7,10 @@ const { watchFileMock } = vi.hoisted(() => {
   let watcherCallback: () => void = () => {};
   return {
     watchFileMock: Object.assign(
-      vi
-        .fn()
-        .mockImplementation((_path: unknown, _opts: unknown, cb: unknown) => {
-          watcherCallback = cb as () => void;
-          return { unref: vi.fn() };
-        }),
+      vi.fn().mockImplementation((_path: unknown, _opts: unknown, cb: unknown) => {
+        watcherCallback = cb as () => void;
+        return { unref: vi.fn() };
+      }),
       { getCallback: () => watcherCallback },
     ),
   };

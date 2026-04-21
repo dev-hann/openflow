@@ -18,19 +18,10 @@ function makeTmpDir(): string {
   return dir;
 }
 
-function writeSkill(
-  dir: string,
-  name: string,
-  frontmatter: string,
-  body = "",
-): void {
+function writeSkill(dir: string, name: string, frontmatter: string, body = ""): void {
   const skillDir = join(dir, name);
   mkdirSync(skillDir, { recursive: true });
-  writeFileSync(
-    join(skillDir, "SKILL.md"),
-    `---\n${frontmatter}\n---\n${body}`,
-    "utf-8",
-  );
+  writeFileSync(join(skillDir, "SKILL.md"), `---\n${frontmatter}\n---\n${body}`, "utf-8");
 }
 
 const defaultConfig: SkillsConfig = {
@@ -41,8 +32,7 @@ const defaultConfig: SkillsConfig = {
 
 describe("parseFrontmatter", () => {
   it("parses name and description", () => {
-    const content =
-      "---\nname: weather\ndescription: Get weather info\n---\nBody";
+    const content = "---\nname: weather\ndescription: Get weather info\n---\nBody";
     const result = parseFrontmatter(content);
     expect(result).toEqual({
       name: "weather",
@@ -51,8 +41,7 @@ describe("parseFrontmatter", () => {
   });
 
   it("parses quoted description", () => {
-    const content =
-      '---\nname: test\ndescription: "A longer description here"\n---\n';
+    const content = '---\nname: test\ndescription: "A longer description here"\n---\n';
     const result = parseFrontmatter(content);
     expect(result).toEqual({
       name: "test",
@@ -94,11 +83,7 @@ describe("createSkillLoader", () => {
   });
 
   it("loads skills from global dir", () => {
-    writeSkill(
-      emptyGlobalDir,
-      "weather",
-      "name: weather\ndescription: Get weather",
-    );
+    writeSkill(emptyGlobalDir, "weather", "name: weather\ndescription: Get weather");
 
     const loader = createSkillLoader(defaultConfig, tmpDir, {
       globalDir: emptyGlobalDir,
@@ -112,11 +97,7 @@ describe("createSkillLoader", () => {
 
   it("loads skills from workspace skills dir", () => {
     const wsSkills = join(tmpDir, "skills");
-    writeSkill(
-      wsSkills,
-      "github",
-      "name: github\ndescription: GitHub operations",
-    );
+    writeSkill(wsSkills, "github", "name: github\ndescription: GitHub operations");
 
     const loader = createSkillLoader(defaultConfig, tmpDir, {
       globalDir: emptyGlobalDir,
@@ -128,18 +109,10 @@ describe("createSkillLoader", () => {
   });
 
   it("workspace skills override global", () => {
-    writeSkill(
-      emptyGlobalDir,
-      "weather",
-      "name: weather\ndescription: Global weather",
-    );
+    writeSkill(emptyGlobalDir, "weather", "name: weather\ndescription: Global weather");
 
     const wsSkills = join(tmpDir, "skills");
-    writeSkill(
-      wsSkills,
-      "weather",
-      "name: weather\ndescription: Workspace weather",
-    );
+    writeSkill(wsSkills, "weather", "name: weather\ndescription: Workspace weather");
 
     const loader = createSkillLoader(defaultConfig, tmpDir, {
       globalDir: emptyGlobalDir,
@@ -153,11 +126,7 @@ describe("createSkillLoader", () => {
   it("filters disabled skills", () => {
     const wsSkills = join(tmpDir, "skills");
     writeSkill(wsSkills, "weather", "name: weather\ndescription: Get weather");
-    writeSkill(
-      wsSkills,
-      "disabled",
-      "name: disabled\ndescription: Should be hidden",
-    );
+    writeSkill(wsSkills, "disabled", "name: disabled\ndescription: Should be hidden");
 
     const config: SkillsConfig = {
       ...defaultConfig,
@@ -176,11 +145,7 @@ describe("createSkillLoader", () => {
     const wsSkills = join(tmpDir, "skills");
     const badDir = join(wsSkills, "bad");
     mkdirSync(badDir, { recursive: true });
-    writeFileSync(
-      join(badDir, "SKILL.md"),
-      "---\nname: only-name\n---\n",
-      "utf-8",
-    );
+    writeFileSync(join(badDir, "SKILL.md"), "---\nname: only-name\n---\n", "utf-8");
 
     const loader = createSkillLoader(defaultConfig, tmpDir, {
       globalDir: emptyGlobalDir,
@@ -209,6 +174,42 @@ describe("createSkillLoader", () => {
       globalDir: emptyGlobalDir,
     });
     expect(loader.loadAll()).toEqual([]);
+  });
+
+  it("loads skills from extraDirs", () => {
+    const extraDir = join(tmpDir, "extra-skills");
+    writeSkill(extraDir, "extra", "name: extra\ndescription: Extra skill");
+
+    const config: SkillsConfig = {
+      ...defaultConfig,
+      extraDirs: [extraDir],
+    };
+    const loader = createSkillLoader(config, tmpDir, {
+      globalDir: emptyGlobalDir,
+    });
+    const skills = loader.loadAll();
+
+    expect(skills).toHaveLength(1);
+    expect(skills[0]!.name).toBe("extra");
+  });
+
+  it("extraDirs skills are overridden by global and workspace", () => {
+    const extraDir = join(tmpDir, "extra-skills");
+    writeSkill(extraDir, "weather", "name: weather\ndescription: Extra weather");
+
+    writeSkill(emptyGlobalDir, "weather", "name: weather\ndescription: Global weather");
+
+    const config: SkillsConfig = {
+      ...defaultConfig,
+      extraDirs: [extraDir],
+    };
+    const loader = createSkillLoader(config, tmpDir, {
+      globalDir: emptyGlobalDir,
+    });
+    const skills = loader.loadAll();
+
+    expect(skills).toHaveLength(1);
+    expect(skills[0]!.description).toBe("Global weather");
   });
 });
 

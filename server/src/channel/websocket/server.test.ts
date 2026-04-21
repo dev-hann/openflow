@@ -114,10 +114,7 @@ describe("createWebSocketChannel", () => {
   });
 
   it("should expose authService with expected methods", () => {
-    channel = createWebSocketChannel(
-      { host: "127.0.0.1", port: 0, cors: false },
-      createMockDeps(),
-    );
+    channel = createWebSocketChannel({ host: "127.0.0.1", port: 0, cors: false }, createMockDeps());
 
     expect(channel.authService).toBeDefined();
     expect(typeof channel.authService.createPairingPin).toBe("function");
@@ -167,10 +164,7 @@ describe("createWebSocketChannel", () => {
   });
 
   it("should handle stop without start", async () => {
-    channel = createWebSocketChannel(
-      { host: "127.0.0.1", port: 0, cors: false },
-      createMockDeps(),
-    );
+    channel = createWebSocketChannel({ host: "127.0.0.1", port: 0, cors: false }, createMockDeps());
 
     await channel.stop();
   });
@@ -189,10 +183,7 @@ describe("createWebSocketChannel", () => {
   describe("WebSocket connections", () => {
     it("should close connected clients on stop", async () => {
       const port = TEST_PORT + 10;
-      channel = createWebSocketChannel(
-        { host: "127.0.0.1", port, cors: false },
-        createMockDeps(),
-      );
+      channel = createWebSocketChannel({ host: "127.0.0.1", port, cors: false }, createMockDeps());
       await channel.start();
 
       const ws = new WebSocket(`ws://127.0.0.1:${port}`);
@@ -211,10 +202,7 @@ describe("createWebSocketChannel", () => {
 
     it("should reject connections beyond MAX_CONNECTIONS limit", async () => {
       const port = TEST_PORT + 11;
-      channel = createWebSocketChannel(
-        { host: "127.0.0.1", port, cors: false },
-        createMockDeps(),
-      );
+      channel = createWebSocketChannel({ host: "127.0.0.1", port, cors: false }, createMockDeps());
       await channel.start();
 
       const clients: WebSocket[] = [];

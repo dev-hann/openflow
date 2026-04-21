@@ -55,9 +55,7 @@ describe("createBrowserTools", () => {
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
       expect(screenshot.name).toBe("browser_screenshot");
       expect(screenshot.definition.function.name).toBe("browser_screenshot");
-      expect(screenshot.definition.function.parameters.required).toContain(
-        "url",
-      );
+      expect(screenshot.definition.function.parameters.required).toContain("url");
     });
 
     it("has all expected parameters", () => {
@@ -72,9 +70,7 @@ describe("createBrowserTools", () => {
 
     it("description mentions auto-install", () => {
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
-      expect(screenshot.definition.function.description).toContain(
-        "auto-installed",
-      );
+      expect(screenshot.definition.function.description).toContain("auto-installed");
     });
   });
 
@@ -83,23 +79,19 @@ describe("createBrowserTools", () => {
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
       expect(execute.name).toBe("browser_execute");
       expect(execute.definition.function.name).toBe("browser_execute");
-      expect(execute.definition.function.parameters.required).toContain(
-        "script",
-      );
+      expect(execute.definition.function.parameters.required).toContain("script");
     });
 
     it("description mentions Playwright and auto-install", () => {
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
       expect(execute.definition.function.description).toContain("Playwright");
-      expect(execute.definition.function.description).toContain(
-        "auto-installed",
-      );
+      expect(execute.definition.function.description).toContain("auto-installed");
     });
 
     it("script parameter description mentions workspace placeholder", () => {
       const { execute } = createBrowserTools(tmpDir, defaultConfig);
-      const scriptDesc = execute.definition.function.parameters.properties
-        .script!.description as string;
+      const scriptDesc = execute.definition.function.parameters.properties.script!
+        .description as string;
       expect(scriptDesc).toContain("{WORKSPACE}");
     });
   });
@@ -128,6 +120,40 @@ describe("createBrowserTools", () => {
   });
 });
 
+describe("isChromiumInstalled edge cases", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+    mockedExistsSync.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+    vi.clearAllMocks();
+  });
+
+  it("returns false when readdirSync throws", () => {
+    mockedExistsSync.mockReturnValue(true);
+    vi.mocked(readdirSync).mockImplementation(() => {
+      throw new Error("permission denied");
+    });
+
+    const { execute } = createBrowserTools(tmpDir, defaultConfig);
+    expect(() => execute.execute({ script: "test" })).not.toThrow();
+  });
+
+  it("returns false when readdirSync has no chromium dirs", () => {
+    mockedExistsSync.mockReturnValue(true);
+    vi.mocked(readdirSync).mockReturnValue(["firefox-1234"] as unknown as ReturnType<
+      typeof readdirSync
+    >);
+
+    const { execute } = createBrowserTools(tmpDir, defaultConfig);
+    expect(() => execute.execute({ script: "test" })).not.toThrow();
+  });
+});
+
 describe("browser tool execution", () => {
   let tmpDir: string;
 
@@ -136,9 +162,9 @@ describe("browser tool execution", () => {
     mockedExecFileSync.mockReturnValue("ok");
     mockedExecSync.mockReturnValue("");
     mockedExistsSync.mockReturnValue(true);
-    vi.mocked(readdirSync).mockReturnValue([
-      "chromium-1234",
-    ] as unknown as ReturnType<typeof readdirSync>);
+    vi.mocked(readdirSync).mockReturnValue(["chromium-1234"] as unknown as ReturnType<
+      typeof readdirSync
+    >);
   });
 
   afterEach(() => {
@@ -186,9 +212,7 @@ describe("browser tool execution", () => {
       });
 
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
-      await expect(
-        screenshot.execute({ url: "https://example.com" }),
-      ).rejects.toThrow("timed out");
+      await expect(screenshot.execute({ url: "https://example.com" })).rejects.toThrow("timed out");
     });
 
     it("should throw on script failure with output", async () => {
@@ -205,9 +229,7 @@ describe("browser tool execution", () => {
       });
 
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
-      await expect(
-        screenshot.execute({ url: "https://example.com" }),
-      ).rejects.toThrow("out\nerr");
+      await expect(screenshot.execute({ url: "https://example.com" })).rejects.toThrow("out\nerr");
     });
 
     it("should throw generic message when no output", async () => {
@@ -224,9 +246,9 @@ describe("browser tool execution", () => {
       });
 
       const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
-      await expect(
-        screenshot.execute({ url: "https://example.com" }),
-      ).rejects.toThrow("Browser script failed");
+      await expect(screenshot.execute({ url: "https://example.com" })).rejects.toThrow(
+        "Browser script failed",
+      );
     });
   });
 

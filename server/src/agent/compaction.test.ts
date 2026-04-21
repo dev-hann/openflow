@@ -7,9 +7,7 @@ function createLongContent(length: number): string {
 }
 
 describe("createCompaction", () => {
-  const mockComplete = vi
-    .fn()
-    .mockResolvedValue("This is a summary of the conversation.");
+  const mockComplete = vi.fn().mockResolvedValue("This is a summary of the conversation.");
 
   function createMockLlm(): LlmClient {
     return {
@@ -157,8 +155,7 @@ describe("createCompaction", () => {
 
     await compaction.compactIfNeeded("session-1", messages);
 
-    const userMessage = localComplete.mock.calls[0]![0].messages[1]
-      .content as string;
+    const userMessage = localComplete.mock.calls[0]![0].messages[1].content as string;
     expect(userMessage).toContain("[Earlier conversation omitted for length]");
   });
 });

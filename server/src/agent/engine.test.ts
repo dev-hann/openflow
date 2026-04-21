@@ -1,13 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import { createAgentEngine, type AgentConfig } from "./engine.js";
 import type { LlmClient, LlmResponse } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
@@ -39,9 +30,7 @@ describe("createAgentEngine", () => {
   });
 
   it("should return text response directly", async () => {
-    const llm = mockLlmClient([
-      { type: "text", content: "Hello! How can I help?" },
-    ]);
+    const llm = mockLlmClient([{ type: "text", content: "Hello! How can I help?" }]);
     const tools = mockToolExecutor({});
     const config: AgentConfig = {
       systemPrompt: "",
@@ -108,11 +97,7 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([
-      toolCallResponse,
-      toolCallResponse,
-      toolCallResponse,
-    ]);
+    const llm = mockLlmClient([toolCallResponse, toolCallResponse, toolCallResponse]);
     const tools = mockToolExecutor({ test_tool: "looping" });
     const config: AgentConfig = {
       systemPrompt: "",
@@ -173,10 +158,7 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([
-      toolCallResponse,
-      { type: "text", content: "Both done" },
-    ]);
+    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "Both done" }]);
     const tools = mockToolExecutor({ tool_a: "result a", tool_b: "result b" });
     const config: AgentConfig = {
       systemPrompt: "",
@@ -207,10 +189,7 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([
-      toolCallResponse,
-      { type: "text", content: "Recovered" },
-    ]);
+    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "Recovered" }]);
     const tools = mockToolExecutor({ test_tool: "should not run" });
     const config: AgentConfig = {
       systemPrompt: "",
@@ -286,9 +265,7 @@ describe("createAgentEngine", () => {
   });
 
   it("should accept lazy LLM factory function", async () => {
-    const llmInstance = mockLlmClient([
-      { type: "text", content: "Lazy response" },
-    ]);
+    const llmInstance = mockLlmClient([{ type: "text", content: "Lazy response" }]);
     const tools = mockToolExecutor({});
     const config: AgentConfig = {
       systemPrompt: "",
@@ -335,9 +312,7 @@ describe("createAgentEngine", () => {
   });
 
   it("should pass systemPromptOverride to context resolver", async () => {
-    const llm = mockLlmClient([
-      { type: "text", content: "Custom prompt response" },
-    ]);
+    const llm = mockLlmClient([{ type: "text", content: "Custom prompt response" }]);
     const tools = mockToolExecutor({});
     const config: AgentConfig = {
       systemPrompt: "default prompt",
@@ -534,10 +509,7 @@ describe("createAgentEngine", () => {
         },
       ],
     };
-    const llm = mockLlmClient([
-      toolCallResponse,
-      { type: "text", content: "final" },
-    ]);
+    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "final" }]);
     const tools = mockToolExecutor({ test_tool: "result" });
     const config: AgentConfig = {
       systemPrompt: "",

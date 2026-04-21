@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mkdirSync, rmSync } from "node:fs";
-import {
-  createAuthStore,
-  type AuthStore,
-  type DeviceRecord,
-} from "./auth-store.js";
+import { createAuthStore, type AuthStore, type DeviceRecord } from "./auth-store.js";
 
 describe("createAuthStore", () => {
   const testDir = join(tmpdir(), "openflow-test-auth-store-" + Date.now());

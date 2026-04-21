@@ -204,14 +204,12 @@ describe("session routes", () => {
 
     it("should list sessions with all mapped fields", async () => {
       const localMemory = createMockMemoryStore();
-      vi.mocked(localMemory.createSession).mockImplementation(
-        (title?: string) => ({
-          id: "sess_mapped",
-          title: title ?? "New Chat",
-          createdAt: 1000,
-          updatedAt: 2000,
-        }),
-      );
+      vi.mocked(localMemory.createSession).mockImplementation((title?: string) => ({
+        id: "sess_mapped",
+        title: title ?? "New Chat",
+        createdAt: 1000,
+        updatedAt: 2000,
+      }));
       vi.mocked(localMemory.listSessions).mockReturnValue([
         {
           id: "sess_mapped",
@@ -383,11 +381,7 @@ describe("session routes", () => {
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
-        "sess_1",
-        50,
-        0,
-      );
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith("sess_1", 50, 0);
     });
 
     it("should clamp limit to 200 maximum", async () => {
@@ -402,11 +396,7 @@ describe("session routes", () => {
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
-        "sess_1",
-        200,
-        0,
-      );
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith("sess_1", 200, 0);
     });
 
     it("should handle NaN limit gracefully", async () => {
@@ -421,11 +411,7 @@ describe("session routes", () => {
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
-        "sess_1",
-        50,
-        0,
-      );
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith("sess_1", 50, 0);
     });
 
     it("should handle NaN offset gracefully", async () => {
@@ -440,11 +426,7 @@ describe("session routes", () => {
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
-        "sess_1",
-        50,
-        0,
-      );
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith("sess_1", 50, 0);
     });
 
     it("should pass custom offset", async () => {
@@ -459,19 +441,12 @@ describe("session routes", () => {
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
-        "sess_1",
-        10,
-        20,
-      );
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith("sess_1", 10, 20);
     });
 
     it("should return messages with transformed fields", async () => {
       const localSetup = createTestSetupWithMessages();
-      const msgRoute = localSetup.findRoute(
-        "/api/sessions/sess_1/messages",
-        "GET",
-      );
+      const msgRoute = localSetup.findRoute("/api/sessions/sess_1/messages", "GET");
       const { res, getStatusCode, getBody } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
@@ -526,11 +501,7 @@ describe("session routes", () => {
       expect(getStatusCode()).toBe(200);
       const body = JSON.parse(getBody()) as { ok: boolean };
       expect(body.ok).toBe(true);
-      expect(setup.pushTokenStore.register).toHaveBeenCalledWith(
-        "expo-token-123",
-        "ios",
-        "iPhone",
-      );
+      expect(setup.pushTokenStore.register).toHaveBeenCalledWith("expo-token-123", "ios", "iPhone");
     });
 
     it("should reject missing token", async () => {

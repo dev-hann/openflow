@@ -23,14 +23,10 @@ function createMockWs(): {
       if (!events[event as keyof MockWsEvents]) {
         (events as Record<string, unknown[]>)[event] = [];
       }
-      (events as Record<string, Array<(...a: unknown[]) => void>>)[event]!.push(
-        handler,
-      );
+      (events as Record<string, Array<(...a: unknown[]) => void>>)[event]!.push(handler);
     },
     off(event: string, handler: (...args: unknown[]) => void) {
-      const handlers = (
-        events as Record<string, Array<(...a: unknown[]) => void>>
-      )[event];
+      const handlers = (events as Record<string, Array<(...a: unknown[]) => void>>)[event];
       if (handlers) {
         const idx = handlers.indexOf(handler);
         if (idx !== -1) handlers.splice(idx, 1);
@@ -55,9 +51,7 @@ function createMockWs(): {
   } as unknown as WebSocket;
 
   const emit = (event: string, ...args: unknown[]) => {
-    const handlers = (
-      events as Record<string, Array<(...a: unknown[]) => void>>
-    )[event];
+    const handlers = (events as Record<string, Array<(...a: unknown[]) => void>>)[event];
     if (handlers) {
       for (const h of handlers) {
         h(...args);
@@ -68,10 +62,7 @@ function createMockWs(): {
   return { ws, emit, sent };
 }
 
-function createMockAuthService(
-  validToken: string,
-  sessionKey: string,
-): AuthService {
+function createMockAuthService(validToken: string, sessionKey: string): AuthService {
   return {
     createPairingPin: vi.fn(),
     verifyPinAndIssueTokens: vi.fn(),
@@ -89,9 +80,7 @@ function createMockAuthService(
 
 function createMockAgentEngine(): AgentEngine {
   return {
-    handleMessage: vi
-      .fn()
-      .mockResolvedValue({ type: "text", content: "reply" }),
+    handleMessage: vi.fn().mockResolvedValue({ type: "text", content: "reply" }),
     getWorkspace: vi.fn().mockReturnValue({
       hasPersona: () => false,
       loadAll: () => [],
@@ -132,9 +121,7 @@ describe("createWsHandler", () => {
       const authMsg = JSON.stringify({ type: "auth", accessToken: validToken });
       mock.emit("message", Buffer.from(authMsg));
 
-      const responses = mock.sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = mock.sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       expect(responses).toHaveLength(1);
       expect(responses[0]!.type).toBe("auth_ok");
     });
@@ -150,9 +137,7 @@ describe("createWsHandler", () => {
       });
       mock.emit("message", Buffer.from(authMsg));
 
-      const responses = mock.sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = mock.sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       expect(responses.some((r) => r.type === "auth_required")).toBe(true);
     });
 
@@ -163,9 +148,7 @@ describe("createWsHandler", () => {
 
       mock.emit("message", Buffer.from("not json"));
 
-      const responses = mock.sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = mock.sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       expect(responses.some((r) => r.type === "auth_required")).toBe(true);
     });
   });
@@ -176,9 +159,7 @@ describe("createWsHandler", () => {
 
       emit("message", Buffer.from(JSON.stringify({ type: "ping" })));
 
-      const responses = sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       const pong = responses.find((r) => r.type === "pong");
       expect(pong).toBeDefined();
     });
@@ -188,14 +169,10 @@ describe("createWsHandler", () => {
 
       emit(
         "message",
-        Buffer.from(
-          JSON.stringify({ type: "switch_session", sessionId: "sess-123" }),
-        ),
+        Buffer.from(JSON.stringify({ type: "switch_session", sessionId: "sess-123" })),
       );
 
-      const responses = sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       const switched = responses.find((r) => r.type === "session_switched");
       expect(switched).toBeDefined();
       expect(switched!.sessionId).toBe("sess-123");
@@ -216,9 +193,7 @@ describe("createWsHandler", () => {
       );
 
       await vi.waitFor(() => {
-        const responses = sent.map(
-          (s) => JSON.parse(s) as Record<string, unknown>,
-        );
+        const responses = sent.map((s) => JSON.parse(s) as Record<string, unknown>);
         expect(responses.some((r) => r.type === "response")).toBe(true);
       });
     });
@@ -228,9 +203,7 @@ describe("createWsHandler", () => {
 
       emit("message", Buffer.from("not valid json"));
 
-      const responses = sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       const err = responses.find((r) => r.type === "error");
       expect(err).toBeDefined();
       expect(err!.code).toBe("INVALID_MESSAGE");
@@ -239,14 +212,9 @@ describe("createWsHandler", () => {
     it("should send error when no active session", () => {
       const { emit, sent } = setupAuthenticated();
 
-      emit(
-        "message",
-        Buffer.from(JSON.stringify({ type: "message", content: "hello" })),
-      );
+      emit("message", Buffer.from(JSON.stringify({ type: "message", content: "hello" })));
 
-      const responses = sent.map(
-        (s) => JSON.parse(s) as Record<string, unknown>,
-      );
+      const responses = sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       const err = responses.find((r) => r.type === "error");
       expect(err).toBeDefined();
       expect(err!.code).toBe("NO_SESSION");
@@ -281,9 +249,7 @@ describe("createWsHandler", () => {
       );
 
       await vi.waitFor(() => {
-        const responses = mock.sent.map(
-          (s) => JSON.parse(s) as Record<string, unknown>,
-        );
+        const responses = mock.sent.map((s) => JSON.parse(s) as Record<string, unknown>);
         const err = responses.find((r) => r.type === "error");
         expect(err).toBeDefined();
         expect(err!.code).toBe("AGENT_ERROR");
@@ -308,16 +274,10 @@ describe("createWsHandler", () => {
       const { emit, sent } = setupAuthenticated();
 
       const sentBefore = sent.length;
-      emit(
-        "message",
-        Buffer.from(JSON.stringify({ type: "auth", accessToken: validToken })),
-      );
+      emit("message", Buffer.from(JSON.stringify({ type: "auth", accessToken: validToken })));
 
       expect(sent.length).toBe(sentBefore + 1);
-      const lastMsg = JSON.parse(sent[sent.length - 1]!) as Record<
-        string,
-        unknown
-      >;
+      const lastMsg = JSON.parse(sent[sent.length - 1]!) as Record<string, unknown>;
       expect(lastMsg.type).toBe("error");
     });
   });
@@ -340,9 +300,7 @@ describe("createWsHandler", () => {
       for (const mock of [mock1, mock2]) {
         const hasNotification = mock.sent.some((s) => {
           const parsed = JSON.parse(s) as Record<string, unknown>;
-          return (
-            parsed.type === "notification" && parsed.message === "hello all"
-          );
+          return parsed.type === "notification" && parsed.message === "hello all";
         });
         expect(hasNotification).toBe(true);
       }

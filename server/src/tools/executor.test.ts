@@ -201,6 +201,32 @@ describe("createToolExecutor", () => {
       expect(result.isError).toBe(true);
       expect(result.content).toContain("fail msg");
     });
+
+    it("should return no output placeholder for empty stdout", async () => {
+      const executor = createToolExecutor(defaultConfig, testDir);
+      const result = await executor.execute({
+        id: "1",
+        name: "shell",
+        arguments: { command: "true" },
+      });
+      expect(result.isError).toBe(false);
+      expect(result.content).toContain("(no output)");
+    });
+
+    it("should use custom timeout from arguments", async () => {
+      const config: ToolsConfig = {
+        ...defaultConfig,
+        shell: { enabled: true, timeout: 30_000 },
+      };
+      const executor = createToolExecutor(config, testDir);
+      const result = await executor.execute({
+        id: "1",
+        name: "shell",
+        arguments: { command: "echo fast", timeout: 500 },
+      });
+      expect(result.isError).toBe(false);
+      expect(result.content).toContain("fast");
+    });
   });
 
   describe("updateSender()", () => {
@@ -220,9 +246,7 @@ describe("createToolExecutor", () => {
       };
       executor.updateSender(newSender);
 
-      const updatedNames = executor
-        .getDefinitions()
-        .map((d) => d.function.name);
+      const updatedNames = executor.getDefinitions().map((d) => d.function.name);
       expect(updatedNames).toContain("send_message");
       expect(updatedNames).toContain("send_image");
     });

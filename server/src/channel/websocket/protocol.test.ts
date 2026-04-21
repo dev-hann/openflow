@@ -3,9 +3,7 @@ import { parseWsClientMessage, serializeWsServerMessage } from "./protocol.js";
 
 describe("parseWsClientMessage", () => {
   it("should parse message type", () => {
-    const msg = parseWsClientMessage(
-      JSON.stringify({ type: "message", content: "hello" }),
-    );
+    const msg = parseWsClientMessage(JSON.stringify({ type: "message", content: "hello" }));
     expect(msg).toEqual({
       type: "message",
       sessionId: undefined,
@@ -21,22 +19,16 @@ describe("parseWsClientMessage", () => {
   });
 
   it("should reject message without content", () => {
-    expect(
-      parseWsClientMessage(JSON.stringify({ type: "message" })),
-    ).toBeNull();
+    expect(parseWsClientMessage(JSON.stringify({ type: "message" }))).toBeNull();
   });
 
   it("should parse switch_session type", () => {
-    const msg = parseWsClientMessage(
-      JSON.stringify({ type: "switch_session", sessionId: "s1" }),
-    );
+    const msg = parseWsClientMessage(JSON.stringify({ type: "switch_session", sessionId: "s1" }));
     expect(msg).toEqual({ type: "switch_session", sessionId: "s1" });
   });
 
   it("should reject switch_session without sessionId", () => {
-    expect(
-      parseWsClientMessage(JSON.stringify({ type: "switch_session" })),
-    ).toBeNull();
+    expect(parseWsClientMessage(JSON.stringify({ type: "switch_session" }))).toBeNull();
   });
 
   it("should parse ping type", () => {
@@ -46,9 +38,7 @@ describe("parseWsClientMessage", () => {
   });
 
   it("should return null for unknown type", () => {
-    expect(
-      parseWsClientMessage(JSON.stringify({ type: "unknown" })),
-    ).toBeNull();
+    expect(parseWsClientMessage(JSON.stringify({ type: "unknown" }))).toBeNull();
   });
 
   it("should return null for non-JSON input", () => {
@@ -60,9 +50,7 @@ describe("parseWsClientMessage", () => {
   });
 
   it("should return null for message without type field", () => {
-    expect(
-      parseWsClientMessage(JSON.stringify({ content: "hello" })),
-    ).toBeNull();
+    expect(parseWsClientMessage(JSON.stringify({ content: "hello" }))).toBeNull();
   });
 });
 

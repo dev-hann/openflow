@@ -66,11 +66,7 @@ describe("createJsonFileStore", () => {
       d !== null &&
       "count" in d &&
       typeof (d as Record<string, unknown>).count === "number";
-    const store = createJsonFileStore(
-      filePath,
-      { count: 0 },
-      { validate: isValid },
-    );
+    const store = createJsonFileStore(filePath, { count: 0 }, { validate: isValid });
     expect(store.getData()).toEqual({ count: 0 });
   });
 
@@ -82,11 +78,7 @@ describe("createJsonFileStore", () => {
       d !== null &&
       "count" in d &&
       typeof (d as Record<string, unknown>).count === "number";
-    const store = createJsonFileStore(
-      filePath,
-      { count: 0 },
-      { validate: isValid },
-    );
+    const store = createJsonFileStore(filePath, { count: 0 }, { validate: isValid });
     expect(store.getData()).toEqual({ count: 7 });
   });
 
