@@ -63,50 +63,99 @@ class _InputBarState extends State<InputBar> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Flexible(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 120),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  onChanged: (_) => setState(() {}),
-                  maxLines: null,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _handleSend(),
-                  enabled: !widget.disabled,
-                  decoration: const InputDecoration(
-                    hintText: '무엇이든 물어보세요...',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: Spacing.md,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
+              child: _TextFieldContainer(
+                controller: _controller,
+                focusNode: _focusNode,
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => _handleSend(),
+                enabled: !widget.disabled,
+                theme: theme,
               ),
             ),
             VoiceInputButton(
               onResult: _handleVoiceResult,
               enabled: !widget.disabled,
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              child: IconButton.filled(
-                onPressed: canSend ? _handleSend : null,
-                icon: const Icon(Icons.send, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor:
-                      canSend ? theme.colorScheme.primary : Colors.transparent,
-                  foregroundColor: canSend
-                      ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+            _AnimatedSendButton(
+              canSend: canSend,
+              onPressed: _handleSend,
+              theme: theme,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TextFieldContainer extends StatelessWidget {
+  const _TextFieldContainer({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.onSubmitted,
+    required this.enabled,
+    required this.theme,
+  });
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
+  final bool enabled;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 120),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        onChanged: onChanged,
+        maxLines: null,
+        textInputAction: TextInputAction.send,
+        onSubmitted: onSubmitted,
+        enabled: enabled,
+        decoration: const InputDecoration(
+          hintText: '무엇이든 물어보세요...',
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: Spacing.md,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedSendButton extends StatelessWidget {
+  const _AnimatedSendButton({
+    required this.canSend,
+    required this.onPressed,
+    required this.theme,
+  });
+  final bool canSend;
+  final VoidCallback onPressed;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: IconButton.filled(
+        onPressed: canSend ? onPressed : null,
+        icon: const Icon(Icons.send, size: 20),
+        style: IconButton.styleFrom(
+          backgroundColor:
+              canSend ? theme.colorScheme.primary : Colors.transparent,
+          foregroundColor: canSend
+              ? theme.colorScheme.onPrimary
+              : theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );

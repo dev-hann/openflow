@@ -42,27 +42,7 @@ class ModelSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.md,
-              Spacing.md,
-              Spacing.md,
-              Spacing.sm,
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '$providerName 모델',
-                  style: theme.textTheme.titleMedium,
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
+          _SheetHeader(title: '$providerName 모델', theme: theme),
           const Divider(height: 1),
           if (models.isEmpty)
             const Padding(
@@ -73,41 +53,79 @@ class ModelSheet extends StatelessWidget {
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: models.length,
-              itemBuilder: (context, index) {
-                final model = models[index];
-                final isActive = model == currentModel;
-                return ListTile(
-                  leading: Icon(
-                    isActive
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    color: isActive ? theme.colorScheme.primary : null,
-                  ),
-                  title: Text(
-                    model,
-                    style: isActive
-                        ? TextStyle(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          )
-                        : null,
-                  ),
-                  trailing: isActive
-                      ? Text(
-                          '사용 중',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                        )
-                      : null,
-                  onTap: () => Navigator.of(context).pop(model),
-                );
-              },
+              itemBuilder: (context, index) => _ModelListTile(
+                model: models[index],
+                isActive: models[index] == currentModel,
+                theme: theme,
+              ),
             ),
           ),
           const SizedBox(height: Spacing.md),
         ],
       ),
+    );
+  }
+}
+
+class _SheetHeader extends StatelessWidget {
+  const _SheetHeader({required this.title, required this.theme});
+  final String title;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          Spacing.md, Spacing.md, Spacing.md, Spacing.sm),
+      child: Row(
+        children: [
+          Text(title, style: theme.textTheme.titleMedium),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModelListTile extends StatelessWidget {
+  const _ModelListTile({
+    required this.model,
+    required this.isActive,
+    required this.theme,
+  });
+  final String model;
+  final bool isActive;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: isActive ? theme.colorScheme.primary : null,
+      ),
+      title: Text(
+        model,
+        style: isActive
+            ? TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              )
+            : null,
+      ),
+      trailing: isActive
+          ? Text(
+              '사용 중',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            )
+          : null,
+      onTap: () => Navigator.of(context).pop(model),
     );
   }
 }

@@ -28,74 +28,27 @@ class _VerifySectionState extends State<VerifySection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FilledButton.tonal(
-          onPressed: widget.verifying ? null : widget.onVerify,
-          child: widget.verifying
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('연결 확인'),
+        _VerifyButton(
+          verifying: widget.verifying,
+          onVerify: widget.onVerify,
         ),
         if (widget.result != null) ...[
           const SizedBox(height: Spacing.sm),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(Spacing.md),
-            decoration: BoxDecoration(
-              color: widget.result!.ok
-                  ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.errorContainer,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Text(
-              widget.result!.ok ? '연결 성공!' : widget.result!.error ?? '연결 실패',
-              style: TextStyle(
-                color: widget.result!.ok
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onErrorContainer,
-              ),
-            ),
-          ),
+          _VerifyResultBanner(result: widget.result!),
         ],
         if ((widget.result?.ok ?? false) &&
             widget.result!.models.isNotEmpty) ...[
           const SizedBox(height: Spacing.sm),
-          Text('모델 선택', style: theme.textTheme.labelLarge),
-          const SizedBox(height: Spacing.xs),
-          TextFormField(
-            decoration: const InputDecoration(
-              hintText: '모델 검색...',
-              prefixIcon: Icon(Icons.search),
-              isDense: true,
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
-          ),
-          const SizedBox(height: Spacing.xs),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 200),
-            child: SingleChildScrollView(
-              child: Wrap(
-                spacing: Spacing.xs,
-                children: widget.result!.models
-                    .where((m) => m.toLowerCase().contains(_searchQuery))
-                    .map((model) {
-                  final selected = model == widget.selectedModel;
-                  return ChoiceChip(
-                    label: Text(model),
-                    selected: selected,
-                    onSelected: (_) => widget.onSelectModel(model),
-                  );
-                }).toList(),
-              ),
-            ),
+          _ModelChipSelector(
+            models: widget.result!.models,
+            selectedModel: widget.selectedModel,
+            searchQuery: _searchQuery,
+            onSearchChanged: (v) =>
+                setState(() => _searchQuery = v.toLowerCase()),
+            onSelectModel: widget.onSelectModel,
           ),
         ],
       ],
@@ -115,4 +68,106 @@ class VerifyResult extends Equatable {
 
   @override
   List<Object?> get props => [ok, models, error];
+}
+
+class _VerifyButton extends StatelessWidget {
+  const _VerifyButton({required this.verifying, required this.onVerify});
+  final bool verifying;
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.tonal(
+      onPressed: verifying ? null : onVerify,
+      child: verifying
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Text('연결 확인'),
+    );
+  }
+}
+
+class _VerifyResultBanner extends StatelessWidget {
+  const _VerifyResultBanner({required this.result});
+  final VerifyResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Spacing.md),
+      decoration: BoxDecoration(
+        color: result.ok
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Text(
+        result.ok ? '연결 성공!' : result.error ?? '연결 실패',
+        style: TextStyle(
+          color: result.ok
+              ? theme.colorScheme.onPrimaryContainer
+              : theme.colorScheme.onErrorContainer,
+        ),
+      ),
+    );
+  }
+}
+
+class _ModelChipSelector extends StatelessWidget {
+  const _ModelChipSelector({
+    required this.models,
+    required this.selectedModel,
+    required this.searchQuery,
+    required this.onSearchChanged,
+    required this.onSelectModel,
+  });
+  final List<String> models;
+  final String? selectedModel;
+  final String searchQuery;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onSelectModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('모델 선택', style: theme.textTheme.labelLarge),
+        const SizedBox(height: Spacing.xs),
+        TextFormField(
+          decoration: const InputDecoration(
+            hintText: '모델 검색...',
+            prefixIcon: Icon(Icons.search),
+            isDense: true,
+            border: OutlineInputBorder(),
+          ),
+          onChanged: onSearchChanged,
+        ),
+        const SizedBox(height: Spacing.xs),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 200),
+          child: SingleChildScrollView(
+            child: Wrap(
+              spacing: Spacing.xs,
+              children: models
+                  .where((m) => m.toLowerCase().contains(searchQuery))
+                  .map((model) {
+                return ChoiceChip(
+                  label: Text(model),
+                  selected: model == selectedModel,
+                  onSelected: (_) => onSelectModel(model),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

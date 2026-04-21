@@ -9,7 +9,7 @@ void main() {
   setUpAll(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/package_info'),
+      const MethodChannel('dev.fluttercommunity.plus/package_info'),
       (call) async => {
             'appName': 'OpenFlow',
             'packageName': 'com.example.openflow',
@@ -57,7 +57,7 @@ void main() {
           version: '1.0.0',
           releaseNotes: '',
           htmlUrl: '',
-          assets: [],
+          assets: const [],
         );
 
         expect(
