@@ -13,13 +13,16 @@ class MessageList extends StatefulWidget {
     super.key,
     this.onRetry,
     this.onLoadMore,
+    this.onEdit,
     this.hasMore = false,
     this.isLoadingMore = false,
   });
+
   final List<ChatMessage> messages;
   final ValueChanged<bool> onScrollStateChange;
   final VoidCallback? onRetry;
   final VoidCallback? onLoadMore;
+  final ValueChanged<String>? onEdit;
   final bool hasMore;
   final bool isLoadingMore;
 
@@ -105,11 +108,18 @@ class MessageListState extends State<MessageList> {
         final nextSame = adjustedIndex < widget.messages.length - 1 &&
             widget.messages[adjustedIndex + 1].role == message.role;
 
+        final isLastAssistant = adjustedIndex == widget.messages.length - 1 &&
+            message.role == MessageRole.assistant;
+
         return MessageBubble(
           message: message,
           isFirstInGroup: !prevSame,
           isLastInGroup: !nextSame,
+          isLastAssistant: isLastAssistant,
           onRetry: message.isFailed ? widget.onRetry : null,
+          onEdit: message.role == MessageRole.user && widget.onEdit != null
+              ? () => widget.onEdit!(message.content)
+              : null,
         );
       },
     );

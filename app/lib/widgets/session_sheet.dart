@@ -25,11 +25,11 @@ class SessionSheet extends StatelessWidget {
   static Future<void> show({
     required BuildContext context,
     required List<SessionInfo> sessions,
-    String? activeSessionId,
     required ValueChanged<String> onSessionTap,
     required VoidCallback onNewChat,
     required ValueChanged<String> onSessionDelete,
     required VoidCallback onSettings,
+    String? activeSessionId,
   }) {
     return showModalBottomSheet<void>(
       context: context,

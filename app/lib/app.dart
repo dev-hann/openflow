@@ -15,6 +15,7 @@ import 'package:openflow/screens/onboarding_screen.dart';
 import 'package:openflow/screens/settings_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/widgets/adaptive_scaffold.dart';
 import 'package:openflow/widgets/session_sheet.dart';
 
 class OpenFlowMaterialApp extends StatelessWidget {
@@ -85,9 +86,19 @@ class _MainScreenState extends State<MainScreen> {
             .firstOrNull;
         final title = activeSession?.title ?? '새 대화';
 
-        return Scaffold(
+        final scaffold = Scaffold(
           appBar: _buildAppBar(context, title),
           body: const ChatScreen(),
+        );
+
+        return AdaptiveScaffold(
+          sessions: sessionsState.sessions,
+          activeSessionId: sessionsState.activeSessionId,
+          onSessionTap: _handleSessionTap,
+          onNewChat: _handleNewChat,
+          onSessionDelete: _handleSessionDelete,
+          onSettings: _handleSettings,
+          child: scaffold,
         );
       },
     );

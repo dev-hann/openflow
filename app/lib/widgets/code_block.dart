@@ -30,7 +30,7 @@ class CodeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = language?.trim().isNotEmpty == true ? language!.trim().toUpperCase() : null;
+    final lang = (language?.trim().isNotEmpty ?? false) ? language!.trim().toUpperCase() : null;
 
     return Container(
       decoration: BoxDecoration(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/widgets/voice_input_button.dart';
 
 class InputBar extends StatefulWidget {
   const InputBar({required this.onSend, super.key, this.disabled = false});
@@ -27,6 +28,12 @@ class _InputBarState extends State<InputBar> {
     if (text.isEmpty || widget.disabled) return;
     widget.onSend(text);
     _controller.clear();
+  }
+
+  void _handleVoiceResult(String text) {
+    if (text.isEmpty) return;
+    _controller.text = text;
+    setState(() {});
   }
 
   @override
@@ -81,7 +88,10 @@ class _InputBarState extends State<InputBar> {
                 ),
               ),
             ),
-            const SizedBox(width: Spacing.xs),
+            VoiceInputButton(
+              onResult: _handleVoiceResult,
+              enabled: !widget.disabled,
+            ),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               child: IconButton.filled(

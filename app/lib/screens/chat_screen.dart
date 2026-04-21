@@ -234,6 +234,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     unawaited(_sendMessage(lastUserText));
   }
 
+  void _editMessage(String text) {
+    final chatCubit = context.read<ChatCubit>();
+    chatCubit.removeFailedPair();
+    unawaited(_sendMessage(text));
+  }
+
   void _reconnect() {
     _connectWebSocket();
   }
@@ -291,6 +297,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       onScrollStateChange: (scrolledUp) =>
                           setState(() => _scrolledUp = scrolledUp),
                       onRetry: _retryLastMessage,
+                      onEdit: _editMessage,
                       onLoadMore: _loadMoreMessages,
                       hasMore: chatState.messages.length < _totalMessages,
                       isLoadingMore: _isLoadingHistory,
@@ -314,7 +321,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   ],
                 ),
         ),
-        if (chatState.isSending) _buildSendingIndicator(context),
+        if (chatState.isSending) _buildThinkingIndicator(context),
         InputBar(
           onSend: _sendMessage,
           disabled: chatState.isSending,
@@ -323,30 +330,38 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildSendingIndicator(BuildContext context) {
-    return Semantics(
-      label: '생각 중...',
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.md,
-          vertical: Spacing.xs + 2,
-        ),
-        color: Theme.of(context).colorScheme.surface,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+  Widget _buildThinkingIndicator(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+          childrenPadding: const EdgeInsets.only(
+            left: Spacing.md,
+            right: Spacing.md,
+            bottom: Spacing.sm,
+          ),
+          leading: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 8),
+          ),
+          title: Text(
+            '생각 중...',
+            style: theme.textTheme.labelMedium,
+          ),
+          children: [
             Text(
-              '생각 중...',
-              style: Theme.of(context).textTheme.labelMedium,
+              'AI가 응답을 생성하고 있습니다...',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
