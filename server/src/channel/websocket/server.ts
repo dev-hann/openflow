@@ -14,6 +14,7 @@ import type { PushTokenStore } from "../../notification/token-store.js";
 const log = createLogger("ws/server");
 
 const MAX_CONNECTIONS = 10;
+const MAX_PAYLOAD = 1024 * 1024;
 
 export interface WebSocketChannelConfig {
   host: string;
@@ -72,7 +73,7 @@ export function createWebSocketChannel(
         });
       });
 
-      wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
+      wss = new WebSocketServer({ noServer: true, maxPayload: MAX_PAYLOAD });
 
       server.on("upgrade", (req: IncomingMessage, socket, head) => {
         wss!.handleUpgrade(req, socket, head, (ws: WebSocket) => {
