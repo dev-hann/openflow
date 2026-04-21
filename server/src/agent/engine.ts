@@ -126,7 +126,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       return await resolveLlm().chat({
         messages,
         toolDefinitions: toolDefinitions.length > 0 ? toolDefinitions : undefined,
-        onToken: round === 0 ? onToken : undefined,
+        onToken,
         signal,
       });
     } catch (err: unknown) {
@@ -165,18 +165,32 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     round: number,
     messages: ChatMessage[],
   ): Promise<void> {
+    const toolName = toolCall.function.name;
     let parsedArgs: Record<string, unknown>;
     try {
       parsedArgs = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
     } catch {
       log.warn(
-        { sessionId, toolName: toolCall.function.name, rawArgs: toolCall.function.arguments.slice(0, 200) },
-        "tool argument parse failed, using empty args",
+        { sessionId, toolName, rawArgs: toolCall.function.arguments.slice(0, 200) },
+        "tool argument parse failed",
       );
-      parsedArgs = {};
+      messages.push({
+        role: "tool",
+        content: `Failed to parse tool arguments for "${toolName}"`,
+        tool_call_id: toolCall.id,
+      });
+      try {
+        memory.addMessage({
+          sessionId,
+          role: "tool",
+          content: `Failed to parse tool arguments for "${toolName}"`,
+          toolCallId: toolCall.id,
+        });
+      } catch (err: unknown) {
+        log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool error");
+      }
+      return;
     }
-
-    const toolName = toolCall.function.name;
     log.info({ sessionId, toolName, round }, "executing tool");
 
     const result = await executeWithConfirmation(toolCall.id, toolName, parsedArgs, chatId);
@@ -233,9 +247,11 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
       messages.push({ role: "assistant", content: null, tool_calls: response.toolCalls });
       persistMessage(sessionId, { role: "assistant", content: "", toolCalls: response.toolCalls });
-      for (const toolCall of response.toolCalls) {
-        await processToolCall(toolCall, sessionId, chatId, round, messages);
-      }
+      await Promise.all(
+        response.toolCalls.map((toolCall) =>
+          processToolCall(toolCall, sessionId, chatId, round, messages),
+        ),
+      );
     }
 
     const overflowMsg = "Maximum tool call rounds reached. Please continue the conversation.";

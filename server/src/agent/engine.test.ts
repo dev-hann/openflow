@@ -141,6 +141,78 @@ describe("createAgentEngine", () => {
     expect(messages[1]).toEqual({ role: "assistant", content: "Got it" });
   });
 
+  it("should execute multiple tool calls in parallel", async () => {
+    const toolCallResponse: LlmResponse = {
+      type: "tool_calls",
+      toolCalls: [
+        {
+          id: "tc_a",
+          type: "function" as const,
+          function: { name: "tool_a", arguments: '{"key":"a"}' },
+        },
+        {
+          id: "tc_b",
+          type: "function" as const,
+          function: { name: "tool_b", arguments: '{"key":"b"}' },
+        },
+      ],
+    };
+    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "Both done" }]);
+    const tools = mockToolExecutor({ tool_a: "result a", tool_b: "result b" });
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Parallel Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "run both tools",
+    });
+
+    expect(result.type).toBe("text");
+    expect(tools.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it("should return error for malformed tool arguments instead of executing with empty args", async () => {
+    const toolCallResponse: LlmResponse = {
+      type: "tool_calls",
+      toolCalls: [
+        {
+          id: "tc_bad",
+          type: "function" as const,
+          function: { name: "test_tool", arguments: "{invalid json" },
+        },
+      ],
+    };
+    const llm = mockLlmClient([toolCallResponse, { type: "text", content: "Recovered" }]);
+    const tools = mockToolExecutor({ test_tool: "should not run" });
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Bad Args Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "run tool with bad args",
+    });
+
+    expect(result.type).toBe("text");
+    expect(tools.execute).not.toHaveBeenCalled();
+
+    const messages = memory.getMessages(session.id);
+    const toolMsg = messages.find((m) => m.role === "tool");
+    expect(toolMsg).toBeDefined();
+    expect(toolMsg!.content).toContain("Failed to parse tool arguments");
+  });
+
   it("should return error on LLM failure", async () => {
     const llm: LlmClient = {
       chat: vi.fn().mockRejectedValue(new Error("API down")),
