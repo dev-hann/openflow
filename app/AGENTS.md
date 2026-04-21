@@ -5,8 +5,27 @@
 - OpenFlow 서버와 연결되는 Flutter 모바일 컴패니언 앱
 - Flutter 3.29+, Dart 3.6+, Material 3
 - 서버와의 통신: WebSocket (실시간 채팅) + REST API (세션/프로바이더 관리)
-- **서버 개발 지침:** [`AGENTS.server.md`](../AGENTS.server.md)
+- **서버 개발 지침:** [`server/AGENTS.md`](../server/AGENTS.md)
 - **전체 스펙:** [`SPEC.md`](../SPEC.md)의 Companion App 섹션
+- **API 계약 SSOT:** [`openapi.yaml`](../openapi.yaml)
+
+## API-First 워크플로우
+
+**[`openapi.yaml`](../openapi.yaml)이 API 계약의 단일 진실 공급원이다.**
+
+### 모델 생성
+
+```bash
+openapi-generator-cli generate -i ../openapi.yaml -g dart -o lib/models/generated
+```
+
+### 규칙
+
+- API 변경 시 **반드시** `openapi.yaml`을 먼저 수정하고 모델을 재생성
+- `fromJson`/`toJson` 필드 이름은 `openapi.yaml` 스키마와 일치해야 함 (camelCase)
+- API 응답 모델의 `fromJson`을 **절대 수동으로 작성하지 않음** — 생성된 모델 사용
+- `lib/models/generated/` 디렉토리의 파일은 수동 수정 금지 — 재생성으로 덮어씀
+- 새 엔드포인트 추가, 필드 변경 시 `openapi.yaml` → 모델 생성 → 구현 순서
 
 ## 파일 참조 규칙
 
@@ -25,9 +44,10 @@ app/lib/
 │   ├── dimensions.dart         # 디자인 토큰 (Spacing, AppRadius, AppShadows)
 │   └── presets.dart            # LLM 프로바이더 프리셋 (12개)
 ├── models/
-│   └── protocol.dart           # 데이터 모델 + WS 메시지 타입 (sealed class)
+│   ├── generated/              # openapi-generator 생성 모델 (수동 수정 금지)
+│   └── protocol.dart           # WS 메시지 타입 (sealed class, OpenAPI 범위 밖)
 ├── services/
-│   ├── api_client.dart         # REST API 클라이언트 (17 엔드포인트)
+│   ├── api_client.dart         # REST API 클라이언트
 │   ├── auth_storage.dart       # flutter_secure_storage 기반 토큰 영속화
 │   └── websocket_service.dart  # WebSocket + 자동 재연결 + 인증 핸드셰이크
 ├── cubits/
@@ -183,16 +203,16 @@ flutter build apk      # Android APK 빌드 (split-per-abi)
 
 ## 서버 API 연동
 
-서버와 통신하는 모든 엔드포인트는 `app/lib/services/api_client.dart`에 정의:
+서버와 통신하는 모든 엔드포인트는 `openapi.yaml`에 정의되며, 필드 이름과 응답 스키마의 SSOT이다.
 
-| 카테고리 | 엔드포인트 |
-|----------|-----------|
-| 인증 | `GET /api/pair/init`, `POST /api/pair/verify`, `POST /api/auth/refresh`, `DELETE /api/pair` |
-| 세션 | `GET /api/sessions`, `POST /api/sessions`, `DELETE /api/sessions/:id` |
-| 프로바이더 | `GET /api/providers`, `POST /api/providers`, `POST /api/providers/:id`, `DELETE /api/providers/:id`, `GET /api/providers/:id/verify`, `GET /api/providers/:id/models`, `POST /api/providers/switch` |
-| 상태 | `GET /api/status` |
+| 카테고리 | 엔드포인트 | openapi.yaml 참조 |
+|----------|-----------|-------------------|
+| 인증 | `POST /api/auth/pair/init`, `POST /api/auth/pair/verify`, `POST /api/auth/refresh`, `DELETE /api/auth/unpair` | `PairInitResponse`, `TokenPairResponse` 등 |
+| 세션 | `GET /api/sessions`, `POST /api/sessions`, `DELETE /api/sessions/{sessionId}` | `SessionListResponse`, `CreateSessionResponse` 등 |
+| 프로바이더 | `GET /api/providers`, `POST /api/providers`, `PUT /api/providers/{providerId}`, `DELETE /api/providers/{providerId}`, `PUT /api/providers/current`, `POST /api/providers/{providerId}/verify`, `GET /api/providers/{providerId}/models` | `ProviderResponse`, `SwitchProviderResponse` 등 |
+| 상태 | `GET /api/status` | `StatusResponse` |
 
-> **참고:** 서버 SPEC의 REST API 경로(`api/auth/pair/init`, `api/auth/pair/verify` 등)와 앱 `ApiClient`의 경로(`api/pair/init`, `api/pair/verify` 등)에 차이가 있을 수 있으니 구현 시 확인 필요.
+> **참고:** 실제 필드 이름, 요청/응답 구조, 필수 여부는 모두 `openapi.yaml`의 schemas 섹션에 정의됨. 생성된 Dart 모델을 통해 자동 동기화.
 
 ## 보안
 

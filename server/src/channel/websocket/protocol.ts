@@ -1,4 +1,5 @@
 import { createLogger } from "../../utils/logger.js";
+import type { components } from "../../generated/api.js";
 
 const log = createLogger("ws/protocol");
 
@@ -70,13 +71,7 @@ export type WsServerMessage =
   | WsPong
   | WsNotification;
 
-export interface SessionInfo {
-  id: string;
-  title: string;
-  createdAt: number;
-  updatedAt: number;
-  messageCount: number;
-}
+export type SessionInfo = components["schemas"]["SessionInfo"];
 
 export function parseWsClientMessage(raw: string): WsClientMessage | null {
   try {

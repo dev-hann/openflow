@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
+
 import { createLogger } from "../../utils/logger.js";
+import type { components } from "../../generated/api.js";
 import { createAuthStore, type AuthStore, type DeviceRecord } from "./auth-store.js";
 
 const log = createLogger("ws/auth");
@@ -8,13 +10,7 @@ const PIN_TTL_MS = 5 * 60 * 1000;
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000;
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-export interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-  sessionKey: string;
-  accessExpiresAt: number;
-  refreshExpiresAt: number;
-}
+export type TokenPair = components["schemas"]["TokenPairResponse"];
 
 export interface AccessTokenPayload {
   sessionKey: string;

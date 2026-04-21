@@ -10,50 +10,77 @@
 
 ## 구성요소별 개발 지침
 
-- **서버 (`src/`):** [`AGENTS.server.md`](./AGENTS.server.md)
+- **서버 (`server/`):** [`server/AGENTS.md`](./server/AGENTS.md)
 - **모바일 앱 (`app/`):** [`app/AGENTS.md`](./app/AGENTS.md)
-
-## 파일 참조 규칙
-
-- 코드 참조 시 항상 프로젝트 루트 상대 경로 사용 (예: `src/llm/client.ts:42`, `app/lib/services/websocket_service.dart:42`)
-- 절대 경로(`~/...`, `/home/...`) 사용 금지
 
 ## 프로젝트 구조
 
 ```
 openflow/
-├── src/                    # 서버 (TypeScript / Node.js)
-│   ├── bin.ts              # CLI 진입점
-│   ├── index.ts            # 공개 API
-│   ├── config/             # 설정 로더 + Zod 스키마
-│   ├── cli/                # CLI 명령어 러너
-│   ├── llm/                # OpenAI 호환 HTTP 클라이언트
-│   ├── agent/              # 에이전트 루프 + 프롬프트 빌더
-│   ├── memory/             # SQLite 저장소
-│   ├── tools/              # 도구 레지스트리 + 실행기
-│   ├── channel/            # WebSocket + REST API 서버 (모바일 앱 연동)
-│   ├── notification/       # Expo 푸시 알림 서비스
-│   └── utils/              # 로거, 에러 타입
+├── server/                    # 서버 (TypeScript / Node.js)
+│   ├── src/
+│   │   ├── bin.ts             # CLI 진입점
+│   │   ├── index.ts           # 공개 API
+│   │   ├── config/            # 설정 로더 + Zod 스키마
+│   │   ├── cli/               # CLI 명령어 러너
+│   │   ├── llm/               # OpenAI 호환 HTTP 클라이언트
+│   │   ├── agent/             # 에이전트 루프 + 프롬프트 빌더
+│   │   ├── memory/            # SQLite 저장소
+│   │   ├── tools/             # 도구 레지스트리 + 실행기
+│   │   ├── channel/           # WebSocket + REST API 서버 (모바일 앱 연동)
+│   │   ├── notification/      # Expo 푸시 알림 서비스
+│   │   ├── generated/         # openapi-typescript 생성 타입
+│   │   └── utils/             # 로거, 에러 타입
+│   ├── AGENTS.md              # 서버 개발 지침
+│   └── ...
 │
-├── app/                    # 모바일 앱 (Flutter / Dart)
-│   └── lib/
-│       ├── main.dart       # 진입점 + DI
-│       ├── app.dart        # MaterialApp, MainScreen
-│       ├── config/         # 테마 설정
-│       ├── constants/      # 디자인 토큰, 프로바이더 프리셋
-│       ├── models/         # 프로토콜 타입 (WS 메시지, 데이터 모델)
-│       ├── services/       # API 클라이언트, WebSocket, 인증 저장소
-│       ├── cubits/         # 상태 관리 (Auth, Chat, Sessions, Providers, Settings)
-│       ├── screens/        # 온보딩, 채팅, 설정, 프로바이더 편집
-│       ├── widgets/        # 재사용 위젯
-│       └── utils/          # URL 정규화, 시간 포맷
+├── app/                       # 모바일 앱 (Flutter / Dart)
+│   ├── lib/
+│   │   ├── main.dart          # 진입점 + DI
+│   │   ├── app.dart           # MaterialApp, MainScreen
+│   │   ├── config/            # 테마 설정
+│   │   ├── constants/         # 디자인 토큰, 프로바이더 프리셋
+│   │   ├── models/
+│   │   │   ├── generated/     # openapi-generator 생성 모델
+│   │   │   └── protocol.dart  # WS 메시지 타입 (sealed class)
+│   │   ├── services/          # API 클라이언트, WebSocket, 인증 저장소
+│   │   ├── cubits/            # 상태 관리 (Auth, Chat, Sessions, Providers, Settings)
+│   │   ├── screens/           # 온보딩, 채팅, 설정, 프로바이더 편집
+│   │   ├── widgets/           # 재사용 위젯
+│   │   └── utils/             # URL 정규화, 시간 포맷
+│   ├── AGENTS.md              # 앱 개발 지침
+│   └── ...
 │
-├── SPEC.md                 # 전체 스펙 및 기능 명세
-├── ADR.md                  # 아키텍처 결정 기록
+├── openapi.yaml               # API 계약 SSOT (Single Source of Truth)
+├── SPEC.md                    # 전체 스펙 및 기능 명세
+├── ADR.md                     # 아키텍처 결정 기록
 ├── API_INTERFACE_CONTRACT.md  # 모듈간 인터페이스 계약서
-├── AGENTS.server.md        # 서버 개발 지침
-└── app/AGENTS.md           # 앱 개발 지침
+└── AGENTS.md                  # 이 파일
 ```
+
+## API-First 워크플로우
+
+**`openapi.yaml`이 API 계약의 단일 진실 공급원(SSOT)이다.**
+
+### API 변경 프로세스
+
+1. `openapi.yaml`을 먼저 수정한다
+2. 서버: `cd server && npx openapi-typescript ../openapi.yaml -o src/generated/api.ts`
+3. 앱: `openapi-generator-cli generate -i openapi.yaml -g dart -o app/lib/models/generated`
+4. 생성된 타입/모델을 기반으로 구현한다
+5. **절대 코드를 먼저 수정하고 스펙을 나중에 맞추지 않는다**
+
+### 규칙
+
+- 새 엔드포인트 추가, 필드 변경, 응답 스키마 수정 시 반드시 `openapi.yaml`부터 시작
+- 생성된 코드(`generated/`)는 수동 수정 금지 — 재생성으로 덮어씀
+- 서버 라우트 핸들러는 생성된 타입으로 응답 형태를 보장
+- 앱의 API 응답 모델은 생성된 모델을 사용
+
+## 파일 참조 규칙
+
+- 코드 참조 시 항상 프로젝트 루트 상대 경로 사용 (예: `server/src/llm/client.ts:42`, `app/lib/services/websocket_service.dart:42`)
+- 절대 경로(`~/...`, `/home/...`) 사용 금지
 
 ## 작업 방식
 
@@ -74,12 +101,14 @@ openflow/
 ## 커밋 메시지
 
 - 형식: `모듈: 동작 설명` (영어)
-- 예시: `llm: add retry with exponential backoff`, `app: add provider edit screen`
+- 예시: `llm: add retry with exponential backoff`, `app: add provider edit screen`, `openapi: add session title field`
 - 명령문 스타일 (동사 원형)
+- `openapi.yaml` 변경 시 커밋 메시지에 `openapi:` 프리픽스 사용
 
 ## 문서 유지보수
 
 - 코드 변경이 `SPEC.md`의 내용에 영향을 주는 경우 (새 모듈/도구 추가, API 라우트 변경, 설정 스키마 변경, 아키텍처 경계 변경 등), 변경 사항을 반영하여 `SPEC.md`도 함께 업데이트
+- `openapi.yaml` 변경 시 관련 문서(`SPEC.md`, `API_INTERFACE_CONTRACT.md`) 동기화
 
 ## 보안
 

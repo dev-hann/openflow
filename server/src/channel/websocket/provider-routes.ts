@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createLogger } from "../../utils/logger.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
+import type { components } from "../../generated/api.js";
 import { sendJson, readJsonObject, requireAuth } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, routePattern, type Route } from "./routes.js";
@@ -14,7 +15,7 @@ function maskApiKey(apiKey: string): string {
   return apiKey.slice(0, 4) + "••••" + apiKey.slice(-4);
 }
 
-function providerToJson(p: Provider, isActive: boolean) {
+function providerToJson(p: Provider, isActive: boolean): components["schemas"]["ProviderResponse"] {
   return {
     id: p.id,
     name: p.name,

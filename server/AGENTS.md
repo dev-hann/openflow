@@ -5,28 +5,50 @@
 - 초경량 개인 AI 비서 서버 (3초 이내 기동)
 - TypeScript (ESM), Node.js 22+
 - WebSocket + REST API 채널, OpenAI 호환 LLM
-- **전체 스펙:** [`SPEC.md`](./SPEC.md) 참조
+- **전체 스펙:** [`SPEC.md`](../SPEC.md) 참조
+- **API 계약 SSOT:** [`openapi.yaml`](../openapi.yaml)
+
+## API-First 워크플로우
+
+**[`openapi.yaml`](../openapi.yaml)이 API 계약의 단일 진실 공급원이다.**
+
+### 타입 생성
+
+```bash
+npx openapi-typescript ../openapi.yaml -o src/generated/api.ts
+```
+
+### 규칙
+
+- API 변경 시 **반드시** `openapi.yaml`을 먼저 수정하고 타입을 재생성
+- 라우트 핸들러는 생성된 타입(`src/generated/api.ts`)을 사용하여 응답 형태를 보장
+- `src/generated/` 디렉토리의 파일은 수동 수정 금지 — 재생성으로 덮어씀
+- 새 엔드포인트 추가, 요청/응답 필드 변경 시 `openapi.yaml` → 타입 생성 → 구현 순서
 
 ## 파일 참조 규칙
 
-- 코드 참조 시 프로젝트 루트 상대 경로 사용 (예: `src/llm/client.ts:42`)
+- 코드 참조 시 프로젝트 루트 상대 경로 사용 (예: `server/src/llm/client.ts:42`)
 - 절대 경로(`~/...`, `/home/...`) 사용 금지
 
 ## 프로젝트 구조
 
 ```
-src/
-├── bin.ts                # CLI 진입점
-├── index.ts              # 공개 API
-├── config/               # 설정 로더 + Zod 스키마
-├── cli/                  # CLI 명령어 러너
-├── llm/                  # OpenAI 호환 HTTP 클라이언트
-├── agent/                # 에이전트 루프 + 프롬프트 빌더
-├── memory/               # SQLite 저장소
-├── tools/                # 도구 레지스트리 + 실행기
-├── channel/              # WebSocket + REST API 서버 (모바일 앱 연동)
-├── notification/         # Expo 푸시 알림 서비스
-└── utils/                # 로거, 에러 타입
+server/
+├── src/
+│   ├── bin.ts                # CLI 진입점
+│   ├── index.ts              # 공개 API
+│   ├── config/               # 설정 로더 + Zod 스키마
+│   ├── cli/                  # CLI 명령어 러너
+│   ├── llm/                  # OpenAI 호환 HTTP 클라이언트
+│   ├── agent/                # 에이전트 루프 + 프롬프트 빌더
+│   ├── memory/               # SQLite 저장소
+│   ├── tools/                # 도구 레지스트리 + 실행기
+│   ├── channel/              # WebSocket + REST API 서버 (모바일 앱 연동)
+│   ├── notification/         # Expo 푸시 알림 서비스
+│   ├── generated/            # openapi-typescript 생성 타입 (수동 수정 금지)
+│   └── utils/                # 로거, 에러 타입
+├── AGENTS.md                 # 이 파일
+└── ...
 ```
 
 - 테스트: 소스 파일 옆에 `*.test.ts` 배치
@@ -41,8 +63,8 @@ src/
 bin.ts → config → agent → llm
                  → tools
                  → memory
-       → channel → agent
-       → notification
+      → channel → agent
+      → notification
 ```
 
 - 상위 모듈이 하위 모듈을 import. 역방향 금지.
@@ -50,6 +72,7 @@ bin.ts → config → agent → llm
 - `tools/`는 `llm/`을 import하지 않음
 - `memory/`는 다른 모듈을 import하지 않음 (가장 하위)
 - `config/`는 다른 모듈을 import하지 않음 (독립적)
+- `generated/`는 다른 모듈을 import하지 않음 (타입만 제공)
 
 ### 금지 사항
 
@@ -102,7 +125,6 @@ import { logger } from "../utils/logger.js";
 ### 에러 처리
 
 ```typescript
-// 커스텀 에러 타입 사용
 class OpenFlowError extends Error {
   constructor(
     message: string,
@@ -113,7 +135,6 @@ class OpenFlowError extends Error {
   }
 }
 
-// 에러 코드는 닫힌 유니온
 type ErrorCode =
   | "CONFIG_INVALID"
   | "LLM_REQUEST_FAILED"
@@ -124,12 +145,6 @@ type ErrorCode =
   | "DB_MIGRATION_FAILED"
   | "NOTIFICATION_ERROR"
   | "PERMISSION_DENIED";
-```
-
-// Result 타입 패턴 선호 (복구 가능한 경우)
-type Result<T, E = OpenFlowError> =
-  | { ok: true; value: T }
-  | { ok: false; error: E };
 ```
 
 - 복구 불가능한 에러: `throw new OpenFlowError(...)`
