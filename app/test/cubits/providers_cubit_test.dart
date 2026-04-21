@@ -153,5 +153,28 @@ void main() {
         ),
       ],
     );
+
+    blocTest<ProvidersCubit, ProvidersState>(
+      'setAvailableModels updates models and clears loading',
+      build: () => cubit,
+      seed: () => const ProvidersState(isLoadingModels: true),
+      act: (c) {
+        c.setAvailableModels(['gpt-4', 'gpt-3.5']);
+      },
+      expect: () => [
+        const ProvidersState(
+          availableModels: ['gpt-4', 'gpt-3.5'],
+        ),
+      ],
+    );
+
+    blocTest<ProvidersCubit, ProvidersState>(
+      'setLoadingModels updates loading state',
+      build: () => cubit,
+      act: (c) {
+        c.setLoadingModels(true);
+      },
+      expect: () => [const ProvidersState(isLoadingModels: true)],
+    );
   });
 }

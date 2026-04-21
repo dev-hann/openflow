@@ -137,16 +137,11 @@ class WebSocketService {
     _pendingMessages.clear();
   }
 
-  void _handleError(Object error) {
-    _stopPing();
-    _connectionState = WsConnectionState.disconnected;
-    onDisconnected?.call();
-    if (!_intentionalDisconnect && !_authFailed) {
-      _scheduleReconnect();
-    }
-  }
+  void _handleError(Object error) => _handleDisconnect();
 
-  void _handleDone() {
+  void _handleDone() => _handleDisconnect();
+
+  void _handleDisconnect() {
     _stopPing();
     _connectionState = WsConnectionState.disconnected;
     onDisconnected?.call();

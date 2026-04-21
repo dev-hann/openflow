@@ -280,5 +280,118 @@ void main() {
       },
       expect: () => <ChatState>[],
     );
+
+    blocTest<ChatCubit, ChatState>(
+      'setError sets errorMessage',
+      build: () => cubit,
+      act: (cubit) {
+        cubit.setError('something went wrong');
+      },
+      expect: () => [
+        const ChatState(errorMessage: 'something went wrong'),
+      ],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'clearError clears errorMessage',
+      build: () => cubit,
+      seed: () => const ChatState(errorMessage: 'error'),
+      act: (cubit) {
+        cubit.clearError();
+      },
+      expect: () => [const ChatState()],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'setMessages replaces message list',
+      build: () => cubit,
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: 'old',
+            role: MessageRole.user,
+            content: 'old',
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
+      act: (cubit) {
+        cubit.setMessages([
+          ChatMessage(
+            id: 'new',
+            role: MessageRole.assistant,
+            content: 'new',
+            timestamp: DateTime(2025),
+          ),
+        ]);
+      },
+      expect: () => [
+        ChatState(
+          messages: [
+            ChatMessage(
+              id: 'new',
+              role: MessageRole.assistant,
+              content: 'new',
+              timestamp: DateTime(2025),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    blocTest<ChatCubit, ChatState>(
+      'prependMessages inserts older messages before current',
+      build: () => cubit,
+      seed: () => ChatState(
+        messages: [
+          ChatMessage(
+            id: 'curr',
+            role: MessageRole.user,
+            content: 'current',
+            timestamp: DateTime(2025),
+          ),
+        ],
+      ),
+      act: (cubit) {
+        cubit.prependMessages([
+          ChatMessage(
+            id: 'old1',
+            role: MessageRole.user,
+            content: 'older1',
+            timestamp: DateTime(2024),
+          ),
+          ChatMessage(
+            id: 'old2',
+            role: MessageRole.assistant,
+            content: 'older2',
+            timestamp: DateTime(2024),
+          ),
+        ]);
+      },
+      expect: () => [
+        ChatState(
+          messages: [
+            ChatMessage(
+              id: 'old1',
+              role: MessageRole.user,
+              content: 'older1',
+              timestamp: DateTime(2024),
+            ),
+            ChatMessage(
+              id: 'old2',
+              role: MessageRole.assistant,
+              content: 'older2',
+              timestamp: DateTime(2024),
+            ),
+            ChatMessage(
+              id: 'curr',
+              role: MessageRole.user,
+              content: 'current',
+              timestamp: DateTime(2025),
+            ),
+          ],
+        ),
+      ],
+    );
   });
 }

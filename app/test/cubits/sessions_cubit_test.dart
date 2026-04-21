@@ -124,5 +124,42 @@ void main() {
       },
       expect: () => [],
     );
+
+    blocTest<SessionsCubit, SessionsState>(
+      'removeSession preserves isLoading and errorMessage',
+      build: () => cubit,
+      seed: () => SessionsState(
+        sessions: [_session('s1'), _session('s2')],
+        activeSessionId: 's1',
+        isLoading: true,
+        errorMessage: 'network error',
+      ),
+      act: (c) {
+        c.removeSession('s2');
+      },
+      expect: () => [
+        SessionsState(
+          sessions: [_session('s1')],
+          activeSessionId: 's1',
+          isLoading: true,
+          errorMessage: 'network error',
+        ),
+      ],
+    );
+
+    blocTest<SessionsCubit, SessionsState>(
+      'removeSession clears active when last session removed',
+      build: () => cubit,
+      seed: () => SessionsState(
+        sessions: [_session('s1')],
+        activeSessionId: 's1',
+      ),
+      act: (c) {
+        c.removeSession('s1');
+      },
+      expect: () => [
+        const SessionsState(),
+      ],
+    );
   });
 }
