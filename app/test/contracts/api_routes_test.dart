@@ -24,9 +24,7 @@ void main() {
     ('DELETE', '/api/sessions/:id'),
   ];
 
-  test('ApiClient covers every server route', () async {
-    final capturedRequests = <http.Request>[];
-
+  ApiClient createTestClient(List<http.Request> capturedRequests) {
     final mockClient = MockClient((req) {
       capturedRequests.add(req);
       return Future.value(
@@ -37,29 +35,41 @@ void main() {
       );
     });
 
-    final apiClient =
-        ApiClient('http://localhost:9800', httpClient: mockClient);
+    return createApiClient(
+      'http://localhost:9800',
+      token: 'at',
+      httpClient: mockClient,
+    );
+  }
 
+  Future<void> exerciseAllRoutes(ApiClient apiClient) async {
     await apiClient.pairInit();
     await apiClient.pairVerify('123', 'dev');
     await apiClient.refreshToken('rt');
-    await apiClient.unpair('at');
+    await apiClient.unpair();
     await apiClient.getStatus();
-    await apiClient.listSessions('at');
-    await apiClient.createSession('at');
-    await apiClient.deleteSession('at', 's1');
-    await apiClient.listProviders('at');
-    await apiClient.createProvider('at', {
+    await apiClient.listSessions();
+    await apiClient.createSession();
+    await apiClient.deleteSession('s1');
+    await apiClient.listProviders();
+    await apiClient.createProvider({
       'name': 'n',
       'baseUrl': 'http://x',
       'apiKey': 'k',
       'model': 'm',
     });
-    await apiClient.updateProvider('at', 'p1', {'name': 'n2'});
-    await apiClient.deleteProvider('at', 'p1');
-    await apiClient.switchProvider('at', 'p1');
-    await apiClient.verifyProvider('at', 'p1');
-    await apiClient.fetchProviderModels('at', 'p1');
+    await apiClient.updateProvider('p1', {'name': 'n2'});
+    await apiClient.deleteProvider('p1');
+    await apiClient.switchProvider('p1');
+    await apiClient.verifyProvider('p1');
+    await apiClient.fetchProviderModels('p1');
+  }
+
+  test('ApiClient covers every server route', () async {
+    final capturedRequests = <http.Request>[];
+    final apiClient = createTestClient(capturedRequests);
+
+    await exerciseAllRoutes(apiClient);
 
     final exercised = capturedRequests.map((req) {
       return (req.method, _normalizePath(req.url.path));
@@ -76,40 +86,9 @@ void main() {
 
   test('no unexpected routes in ApiClient', () async {
     final capturedRequests = <http.Request>[];
+    final apiClient = createTestClient(capturedRequests);
 
-    final mockClient = MockClient((req) {
-      capturedRequests.add(req);
-      return Future.value(
-        http.Response(
-          jsonEncode(_okBodyFor(req.method, req.url.path)),
-          200,
-        ),
-      );
-    });
-
-    final apiClient =
-        ApiClient('http://localhost:9800', httpClient: mockClient);
-
-    await apiClient.pairInit();
-    await apiClient.pairVerify('123', 'dev');
-    await apiClient.refreshToken('rt');
-    await apiClient.unpair('at');
-    await apiClient.getStatus();
-    await apiClient.listSessions('at');
-    await apiClient.createSession('at');
-    await apiClient.deleteSession('at', 's1');
-    await apiClient.listProviders('at');
-    await apiClient.createProvider('at', {
-      'name': 'n',
-      'baseUrl': 'http://x',
-      'apiKey': 'k',
-      'model': 'm',
-    });
-    await apiClient.updateProvider('at', 'p1', {'name': 'n2'});
-    await apiClient.deleteProvider('at', 'p1');
-    await apiClient.switchProvider('at', 'p1');
-    await apiClient.verifyProvider('at', 'p1');
-    await apiClient.fetchProviderModels('at', 'p1');
+    await exerciseAllRoutes(apiClient);
 
     final serverSet = serverRoutes.toSet();
     for (final req in capturedRequests) {

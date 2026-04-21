@@ -24,7 +24,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pinController = TextEditingController();
   final _pinFocusNode = FocusNode();
   bool _loading = false;
+  bool _isVerifying = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _pinController.addListener(() {
+      if (_pinController.text.length == 6 && !_isVerifying) {
+        _submitPin();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -34,10 +45,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
+  bool _isValidUrl(String url) {
+    if (url.trim().isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && uri.host.isNotEmpty;
+    } on FormatException {
+      return false;
+    }
+  }
+
+  void _previousStep() {
+    if (_step.index > 0) {
+      setState(() => _step = _Step.values[_step.index - 1]);
+    }
+  }
+
   Future<void> _submitServer() async {
     final url = normalizeUrl(_serverController.text);
     if (url.isEmpty) {
       setState(() => _error = '서버 주소를 입력해주세요');
+      return;
+    }
+    if (!_isValidUrl(url)) {
+      setState(() => _error = '올바른 서버 주소를 입력해주세요');
       return;
     }
 
@@ -55,9 +86,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _step = _Step.pin;
         _loading = false;
       });
-    } on Object catch (e) {
+    } on Object {
       setState(() {
-        _error = '서버에 연결할 수 없습니다: $e';
+        _error = '서버에 연결할 수 없습니다.';
         _loading = false;
       });
     }
@@ -72,6 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     setState(() {
       _loading = true;
+      _isVerifying = true;
       _error = null;
     });
 
@@ -92,11 +124,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       setState(() {
         _step = _Step.provider;
         _loading = false;
+        _isVerifying = false;
       });
-    } on Object catch (e) {
+    } on Object {
       setState(() {
-        _error = 'PIN 인증 실패: $e';
+        _error = 'PIN 인증에 실패했습니다.';
         _loading = false;
+        _isVerifying = false;
       });
     }
   }
@@ -106,6 +140,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      appBar: _step.index > 0
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _previousStep,
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(Spacing.lg),
@@ -132,6 +174,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               const SizedBox(height: Spacing.xxl),
+              _buildStepIndicator(),
+              const SizedBox(height: Spacing.lg),
               Expanded(child: _buildStep()),
               if (_error != null)
                 Padding(
@@ -143,6 +187,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        3,
+        (i) => Container(
+          width: i == _step.index ? 24 : 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: i == _step.index
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outlineVariant,
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
       ),
@@ -234,7 +298,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildPinBoxes() {
     return GestureDetector(
-      onTap: () => _pinFocusNode.requestFocus(),
+      onTap: _pinFocusNode.requestFocus,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(6, (i) {

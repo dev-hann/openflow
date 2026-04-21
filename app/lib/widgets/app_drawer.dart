@@ -24,6 +24,8 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sortedSessions = List<SessionInfo>.from(sessions)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return NavigationDrawer(
       selectedIndex: null,
@@ -49,7 +51,7 @@ class AppDrawer extends StatelessWidget {
           ),
         ),
         const Divider(),
-        if (sessions.isEmpty)
+        if (sortedSessions.isEmpty)
           Padding(
             padding: const EdgeInsets.all(Spacing.xl),
             child: Text(
@@ -59,7 +61,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-        ...sessions.map((session) {
+        ...sortedSessions.map((session) {
           final isActive = session.id == activeSessionId;
           return ListTile(
             selected: isActive,
@@ -77,7 +79,29 @@ class AppDrawer extends StatelessWidget {
             ),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline, size: 18),
-              onPressed: () => onSessionDelete(session.id),
+              tooltip: '세션 삭제',
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('세션 삭제'),
+                    content: Text("'${session.title}' 세션을 삭제하시겠습니까?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('취소'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('삭제'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed ?? false) {
+                  onSessionDelete(session.id);
+                }
+              },
             ),
             onTap: () => onSessionTap(session.id),
           );

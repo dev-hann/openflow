@@ -4,7 +4,7 @@ import 'package:equatable/equatable.dart';
 
 import 'package:openflow/constants/dimensions.dart';
 
-class VerifySection extends StatelessWidget {
+class VerifySection extends StatefulWidget {
   const VerifySection({
     required this.verifying,
     required this.onVerify,
@@ -20,6 +20,13 @@ class VerifySection extends StatelessWidget {
   final ValueChanged<String> onSelectModel;
 
   @override
+  State<VerifySection> createState() => _VerifySectionState();
+}
+
+class _VerifySectionState extends State<VerifySection> {
+  String _searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -27,8 +34,8 @@ class VerifySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         FilledButton.tonal(
-          onPressed: verifying ? null : onVerify,
-          child: verifying
+          onPressed: widget.verifying ? null : widget.onVerify,
+          child: widget.verifying
               ? const SizedBox(
                   width: 16,
                   height: 16,
@@ -36,41 +43,61 @@ class VerifySection extends StatelessWidget {
                 )
               : const Text('연결 확인'),
         ),
-        if (result != null) ...[
+        if (widget.result != null) ...[
           const SizedBox(height: Spacing.sm),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(Spacing.md),
             decoration: BoxDecoration(
-              color: result!.ok
+              color: widget.result!.ok
                   ? theme.colorScheme.primaryContainer
                   : theme.colorScheme.errorContainer,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Text(
-              result!.ok ? '연결 성공!' : result!.error ?? '연결 실패',
+              widget.result!.ok
+                  ? '연결 성공!'
+                  : widget.result!.error ?? '연결 실패',
               style: TextStyle(
-                color: result!.ok
+                color: widget.result!.ok
                     ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.onErrorContainer,
               ),
             ),
           ),
         ],
-        if (result?.ok == true && result!.models.isNotEmpty) ...[
+        if ((widget.result?.ok ?? false) &&
+            widget.result!.models.isNotEmpty) ...[
           const SizedBox(height: Spacing.sm),
           Text('모델 선택', style: theme.textTheme.labelLarge),
           const SizedBox(height: Spacing.xs),
-          Wrap(
-            spacing: Spacing.xs,
-            children: result!.models.map((model) {
-              final selected = model == selectedModel;
-              return ChoiceChip(
-                label: Text(model),
-                selected: selected,
-                onSelected: (_) => onSelectModel(model),
-              );
-            }).toList(),
+          TextFormField(
+            decoration: const InputDecoration(
+              hintText: '모델 검색...',
+              prefixIcon: Icon(Icons.search),
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+          ),
+          const SizedBox(height: Spacing.xs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: Spacing.xs,
+                children: widget.result!.models
+                    .where((m) => m.toLowerCase().contains(_searchQuery))
+                    .map((model) {
+                  final selected = model == widget.selectedModel;
+                  return ChoiceChip(
+                    label: Text(model),
+                    selected: selected,
+                    onSelected: (_) => widget.onSelectModel(model),
+                  );
+                }).toList(),
+              ),
+            ),
           ),
         ],
       ],

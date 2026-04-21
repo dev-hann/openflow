@@ -8,18 +8,21 @@ class ChatMessage extends Equatable {
     required this.role,
     required this.content,
     required this.timestamp,
+    this.sessionId,
     this.isStreaming = false,
     this.isFailed = false,
   });
   final String id;
   final MessageRole role;
   final String content;
+  final String? sessionId;
   final bool isStreaming;
   final bool isFailed;
   final DateTime timestamp;
 
   ChatMessage copyWith({
     String? content,
+    String? sessionId,
     bool? isStreaming,
     bool? isFailed,
   }) {
@@ -27,6 +30,7 @@ class ChatMessage extends Equatable {
       id: id,
       role: role,
       content: content ?? this.content,
+      sessionId: sessionId ?? this.sessionId,
       isStreaming: isStreaming ?? this.isStreaming,
       isFailed: isFailed ?? this.isFailed,
       timestamp: timestamp,
@@ -35,7 +39,7 @@ class ChatMessage extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, role, content, isStreaming, isFailed, timestamp];
+      [id, role, content, sessionId, isStreaming, isFailed, timestamp];
 }
 
 sealed class WsClientMessage {
@@ -84,17 +88,19 @@ class WsAuth extends WsClientMessage {
       };
 }
 
-sealed class WsServerMessage {
+sealed class WsServerMessage extends Equatable {
   const WsServerMessage();
+
   static WsServerMessage fromJson(Map<String, dynamic> json) {
-    return switch (json['type'] as String) {
+    final type = json['type'] as String;
+    return switch (type) {
       'token' => WsTokenChunk(
-          sessionId: json['sessionId'] as String,
-          content: json['content'] as String,
+          sessionId: json['sessionId'] as String? ?? '',
+          content: json['content'] as String? ?? '',
         ),
       'response' => WsResponse(
-          sessionId: json['sessionId'] as String,
-          content: json['content'] as String,
+          sessionId: json['sessionId'] as String? ?? '',
+          content: json['content'] as String? ?? '',
         ),
       'error' => WsError(
           sessionId: json['sessionId'] as String? ?? '',
@@ -104,10 +110,10 @@ sealed class WsServerMessage {
       'auth_required' => const WsAuthRequired(),
       'auth_ok' => const WsAuthOk(),
       'session_switched' => WsSessionSwitched(
-          sessionId: json['sessionId'] as String,
+          sessionId: json['sessionId'] as String? ?? '',
         ),
       'pong' => const WsPong(),
-      _ => throw FormatException('Unknown WS message type: ${json['type']}'),
+      _ => WsUnknown(rawType: type, data: json),
     };
   }
 }
@@ -116,12 +122,18 @@ class WsTokenChunk extends WsServerMessage {
   const WsTokenChunk({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
+
+  @override
+  List<Object?> get props => [sessionId, content];
 }
 
 class WsResponse extends WsServerMessage {
   const WsResponse({required this.sessionId, required this.content});
   final String sessionId;
   final String content;
+
+  @override
+  List<Object?> get props => [sessionId, content];
 }
 
 class WsError extends WsServerMessage {
@@ -133,23 +145,47 @@ class WsError extends WsServerMessage {
   final String sessionId;
   final String code;
   final String message;
+
+  @override
+  List<Object?> get props => [sessionId, code, message];
 }
 
 class WsAuthRequired extends WsServerMessage {
   const WsAuthRequired();
+
+  @override
+  List<Object?> get props => [];
 }
 
 class WsAuthOk extends WsServerMessage {
   const WsAuthOk();
+
+  @override
+  List<Object?> get props => [];
 }
 
 class WsSessionSwitched extends WsServerMessage {
   const WsSessionSwitched({required this.sessionId});
   final String sessionId;
+
+  @override
+  List<Object?> get props => [sessionId];
 }
 
 class WsPong extends WsServerMessage {
   const WsPong();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class WsUnknown extends WsServerMessage {
+  const WsUnknown({required this.rawType, required this.data});
+  final String rawType;
+  final Map<String, dynamic> data;
+
+  @override
+  List<Object?> get props => [rawType, data];
 }
 
 class SessionInfo extends Equatable {
@@ -160,11 +196,13 @@ class SessionInfo extends Equatable {
   });
 
   factory SessionInfo.fromJson(Map<String, dynamic> json) => SessionInfo(
-        id: json['id'] as String,
+        id: json['id'] as String? ?? '',
         title: json['title'] as String? ?? '새 대화',
-        createdAt: DateTime.fromMillisecondsSinceEpoch(
-          (json['createdAt'] as num).toInt(),
-        ),
+        createdAt: json['createdAt'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(
+                (json['createdAt'] as num).toInt(),
+              )
+            : DateTime.now(),
       );
   final String id;
   final String title;
@@ -178,8 +216,8 @@ class TokenPair extends Equatable {
   const TokenPair({required this.accessToken, required this.refreshToken});
 
   factory TokenPair.fromJson(Map<String, dynamic> json) => TokenPair(
-        accessToken: json['accessToken'] as String,
-        refreshToken: json['refreshToken'] as String,
+        accessToken: json['accessToken'] as String? ?? '',
+        refreshToken: json['refreshToken'] as String? ?? '',
       );
   final String accessToken;
   final String refreshToken;
@@ -231,14 +269,16 @@ class ProviderInfo extends Equatable {
   });
 
   factory ProviderInfo.fromJson(Map<String, dynamic> json) => ProviderInfo(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        baseUrl: json['baseUrl'] as String,
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        baseUrl: json['baseUrl'] as String? ?? '',
         model: json['model'] as String? ?? '',
         isActive: json['isActive'] as bool? ?? false,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(
-          (json['createdAt'] as num).toInt(),
-        ),
+        createdAt: json['createdAt'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(
+                (json['createdAt'] as num).toInt(),
+              )
+            : DateTime.now(),
       );
   final String id;
   final String name;

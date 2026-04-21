@@ -16,7 +16,7 @@ void main() {
 
   http.Request lastRequest() => capturedRequests.last;
 
-  setUp(() {
+  ApiClient createTestClient({String? token}) {
     capturedRequests = [];
     customHandler = null;
 
@@ -28,11 +28,16 @@ void main() {
       return Future.value(okResponse());
     });
 
-    apiClient = ApiClient('http://localhost:9800', httpClient: mockClient);
-  });
+    return createApiClient(
+      'http://localhost:9800',
+      token: token,
+      httpClient: mockClient,
+    );
+  }
 
   group('pairInit', () {
     test('sends POST /api/auth/pair/init', () async {
+      apiClient = createTestClient();
       customHandler = (req) => okResponse({'expiresInMs': 300000});
       await apiClient.pairInit();
       final req = lastRequest();
@@ -43,6 +48,7 @@ void main() {
 
   group('pairVerify', () {
     test('sends POST /api/auth/pair/verify with pin and label', () async {
+      apiClient = createTestClient();
       customHandler = (req) => okResponse({
             'accessToken': 'at_test',
             'refreshToken': 'rt_test',
@@ -59,6 +65,7 @@ void main() {
 
   group('refreshToken', () {
     test('sends POST /api/auth/refresh with refreshToken field', () async {
+      apiClient = createTestClient();
       customHandler = (req) => okResponse({
             'accessToken': 'at_new',
             'refreshToken': 'rt_new',
@@ -73,8 +80,9 @@ void main() {
   });
 
   group('unpair', () {
-    test('sends DELETE /api/auth/unpair', () async {
-      await apiClient.unpair('at_test');
+    test('sends DELETE /api/auth/unpair with auth header', () async {
+      apiClient = createTestClient(token: 'at_test');
+      await apiClient.unpair();
       final req = lastRequest();
       expect(req.method, 'DELETE');
       expect(req.url.path, '/api/auth/unpair');
@@ -84,9 +92,10 @@ void main() {
 
   group('listSessions', () {
     test('sends GET /api/sessions', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) =>
           okResponse(<String, dynamic>{'sessions': <Map<String, dynamic>>[]});
-      await apiClient.listSessions('at_test');
+      await apiClient.listSessions();
       final req = lastRequest();
       expect(req.method, 'GET');
       expect(req.url.path, '/api/sessions');
@@ -95,9 +104,10 @@ void main() {
 
   group('createSession', () {
     test('sends POST /api/sessions', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) =>
           okResponse({'id': 's1', 'title': 'test', 'createdAt': 1000});
-      await apiClient.createSession('at_test');
+      await apiClient.createSession();
       final req = lastRequest();
       expect(req.method, 'POST');
       expect(req.url.path, '/api/sessions');
@@ -106,7 +116,8 @@ void main() {
 
   group('deleteSession', () {
     test('sends DELETE /api/sessions/:id', () async {
-      await apiClient.deleteSession('at_test', 's1');
+      apiClient = createTestClient(token: 'at_test');
+      await apiClient.deleteSession('s1');
       final req = lastRequest();
       expect(req.method, 'DELETE');
       expect(req.url.path, '/api/sessions/s1');
@@ -115,6 +126,7 @@ void main() {
 
   group('getStatus', () {
     test('sends GET /api/status', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({'status': 'ok'});
       await apiClient.getStatus();
       final req = lastRequest();
@@ -125,9 +137,10 @@ void main() {
 
   group('listProviders', () {
     test('sends GET /api/providers', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) =>
           okResponse(<String, dynamic>{'providers': <Map<String, dynamic>>[]});
-      await apiClient.listProviders('at_test');
+      await apiClient.listProviders();
       final req = lastRequest();
       expect(req.method, 'GET');
       expect(req.url.path, '/api/providers');
@@ -136,6 +149,7 @@ void main() {
 
   group('createProvider', () {
     test('sends POST /api/providers', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({
             'id': 'p1',
             'name': 'test',
@@ -143,7 +157,7 @@ void main() {
             'model': 'gpt-4',
             'createdAt': 1000,
           });
-      await apiClient.createProvider('at_test', {
+      await apiClient.createProvider({
         'name': 'test',
         'baseUrl': 'http://x',
         'apiKey': 'sk-test',
@@ -157,6 +171,7 @@ void main() {
 
   group('updateProvider', () {
     test('sends PUT /api/providers/:id', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({
             'id': 'p1',
             'name': 'new',
@@ -164,7 +179,7 @@ void main() {
             'model': 'gpt-4',
             'createdAt': 1000,
           });
-      await apiClient.updateProvider('at_test', 'p1', {'name': 'new'});
+      await apiClient.updateProvider('p1', {'name': 'new'});
       final req = lastRequest();
       expect(req.method, 'PUT');
       expect(req.url.path, '/api/providers/p1');
@@ -173,7 +188,8 @@ void main() {
 
   group('deleteProvider', () {
     test('sends DELETE /api/providers/:id', () async {
-      await apiClient.deleteProvider('at_test', 'p1');
+      apiClient = createTestClient(token: 'at_test');
+      await apiClient.deleteProvider('p1');
       final req = lastRequest();
       expect(req.method, 'DELETE');
       expect(req.url.path, '/api/providers/p1');
@@ -182,8 +198,9 @@ void main() {
 
   group('verifyProvider', () {
     test('sends POST /api/providers/:id/verify', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({'ok': true});
-      await apiClient.verifyProvider('at_test', 'p1');
+      await apiClient.verifyProvider('p1');
       final req = lastRequest();
       expect(req.method, 'POST');
       expect(req.url.path, '/api/providers/p1/verify');
@@ -192,10 +209,11 @@ void main() {
 
   group('fetchProviderModels', () {
     test('sends GET /api/providers/:id/models', () async {
+      apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({
             'models': ['gpt-4'],
           });
-      await apiClient.fetchProviderModels('at_test', 'p1');
+      await apiClient.fetchProviderModels('p1');
       final req = lastRequest();
       expect(req.method, 'GET');
       expect(req.url.path, '/api/providers/p1/models');
@@ -204,7 +222,8 @@ void main() {
 
   group('switchProvider', () {
     test('sends PUT /api/providers/current with providerId field', () async {
-      await apiClient.switchProvider('at_test', 'p1');
+      apiClient = createTestClient(token: 'at_test');
+      await apiClient.switchProvider('p1');
       final req = lastRequest();
       expect(req.method, 'PUT');
       expect(req.url.path, '/api/providers/current');
@@ -214,7 +233,8 @@ void main() {
   });
 
   group('error handling', () {
-    test('throws ApiError on 4xx response', () {
+    test('throws ApiException on 4xx response', () {
+      apiClient = createTestClient();
       customHandler = (req) => http.Response(
             jsonEncode(
               <String, dynamic>{
@@ -226,7 +246,7 @@ void main() {
           );
       expect(
         () => apiClient.pairVerify('000000', 'test'),
-        throwsA(isA<ApiError>().having((e) => e.status, 'status', 401)),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401)),
       );
     });
   });

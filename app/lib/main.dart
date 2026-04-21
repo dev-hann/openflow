@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,13 +18,11 @@ void main() {
 
   final authStorage = AuthStorage();
   final wsService = WebSocketService();
-  final updateService = UpdateService();
 
   runApp(
     OpenFlowApp(
       authStorage: authStorage,
       wsService: wsService,
-      updateService: updateService,
     ),
   );
 }
@@ -35,12 +31,10 @@ class OpenFlowApp extends StatelessWidget {
   const OpenFlowApp({
     required this.authStorage,
     required this.wsService,
-    required this.updateService,
     super.key,
   });
   final AuthStorage authStorage;
   final WebSocketService wsService;
-  final UpdateService updateService;
 
   @override
   Widget build(BuildContext context) {
@@ -48,19 +42,20 @@ class OpenFlowApp extends StatelessWidget {
       providers: [
         RepositoryProvider<AuthStorage>.value(value: authStorage),
         RepositoryProvider<WebSocketService>.value(value: wsService),
-        RepositoryProvider<UpdateService>.value(value: updateService),
+        RepositoryProvider<UpdateService>(create: (_) => UpdateService()),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) => AuthCubit(authStorage)..loadAuth().ignore(),
+            create: (_) => AuthCubit(authStorage)..loadAuth().catchError((_) {}),
           ),
           BlocProvider(create: (_) => ChatCubit()),
           BlocProvider(create: (_) => SessionsCubit()),
           BlocProvider(create: (_) => ProvidersCubit()),
           BlocProvider(create: (_) => SettingsCubit()),
-          BlocProvider(
-            create: (_) => UpdateCubit(updateService)..loadCurrentVersion().ignore(),
+          BlocProvider<UpdateCubit>(
+            create: (ctx) =>
+                UpdateCubit(ctx.read<UpdateService>())..checkForUpdate(),
           ),
         ],
         child: const OpenFlowMaterialApp(),

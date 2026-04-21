@@ -17,6 +17,9 @@ import 'package:openflow/screens/provider_edit_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/update_service.dart';
 import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/widgets/active_provider_card.dart';
+import 'package:openflow/widgets/connection_section.dart';
+import 'package:openflow/widgets/provider_list_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,20 +43,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final serverUrl = authCubit.state.storedAuth?.serverUrl;
     if (serverUrl == null) return;
 
-    final api = createApiClient(serverUrl);
+    final api = createApiClient(serverUrl, token: token);
 
     try {
-      final providers = await api.listProviders(token);
+      final providers = await api.listProviders();
       if (mounted) context.read<ProvidersCubit>().setProviders(providers);
     } on Object {
-      // Provider load failure is non-critical
     }
 
     try {
-      final sessions = await api.listSessions(token);
+      final sessions = await api.listSessions();
       if (mounted) context.read<SessionsCubit>().setSessions(sessions);
     } on Object {
-      // Session load failure is non-critical
+    }
+
+    if (mounted) {
+      unawaited(context.read<UpdateCubit>().loadCurrentVersion());
     }
   }
 
@@ -100,10 +105,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     providersCubit.setSwitching(true);
     try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-      await api.switchProvider(token, providerId);
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
+      await api.switchProvider(providerId);
       providersCubit.setActiveProviderId(providerId);
-      final providers = await api.listProviders(token);
+      final providers = await api.listProviders();
       providersCubit.setProviders(providers);
     } on Object catch (e) {
       if (mounted) {
@@ -112,7 +120,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } finally {
-      providersCubit.setSwitching(false);
+      if (context.mounted) {
+        providersCubit.setSwitching(false);
+      }
     }
   }
 
@@ -150,8 +160,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-      await api.deleteProvider(token, providerId);
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
+      await api.deleteProvider(providerId);
       providersCubit.removeProvider(providerId);
     } on Object catch (e) {
       if (mounted) {
@@ -171,10 +184,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     providersCubit.setLoadingModels(true);
     providersCubit.setAvailableModels([]);
 
-    List<String> models = [];
+    var models = <String>[];
     try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-      models = await api.fetchProviderModels(token, provider.id);
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
+      models = await api.fetchProviderModels(provider.id);
     } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,13 +217,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (selected == null || selected == provider.model || !mounted) return;
 
-    final authCubit2 = context.read<AuthCubit>();
-    final token2 = await authCubit2.getValidToken();
-    if (token2 == null) return;
+    final freshToken = await authCubit.getValidToken();
+    if (freshToken == null) return;
 
     try {
-      final api = createApiClient(authCubit2.state.storedAuth!.serverUrl);
-      final updated = await api.updateProvider(token2, provider.id, {
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: freshToken,
+      );
+      final updated = await api.updateProvider(provider.id, {
         'model': selected,
       });
       context.read<ProvidersCubit>().updateProvider(updated);
@@ -249,16 +267,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildContent(AuthState authState, ProvidersState providersState) {
     final theme = Theme.of(context);
 
-    return ListView(
-      children: [
-        _buildConnectionTile(authState),
-        const Divider(height: 1),
-        _buildActiveProviderSection(theme, providersState),
-        const Divider(height: 1),
-        _buildProvidersList(theme, providersState),
-        const Divider(height: 1),
-        _buildVersionSection(theme),
-      ],
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        children: [
+          ConnectionSection(
+            authState: authState,
+            onServerChanged: _handleServerChanged,
+          ),
+          const Divider(height: 1),
+          _buildActiveProviderSection(theme, providersState),
+          const Divider(height: 1),
+          ProviderListSection(
+            providersState: providersState,
+            onAdd: _navigateToProviderEdit,
+            onSwitchProvider: _switchProvider,
+            onShowModels: _showModelSheet,
+            onEdit: _navigateToProviderEdit,
+            onDelete: _deleteProvider,
+          ),
+          const Divider(height: 1),
+          _buildVersionSection(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveProviderSection(
+    ThemeData theme,
+    ProvidersState providersState,
+  ) {
+    final active = providersState.activeProvider;
+
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '활성 Provider',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: Spacing.sm),
+          if (active != null)
+            ActiveProviderCard(
+              provider: active,
+              onTap: () => _showModelSheet(active),
+            )
+          else
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(Spacing.md),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 20, color: theme.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: Spacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Provider를 추가하고 활성화하세요',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -336,8 +416,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-        const SizedBox(height: Spacing.xs),
-        TextButton(
+            const SizedBox(height: Spacing.xs),
+            TextButton(
               onPressed: updateCubit.reset,
               child: const Text('다시 시도'),
             ),
@@ -357,7 +437,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .where((a) => a.name.endsWith('.apk'))
         .where((a) => a.name.contains('arm64'))
         .firstOrNull;
-    final sizeText = asset != null ? updateService.formatFileSize(asset.size) : '';
+    final sizeText =
+        asset != null ? updateService.formatFileSize(asset.size) : '';
 
     return Column(
       children: [
@@ -495,325 +576,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
-  }
-
-  Widget _buildConnectionTile(AuthState authState) {
-    final theme = Theme.of(context);
-    final connected = authState.isConnected;
-    final url = authState.storedAuth?.serverUrl;
-
-    return ListTile(
-      leading: Icon(
-        connected ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
-        color: connected ? theme.colorScheme.tertiary : theme.colorScheme.error,
-      ),
-      title: Text(connected ? '연결됨' : '연결 안됨'),
-      subtitle: url != null
-          ? Text(url, style: theme.textTheme.bodySmall)
-          : null,
-      trailing: OutlinedButton(
-        onPressed: _handleServerChanged,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: theme.colorScheme.error,
-          side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
-        ),
-        child: const Text('서버 변경'),
-      ),
-    );
-  }
-
-  Widget _buildActiveProviderSection(
-    ThemeData theme,
-    ProvidersState providersState,
-  ) {
-    final active = providersState.activeProvider;
-
-    return Padding(
-      padding: const EdgeInsets.all(Spacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '활성 Provider',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: Spacing.sm),
-          if (active != null)
-            _ActiveProviderCard(
-              provider: active,
-              onTap: () => _showModelSheet(active),
-            )
-          else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(Spacing.md),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 20, color: theme.colorScheme.onSurfaceVariant),
-                    const SizedBox(width: Spacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Provider를 추가하고 활성화하세요',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProvidersList(
-    ThemeData theme,
-    ProvidersState providersState,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Spacing.md,
-            Spacing.md,
-            Spacing.md,
-            Spacing.sm,
-          ),
-          child: Row(
-            children: [
-              Text('Provider', style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              )),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: _navigateToProviderEdit,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('추가'),
-              ),
-            ],
-          ),
-        ),
-        if (providersState.providers.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(Spacing.xl),
-            child: Center(
-              child: Text(
-                '등록된 Provider가 없습니다',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
-        ...providersState.providers.map((provider) {
-          final isActive = provider.id == providersState.activeProviderId;
-          final isSwitching = providersState.isSwitching;
-          return _ProviderTile(
-            provider: provider,
-            isActive: isActive,
-            isSwitching: isSwitching && !isActive,
-            onTap: isActive
-                ? null
-                : () => _switchProvider(provider.id),
-            onModels: isActive ? () => _showModelSheet(provider) : null,
-            onEdit: () => _navigateToProviderEdit(provider),
-            onDelete: isActive
-                ? null
-                : () => _deleteProvider(provider.id),
-          );
-        }),
-      ],
-    );
-  }
-}
-
-class _ActiveProviderCard extends StatelessWidget {
-  const _ActiveProviderCard({
-    required this.provider,
-    required this.onTap,
-  });
-  final ProviderInfo provider;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.md),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(Spacing.sm),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(
-                  Icons.smart_toy_outlined,
-                  size: 24,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: Spacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      provider.name,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      provider.model.isNotEmpty ? provider.model : '모델 미선택',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: provider.model.isNotEmpty
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.colorScheme.error,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProviderTile extends StatelessWidget {
-  const _ProviderTile({
-    required this.provider,
-    required this.isActive,
-    required this.isSwitching,
-    required this.onTap,
-    this.onModels,
-    this.onEdit,
-    this.onDelete,
-  });
-  final ProviderInfo provider;
-  final bool isActive;
-  final bool isSwitching;
-  final VoidCallback? onTap;
-  final VoidCallback? onModels;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      leading: _buildStatusIndicator(theme),
-      title: Row(
-        children: [
-          Expanded(child: Text(provider.name)),
-          if (isActive)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-              child: Text(
-                '활성',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-        ],
-      ),
-      subtitle: Text(
-        provider.model.isNotEmpty ? provider.model : provider.baseUrl,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: isSwitching
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : _buildActions(theme),
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildStatusIndicator(ThemeData theme) {
-    if (isActive) {
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20),
-      );
-    }
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: const Icon(Icons.dns_outlined, size: 20),
-    );
-  }
-
-  Widget _buildActions(ThemeData theme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (onModels != null)
-          IconButton(
-            icon: const Icon(Icons.tune, size: 20),
-            tooltip: '모델 변경',
-            onPressed: onModels,
-          ),
-        if (onEdit != null)
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            tooltip: '편집',
-            onPressed: onEdit,
-          ),
-        if (onDelete != null)
-          IconButton(
-            icon: Icon(Icons.delete_outline, size: 20,
-                color: theme.colorScheme.error),
-            tooltip: '삭제',
-            onPressed: onDelete,
-          ),
-      ],
-    );
   }
 }
 

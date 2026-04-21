@@ -4,19 +4,29 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/models/protocol.dart';
 
 class ChatState extends Equatable {
-  const ChatState({this.messages = const [], this.isSending = false});
+  const ChatState({
+    this.messages = const [],
+    this.isSending = false,
+    this.errorMessage,
+  });
   final List<ChatMessage> messages;
   final bool isSending;
+  final String? errorMessage;
 
-  ChatState copyWith({List<ChatMessage>? messages, bool? isSending}) {
+  ChatState copyWith({
+    List<ChatMessage>? messages,
+    bool? isSending,
+    String? errorMessage,
+  }) {
     return ChatState(
       messages: messages ?? this.messages,
       isSending: isSending ?? this.isSending,
+      errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [messages, isSending];
+  List<Object?> get props => [messages, isSending, errorMessage];
 }
 
 class ChatCubit extends Cubit<ChatState> {
@@ -27,7 +37,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void appendToLastMessage(String token) {
-    final messages = List<ChatMessage>.from(state.messages);
+    final messages = List<ChatMessage>.of(state.messages);
     if (messages.isEmpty) return;
     final last = messages.last;
     if (last.role != MessageRole.assistant || !last.isStreaming) return;
@@ -38,7 +48,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void finalizeLastMessage([String? content]) {
-    final messages = List<ChatMessage>.from(state.messages);
+    final messages = List<ChatMessage>.of(state.messages);
     if (messages.isEmpty) return;
     final last = messages.last;
     if (last.role != MessageRole.assistant) return;
@@ -52,7 +62,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void markLastMessageFailed() {
-    final messages = List<ChatMessage>.from(state.messages);
+    final messages = List<ChatMessage>.of(state.messages);
     if (messages.isEmpty) return;
     final last = messages.last;
     if (last.role != MessageRole.assistant) return;
@@ -64,22 +74,20 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void removeFailedPair() {
-    final messages = List<ChatMessage>.from(state.messages);
-    final originalLength = messages.length;
-    while (messages.isNotEmpty) {
-      final last = messages.last;
-      if (last.role == MessageRole.assistant && last.isFailed) {
-        messages.removeLast();
-      } else if (last.role == MessageRole.user) {
-        messages.removeLast();
-        break;
-      } else {
+    final messages = List<ChatMessage>.of(state.messages);
+    int lastFailedIdx = -1;
+    for (var i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].isFailed) {
+        lastFailedIdx = i;
         break;
       }
     }
-    if (messages.length != originalLength) {
-      emit(state.copyWith(messages: messages));
+    if (lastFailedIdx > 0) {
+      messages.removeRange(lastFailedIdx - 1, lastFailedIdx + 1);
+    } else if (lastFailedIdx == 0) {
+      messages.removeAt(0);
     }
+    emit(state.copyWith(messages: messages));
   }
 
   void clearMessages() {
@@ -96,5 +104,13 @@ class ChatCubit extends Cubit<ChatState> {
 
   void setSending(bool sending) {
     emit(state.copyWith(isSending: sending));
+  }
+
+  void setError(String msg) {
+    emit(state.copyWith(errorMessage: msg));
+  }
+
+  void clearError() {
+    emit(state.copyWith(errorMessage: null));
   }
 }

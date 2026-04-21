@@ -60,8 +60,11 @@ class _MainScreenState extends State<MainScreen> {
     if (token == null || !mounted) return;
 
     try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-      final sessions = await api.listSessions(token);
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
+      final sessions = await api.listSessions();
       if (mounted) {
         context.read<SessionsCubit>().setSessions(sessions);
         if (sessions.isNotEmpty) {
@@ -161,8 +164,11 @@ class _MainScreenState extends State<MainScreen> {
     final token = await authCubit.getValidToken();
     if (token == null) return;
     try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-      await api.deleteSession(token, id);
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
+      await api.deleteSession(id);
       if (!context.mounted) return;
       if (mounted) {
         context.read<SessionsCubit>().removeSession(id);

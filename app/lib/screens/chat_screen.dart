@@ -31,6 +31,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   String? _loadedSessionId;
   int _totalMessages = 0;
   bool _isLoadingHistory = false;
+  bool _isLoadingMore = false;
+  int _msgCounter = 0;
 
   @override
   void initState() {
@@ -47,15 +49,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      final ws = context.read<WebSocketService>();
+      if (ws.connectionState != WsConnectionState.connected) {
+        _connectWebSocket();
+      }
+    }
+  }
+
   void _connectWebSocket() {
     final authState = context.read<AuthCubit>().state;
     if (authState.storedAuth == null) return;
 
     final ws = context.read<WebSocketService>();
-    ws.connect(
-      authState.storedAuth!.serverUrl,
-      authState.storedAuth!.accessToken,
-    );
 
     ws.onConnected = () {
       if (mounted) context.read<AuthCubit>().setConnected(true);
@@ -64,6 +72,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       if (mounted) context.read<AuthCubit>().setConnected(false);
     };
     ws.onMessage = _handleWsMessage;
+
+    ws.connect(
+      authState.storedAuth!.serverUrl,
+      authState.storedAuth!.accessToken,
+    );
   }
 
   Future<void> _loadInitialMessages() async {
@@ -81,11 +94,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     setState(() => _isLoadingHistory = true);
 
     try {
-      final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
       final result = await api.fetchMessages(
-        token,
         sessionId,
-        limit: 50,
         offset: offset,
       );
       if (!mounted) return;
@@ -99,18 +113,28 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _loadedSessionId = sessionId;
       _totalMessages = result.total;
     } on Object {
-      // Message load failure is non-critical
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('메시지를 불러올 수 없습니다.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoadingHistory = false);
     }
   }
 
   Future<void> _loadMoreMessages() async {
+    if (_isLoadingMore) return;
     final sessionId = _loadedSessionId;
     if (sessionId == null) return;
     final currentCount = context.read<ChatCubit>().state.messages.length;
     if (currentCount >= _totalMessages) return;
-    await _loadMessages(sessionId, offset: currentCount);
+    setState(() => _isLoadingMore = true);
+    try {
+      await _loadMessages(sessionId, offset: currentCount);
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
   }
 
   void _handleWsMessage(WsServerMessage message) {
@@ -136,6 +160,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       case WsAuthRequired():
       case WsAuthOk():
       case WsPong():
+      case WsUnknown():
         break;
     }
   }
@@ -153,8 +178,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
     if (sessionId == null) {
       try {
-        final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
-        final session = await api.createSession(token);
+        final api = createApiClient(
+          authCubit.state.storedAuth!.serverUrl,
+          token: token,
+        );
+        final session = await api.createSession();
         sessionsCubit.addSession(session);
         sessionId = session.id;
       } on Object catch (e) {
@@ -210,7 +238,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _connectWebSocket();
   }
 
-  String _generateId() => DateTime.now().microsecondsSinceEpoch.toString();
+  String _generateId() =>
+      '_msg_${DateTime.now().millisecondsSinceEpoch}_${++_msgCounter}';
 
   @override
   Widget build(BuildContext context) {
@@ -270,11 +299,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       Positioned(
                         bottom: 16,
                         right: 16,
-                        child: FloatingActionButton.small(
-                          onPressed: () =>
-                              _listKey.currentState?.scrollToBottom(),
-                          child: const Icon(
-                            Icons.keyboard_double_arrow_down,
+                        child: Semantics(
+                          label: '맨 아래로 스크롤',
+                          button: true,
+                          child: FloatingActionButton.small(
+                            onPressed: () =>
+                                _listKey.currentState?.scrollToBottom(),
+                            child: const Icon(
+                              Icons.keyboard_double_arrow_down,
+                            ),
                           ),
                         ),
                       ),
@@ -291,28 +324,32 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildSendingIndicator(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.xs + 2,
-      ),
-      color: Theme.of(context).colorScheme.surface,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Theme.of(context).colorScheme.primary,
+    return Semantics(
+      label: '생각 중...',
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.md,
+          vertical: Spacing.xs + 2,
+        ),
+        color: Theme.of(context).colorScheme.surface,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '생각 중...',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-        ],
+            const SizedBox(width: 8),
+            Text(
+              '생각 중...',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+          ],
+        ),
       ),
     );
   }

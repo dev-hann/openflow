@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/constants/presets.dart';
@@ -37,6 +34,8 @@ class _ProviderFormState extends State<ProviderForm> {
   String? _selectedModel;
   bool _verifying = false;
   bool _submitting = false;
+  bool _obscureApiKey = true;
+  String? _savedProviderId;
   VerifyResult? _verifyResult;
 
   @override
@@ -71,8 +70,11 @@ class _ProviderFormState extends State<ProviderForm> {
   }
 
   Future<void> _verify() async {
-    final url = normalizeUrl(_urlController.text);
-    if (url.isEmpty) return;
+    final name = _nameController.text.trim();
+    final baseUrl = normalizeUrl(_urlController.text);
+    final apiKey = _apiKeyController.text.trim();
+
+    if (name.isEmpty || baseUrl.isEmpty) return;
 
     setState(() {
       _verifying = true;
@@ -80,37 +82,63 @@ class _ProviderFormState extends State<ProviderForm> {
     });
 
     try {
-      final base = url.replaceFirst(RegExp(r'/+$'), '');
-      final response = await http
-          .get(
-            Uri.parse('$base/models'),
-            headers: {'Authorization': 'Bearer ${_apiKeyController.text}'},
-          )
-          .timeout(const Duration(seconds: 10));
+      final authCubit = context.read<AuthCubit>();
+      final token = await authCubit.getValidToken();
+      if (token == null || !mounted) return;
+
+      final api = createApiClient(
+        authCubit.state.storedAuth!.serverUrl,
+        token: token,
+      );
+
+      ProviderInfo provider;
+      if (widget.editProvider != null) {
+        final params = <String, dynamic>{
+          'name': name,
+          'baseUrl': baseUrl,
+        };
+        if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
+        provider = await api.updateProvider(
+          widget.editProvider!.id,
+          params,
+        );
+      } else {
+        if (apiKey.isEmpty) {
+          if (mounted) {
+            setState(() {
+              _verifying = false;
+              _verifyResult = const VerifyResult(
+                ok: false,
+                error: 'API Key를 입력해주세요',
+              );
+            });
+          }
+          return;
+        }
+        provider = await api.createProvider({
+          'name': name,
+          'baseUrl': baseUrl,
+          'apiKey': apiKey,
+          'model': '',
+          'isDefault': true,
+        });
+      }
+
+      _savedProviderId = provider.id;
+
+      await api.verifyProvider(provider.id);
+      final models = await api.fetchProviderModels(provider.id)
+        ..sort();
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        final data = json['data'] as List<dynamic>? ?? [];
-        final models = (data
-                .map((m) => (m as Map<String, dynamic>)['id'] as String)
-                .toList())
-          ..sort();
-        setState(() {
-          _verifying = false;
-          _verifyResult = VerifyResult(ok: true, models: models);
-          if (models.isNotEmpty && _selectedModel == null) {
-            _selectedModel = models.first;
-          }
-        });
-      } else {
-        setState(() {
-          _verifying = false;
-          _verifyResult =
-              VerifyResult(ok: false, error: 'HTTP ${response.statusCode}');
-        });
-      }
+      setState(() {
+        _verifying = false;
+        _verifyResult = VerifyResult(ok: true, models: models);
+        if (models.isNotEmpty && _selectedModel == null) {
+          _selectedModel = models.first;
+        }
+      });
     } on Object catch (e) {
       if (!mounted) return;
       setState(() {
@@ -144,12 +172,28 @@ class _ProviderFormState extends State<ProviderForm> {
     final token = await authCubit.getValidToken();
     if (token == null || !mounted) return;
 
-    final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+    final api = createApiClient(
+      authCubit.state.storedAuth!.serverUrl,
+      token: token,
+    );
 
     setState(() => _submitting = true);
 
     try {
-      if (widget.editProvider != null) {
+      if (_savedProviderId != null) {
+        final updated = await api.updateProvider(
+          _savedProviderId!,
+          {'model': model},
+        );
+        if (mounted) {
+          if (widget.editProvider != null) {
+            context.read<ProvidersCubit>().updateProvider(updated);
+          } else {
+            final cubit = context.read<ProvidersCubit>();
+            cubit.setProviders([...cubit.state.providers, updated]);
+          }
+        }
+      } else if (widget.editProvider != null) {
         final params = <String, dynamic>{
           'name': name,
           'baseUrl': baseUrl,
@@ -157,13 +201,15 @@ class _ProviderFormState extends State<ProviderForm> {
         };
         if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
 
-        final updated =
-            await api.updateProvider(token, widget.editProvider!.id, params);
+        final updated = await api.updateProvider(
+          widget.editProvider!.id,
+          params,
+        );
         if (mounted) {
           context.read<ProvidersCubit>().updateProvider(updated);
         }
       } else {
-        final provider = await api.createProvider(token, {
+        final provider = await api.createProvider({
           'name': name,
           'baseUrl': baseUrl,
           'apiKey': apiKey,
@@ -238,8 +284,17 @@ class _ProviderFormState extends State<ProviderForm> {
                 labelText: 'API Key',
                 border: const OutlineInputBorder(),
                 hintText: widget.editProvider != null ? '변경 시에만 입력' : null,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureApiKey
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureApiKey = !_obscureApiKey),
+                ),
               ),
-              obscureText: true,
+              obscureText: _obscureApiKey,
             ),
           ],
           const SizedBox(height: Spacing.lg),
