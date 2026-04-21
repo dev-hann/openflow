@@ -21,6 +21,13 @@ function createMockWs(): { ws: WebSocket; emit: (event: string, ...args: unknown
       }
       (events as Record<string, Array<(...a: unknown[]) => void>>)[event]!.push(handler);
     },
+    off(event: string, handler: (...args: unknown[]) => void) {
+      const handlers = (events as Record<string, Array<(...a: unknown[]) => void>>)[event];
+      if (handlers) {
+        const idx = handlers.indexOf(handler);
+        if (idx !== -1) handlers.splice(idx, 1);
+      }
+    },
     removeAllListeners(event?: string) {
       if (event) {
         delete (events as Record<string, unknown>)[event];
@@ -34,6 +41,7 @@ function createMockWs(): { ws: WebSocket; emit: (event: string, ...args: unknown
       sent.push(data);
     },
     close: vi.fn(),
+    ping: vi.fn(),
     readyState: 1,
     OPEN: 1,
   } as unknown as WebSocket;

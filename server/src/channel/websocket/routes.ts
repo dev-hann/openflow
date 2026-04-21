@@ -57,7 +57,7 @@ export function createRoutes(deps: RoutesDeps) {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = url.pathname;
     const method = req.method ?? "GET";
-    const clientIp = req.socket.remoteAddress ?? "unknown";
+    const clientIp = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? "unknown";
 
     for (const route of routes) {
       if (route.match(path, method)) {

@@ -4,6 +4,7 @@ export {
   type Session,
   type AddMessageParams,
   type SearchResult,
+  type VisibleMessage,
 } from "./store.js";
 
 export {

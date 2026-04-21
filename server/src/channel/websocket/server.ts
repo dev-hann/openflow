@@ -13,6 +13,8 @@ import type { PushTokenStore } from "../../notification/token-store.js";
 
 const log = createLogger("ws/server");
 
+const MAX_CONNECTIONS = 10;
+
 export interface WebSocketChannelConfig {
   host: string;
   port: number;
@@ -70,7 +72,7 @@ export function createWebSocketChannel(
         });
       });
 
-      wss = new WebSocketServer({ noServer: true });
+      wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
 
       server.on("upgrade", (req: IncomingMessage, socket, head) => {
         wss!.handleUpgrade(req, socket, head, (ws: WebSocket) => {
@@ -80,6 +82,10 @@ export function createWebSocketChannel(
       });
 
       wss.on("connection", (ws: WebSocket, _req: IncomingMessage) => {
+        if (wss!.clients.size > MAX_CONNECTIONS) {
+          ws.close(1013, "too many connections");
+          return;
+        }
         wsHandler.handleConnection(ws);
       });
 
@@ -98,7 +104,17 @@ export function createWebSocketChannel(
         for (const client of wss.clients) {
           client.close(1001, "server shutting down");
         }
-        await new Promise<void>((resolve) => wss!.close(() => resolve()));
+        const shutdownTimeout = setTimeout(() => {
+          log.warn("WS shutdown timed out, forcing close");
+          for (const client of wss!.clients) {
+            client.terminate();
+          }
+        }, 5_000);
+        shutdownTimeout.unref();
+        await new Promise<void>((resolve) => wss!.close(() => {
+          clearTimeout(shutdownTimeout);
+          resolve();
+        }));
         wss = undefined;
       }
       if (server) {

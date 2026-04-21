@@ -32,6 +32,8 @@ export interface SearchResult {
   snippet: string;
 }
 
+export type VisibleMessage = ChatMessage & { createdAt: number };
+
 export interface MemoryStore {
   createSession(title?: string): Session;
   listSessions(): Session[];
@@ -40,6 +42,7 @@ export interface MemoryStore {
   addMessage(params: AddMessageParams): void;
   getMessages(sessionId: string, limit?: number): ChatMessage[];
   getMessageCount(sessionId: string): number;
+  getVisibleMessages(sessionId: string, limit?: number, offset?: number): { messages: VisibleMessage[]; total: number };
   searchMessages(query: string, limit?: number): SearchResult[];
   buildContext(sessionId: string, maxSize: number): ChatMessage[];
   close(): void;
@@ -86,6 +89,11 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
   return { role: role as ChatMessage["role"], content } as ChatMessage;
 }
 
+function rowToApiMessage(row: Record<string, unknown>): VisibleMessage {
+  const base = rowToMessage(row);
+  return { ...base, createdAt: row.created_at as number };
+}
+
 function prepareSessionStatements(db: DatabaseSync) {
   return {
     insertSession: db.prepare(
@@ -109,6 +117,12 @@ function prepareSessionStatements(db: DatabaseSync) {
     ),
     getMessagesOffset: db.prepare(
       "SELECT role, content, tool_call_id, tool_calls_json FROM messages WHERE session_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?",
+    ),
+    countVisibleMessages: db.prepare(
+      "SELECT COUNT(*) as count FROM messages WHERE session_id = ? AND role IN ('user', 'assistant')",
+    ),
+    getVisibleMessages: db.prepare(
+      "SELECT role, content, tool_call_id, tool_calls_json, created_at FROM messages WHERE session_id = ? AND role IN ('user', 'assistant') ORDER BY created_at ASC LIMIT ? OFFSET ?",
     ),
     searchMessages: db.prepare(
       `SELECT m.role, m.content, m.created_at, s.id as session_id, s.title as session_title
@@ -183,6 +197,15 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       return wrapDb("getMessageCount", () => {
         const row = stmts.countMessages.get(sessionId) as Record<string, unknown>;
         return (row?.count ?? 0) as number;
+      });
+    },
+
+    getVisibleMessages(sessionId: string, limit = 50, offset = 0): { messages: VisibleMessage[]; total: number } {
+      return wrapDb("getVisibleMessages", () => {
+        const countRow = stmts.countVisibleMessages.get(sessionId) as Record<string, unknown>;
+        const total = (countRow?.count ?? 0) as number;
+        const rows = stmts.getVisibleMessages.all(sessionId, limit, offset) as Array<Record<string, unknown>>;
+        return { messages: rows.map(rowToApiMessage), total };
       });
     },
 

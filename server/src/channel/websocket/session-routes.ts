@@ -66,17 +66,13 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     const parsedUrl = new URL(req.url ?? path, `http://${req.headers.host ?? "localhost"}`);
     const limit = Math.min(parseInt(parsedUrl.searchParams.get("limit") ?? "50", 10), 200);
     const offset = parseInt(parsedUrl.searchParams.get("offset") ?? "0", 10);
-    const total = memoryStore.getMessageCount(sessionId);
 
-    const rawMessages = memoryStore.getMessages(sessionId, limit + offset);
-    const messages = rawMessages
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .slice(offset, offset + limit)
-      .map((m) => ({
-        role: m.role,
-        content: m.content ?? "",
-        createdAt: 0,
-      }));
+    const { messages: rawMessages, total } = memoryStore.getVisibleMessages(sessionId, limit, offset);
+    const messages = rawMessages.map((m) => ({
+      role: m.role,
+      content: m.content ?? "",
+      createdAt: m.createdAt,
+    }));
 
     sendJson(res, 200, { messages, total });
   }
