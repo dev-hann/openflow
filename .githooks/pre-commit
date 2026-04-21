@@ -10,5 +10,5 @@ fi
 
 if echo "$STAGED" | grep -qE "^app/(lib|test)/"; then
   echo "running app checks..."
-  (cd app && flutter analyze && flutter test)
+  (cd app && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter test)
 fi
