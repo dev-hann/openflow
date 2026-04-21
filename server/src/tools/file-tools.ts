@@ -9,8 +9,11 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
+import { createLogger } from "../utils/logger.js";
 import type { InternalTool } from "./types.js";
 import { truncate } from "./utils.js";
+
+const log = createLogger("tools/file");
 
 export function validateWorkspacePath(p: string, workspace: string): string {
   const resolved = resolve(p);
@@ -39,7 +42,10 @@ export function createFileReadTool(workspace: string): InternalTool {
         parameters: {
           type: "object",
           properties: {
-            path: { type: "string", description: "Path to the file (relative to workspace)" },
+            path: {
+              type: "string",
+              description: "Path to the file (relative to workspace)",
+            },
           },
           required: ["path"],
         },
@@ -65,7 +71,10 @@ export function createFileWriteTool(workspace: string): InternalTool {
         parameters: {
           type: "object",
           properties: {
-            path: { type: "string", description: "Path to the file (relative to workspace)" },
+            path: {
+              type: "string",
+              description: "Path to the file (relative to workspace)",
+            },
             content: { type: "string", description: "Content to write" },
           },
           required: ["path", "content"],
@@ -94,7 +103,10 @@ export function createListDirTool(workspace: string): InternalTool {
         parameters: {
           type: "object",
           properties: {
-            path: { type: "string", description: "Directory path (relative to workspace)" },
+            path: {
+              type: "string",
+              description: "Directory path (relative to workspace)",
+            },
           },
           required: ["path"],
         },
@@ -109,6 +121,7 @@ export function createListDirTool(workspace: string): InternalTool {
           const s = statSync(full);
           return s.isDirectory() ? `${name}/` : name;
         } catch {
+          log.debug({ path: full }, "failed to stat entry, skipping");
           return name;
         }
       });

@@ -16,10 +16,22 @@ import { route, routePattern, type Route } from "./routes.js";
 
 const log = createLogger("ws/session-routes");
 
+const VALID_PLATFORMS = ["ios", "android", "web"] as const;
+type Platform = (typeof VALID_PLATFORMS)[number];
+
+function isValidPlatform(value: string | undefined): value is Platform {
+  return value !== undefined && (VALID_PLATFORMS as readonly string[]).includes(value);
+}
+
 export interface SessionRoutesDeps {
   authService: AuthService;
   memoryStore: MemoryStore;
   pushTokenStore: PushTokenStore;
+}
+
+function extractSessionId(path: string, prefix: string): string | null {
+  const rest = path.slice(prefix.length);
+  return rest && !rest.includes("/") ? rest : null;
 }
 
 export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
@@ -58,7 +70,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   ): void {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const sessionId = path.slice("/api/sessions/".length);
+    const sessionId = extractSessionId(path, "/api/sessions/");
     if (!sessionId) {
       sendJson(res, 400, { error: "session_id_required" });
       return;
@@ -118,7 +130,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
       sendJson(res, 400, { error: "token_required" });
       return;
     }
-    if (platform !== "ios" && platform !== "android" && platform !== "web") {
+    if (!isValidPlatform(platform)) {
       sendJson(res, 400, { error: "platform must be ios, android, or web" });
       return;
     }
