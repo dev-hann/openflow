@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadConfig, resetConfigCache, getConfigPath, initConfig } from "./loader.js";
+import { loadConfig, resetConfigCache, getConfigPath, initConfig, ensureConfigDir, watchConfig } from "./loader.js";
 
 describe("loadConfig", () => {
   const testDir = join(tmpdir(), "openflow-test-config-" + Date.now());
@@ -133,5 +133,62 @@ describe("initConfig", () => {
     initConfig(testConfigPath);
     const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<string, unknown>;
     expect((content.websocket as Record<string, unknown>).enabled).toBe(false);
+  });
+});
+
+describe("ensureConfigDir", () => {
+  const testDir = join(tmpdir(), `openflow-test-ensureDir-${Date.now()}`);
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("should create config directory if it does not exist", () => {
+    const originalHome = process.env.HOME;
+    process.env.HOME = testDir;
+    try {
+      ensureConfigDir();
+      expect(existsSync(join(testDir, ".openflow"))).toBe(true);
+    } finally {
+      process.env.HOME = originalHome;
+    }
+  });
+});
+
+describe("watchConfig", () => {
+  const testDir = join(tmpdir(), `openflow-test-watch-${Date.now()}`);
+  const testConfigPath = join(testDir, "openflow.json");
+
+  beforeEach(() => {
+    resetConfigCache();
+    mkdirSync(testDir, { recursive: true });
+    process.env.OPENFLOW_CONFIG = testConfigPath;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    resetConfigCache();
+    delete process.env.OPENFLOW_CONFIG;
+    delete process.env.OPENFLOW_LOG_LEVEL;
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("should return unwatch function for nonexistent config", () => {
+    delete process.env.OPENFLOW_CONFIG;
+    const unwatch = watchConfig(() => {});
+    expect(typeof unwatch).toBe("function");
+    unwatch();
+  });
+
+  it("should return unwatch function for existing config", () => {
+    writeFileSync(testConfigPath, JSON.stringify({ agent: {}, memory: {} }));
+    const unwatch = watchConfig(() => {});
+    expect(typeof unwatch).toBe("function");
+    unwatch();
   });
 });
