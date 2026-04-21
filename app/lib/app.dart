@@ -11,7 +11,6 @@ import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/screens/chat_screen.dart';
 import 'package:openflow/screens/onboarding_screen.dart';
-import 'package:openflow/screens/provider_edit_screen.dart';
 import 'package:openflow/screens/settings_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
@@ -178,17 +177,7 @@ class _MainScreenState extends State<MainScreen> {
     unawaited(
       Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
-          builder: (_) => SettingsScreen(
-            onProviderEdit: () {
-              unawaited(
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ProviderEditScreen(),
-                  ),
-                ),
-              );
-            },
-          ),
+          builder: (_) => const SettingsScreen(),
         ),
       ),
     );

@@ -4,30 +4,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class SettingsState extends Equatable {
   const SettingsState({
     this.serverUrl,
-    this.currentModel,
-    this.availableModels = const [],
   });
   final String? serverUrl;
-  final String? currentModel;
-  final List<String> availableModels;
 
   SettingsState copyWith({
     String? serverUrl,
     bool clearServerUrl = false,
-    String? currentModel,
-    bool clearCurrentModel = false,
-    List<String>? availableModels,
   }) {
     return SettingsState(
       serverUrl: clearServerUrl ? null : (serverUrl ?? this.serverUrl),
-      currentModel:
-          clearCurrentModel ? null : (currentModel ?? this.currentModel),
-      availableModels: availableModels ?? this.availableModels,
     );
   }
 
   @override
-  List<Object?> get props => [serverUrl, currentModel, availableModels];
+  List<Object?> get props => [serverUrl];
 }
 
 class SettingsCubit extends Cubit<SettingsState> {
@@ -39,17 +29,5 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   void clearServerUrl() {
     emit(state.copyWith(clearServerUrl: true));
-  }
-
-  void setCurrentModel(String model) {
-    emit(state.copyWith(currentModel: model));
-  }
-
-  void clearCurrentModel() {
-    emit(state.copyWith(clearCurrentModel: true));
-  }
-
-  void setAvailableModels(List<String> models) {
-    emit(state.copyWith(availableModels: models));
   }
 }

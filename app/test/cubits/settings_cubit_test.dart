@@ -16,8 +16,6 @@ void main() {
       build: () => cubit,
       verify: (c) {
         expect(c.state.serverUrl, isNull);
-        expect(c.state.currentModel, isNull);
-        expect(c.state.availableModels, isEmpty);
       },
     );
 
@@ -31,21 +29,11 @@ void main() {
     );
 
     blocTest<SettingsCubit, SettingsState>(
-      'setCurrentModel updates model',
+      'clearServerUrl clears url',
       build: () => cubit,
-      act: (c) => c.setCurrentModel('gpt-4o'),
-      expect: () => [
-        const SettingsState(currentModel: 'gpt-4o'),
-      ],
-    );
-
-    blocTest<SettingsCubit, SettingsState>(
-      'setAvailableModels updates models list',
-      build: () => cubit,
-      act: (c) => c.setAvailableModels(['gpt-4o', 'claude-3']),
-      expect: () => [
-        const SettingsState(availableModels: ['gpt-4o', 'claude-3']),
-      ],
+      seed: () => const SettingsState(serverUrl: 'http://localhost:9800'),
+      act: (c) => c.clearServerUrl(),
+      expect: () => [const SettingsState()],
     );
   });
 }
