@@ -116,6 +116,22 @@ describe("createFileReadTool", () => {
     );
   });
 
+  it("should throw for missing path argument", async () => {
+    await expect(tool.execute({})).rejects.toThrow("Missing or invalid argument: path");
+  });
+
+  it("should throw for non-string path argument", async () => {
+    await expect(tool.execute({ path: 123 })).rejects.toThrow(
+      "Missing or invalid argument: path",
+    );
+  });
+
+  it("should throw for empty path argument", async () => {
+    await expect(tool.execute({ path: "" })).rejects.toThrow(
+      "Missing or invalid argument: path",
+    );
+  });
+
   it("should truncate large content", async () => {
     const filePath = join(testDir, "large.txt");
     const largeContent = "x".repeat(60_000);
@@ -166,6 +182,19 @@ describe("createFileWriteTool", () => {
       tool.execute({ path: "/tmp/outside.txt", content: "nope" }),
     ).rejects.toThrow("outside workspace");
   });
+
+  it("should throw for missing path argument", async () => {
+    await expect(
+      tool.execute({ content: "nope" }),
+    ).rejects.toThrow("Missing or invalid argument: path");
+  });
+
+  it("should throw for missing content argument", async () => {
+    const filePath = join(testDir, "nocontent.txt");
+    await expect(
+      tool.execute({ path: filePath }),
+    ).rejects.toThrow("Missing or invalid argument: content");
+  });
 });
 
 describe("createListDirTool", () => {
@@ -197,14 +226,20 @@ describe("createListDirTool", () => {
   });
 
   it("should throw for non-existent directory", async () => {
-    await expect(
-      tool.execute({ path: join(testDir, "nope") }),
-    ).rejects.toThrow("Directory not found");
+    await expect(tool.execute({ path: join(testDir, "nope") })).rejects.toThrow(
+      "Directory not found",
+    );
   });
 
   it("should throw for path outside workspace", async () => {
     await expect(tool.execute({ path: "/etc" })).rejects.toThrow(
       "outside workspace",
+    );
+  });
+
+  it("should throw for missing path argument", async () => {
+    await expect(tool.execute({})).rejects.toThrow(
+      "Missing or invalid argument: path",
     );
   });
 });

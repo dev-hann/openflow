@@ -15,6 +15,14 @@ import { truncate } from "./utils.js";
 
 const log = createLogger("tools/file");
 
+function requireString(args: Record<string, unknown>, key: string): string {
+  const value = args[key];
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Missing or invalid argument: ${key}`);
+  }
+  return value;
+}
+
 export function validateWorkspacePath(p: string, workspace: string): string {
   const resolved = resolve(p);
   const resolvedWorkspace = realpathSync(resolve(workspace));
@@ -52,7 +60,7 @@ export function createFileReadTool(workspace: string): InternalTool {
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const path = validateWorkspacePath(args.path as string, workspace);
+      const path = validateWorkspacePath(requireString(args, "path"), workspace);
       if (!existsSync(path)) throw new Error(`File not found: ${path}`);
       const content = readFileSync(path, "utf-8");
       return truncate(content, 50_000);
@@ -82,8 +90,8 @@ export function createFileWriteTool(workspace: string): InternalTool {
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const path = validateWorkspacePath(args.path as string, workspace);
-      const content = args.content as string;
+      const path = validateWorkspacePath(requireString(args, "path"), workspace);
+      const content = requireString(args, "content");
       const dir = dirname(path);
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       writeFileSync(path, content, "utf-8");
@@ -113,7 +121,7 @@ export function createListDirTool(workspace: string): InternalTool {
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const path = validateWorkspacePath(args.path as string, workspace);
+      const path = validateWorkspacePath(requireString(args, "path"), workspace);
       if (!existsSync(path)) throw new Error(`Directory not found: ${path}`);
       const entries = readdirSync(path).map((name) => {
         const full = join(path, name);
