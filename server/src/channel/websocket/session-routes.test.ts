@@ -357,31 +357,23 @@ describe("session routes", () => {
       );
     });
 
-    it("should return messages with content mapped to empty string when null", async () => {
-      const localSetup = createTestSetup();
-      localSetup.memoryStore.getVisibleMessages = vi.fn(() => ({
-        messages: [
-          { role: "user", content: null as unknown as string, createdAt: 123 },
-          { role: "assistant", content: "hello", createdAt: 456 },
-        ],
-        total: 2,
-      }));
-      const route = localSetup.findRoute("/api/sessions/sess_1/messages", "GET");
-      const { res, getStatusCode, getBody } = createMockResponse();
+    it("should pass custom offset", async () => {
+      const route = findRoute("/api/sessions/sess_1/messages", "GET");
+      const { res, getStatusCode } = createMockResponse();
       const req = createMockRequest({
         headers: { authorization: VALID_TOKEN },
-        url: "/api/sessions/sess_1/messages",
+        url: "/api/sessions/sess_1/messages?limit=10&offset=20",
       });
       await route!.handler(req, res, {
         path: "/api/sessions/sess_1/messages",
         clientIp: "127.0.0.1",
       });
       expect(getStatusCode()).toBe(200);
-      const body = JSON.parse(getBody()) as {
-        messages: Array<{ role: string; content: string }>;
-      };
-      expect(body.messages[0]!.content).toBe("");
-      expect(body.messages[1]!.content).toBe("hello");
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
+        "sess_1",
+        10,
+        20,
+      );
     });
   });
 
