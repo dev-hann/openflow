@@ -1,8 +1,28 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { execSync, execFileSync } from "node:child_process";
+import { existsSync, readdirSync } from "node:fs";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createBrowserTools, type BrowserConfig } from "./browser.js";
+
+vi.mock("node:child_process", () => ({
+  execSync: vi.fn().mockReturnValue(""),
+  execFileSync: vi.fn().mockReturnValue(""),
+}));
+
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    existsSync: vi.fn().mockReturnValue(true),
+    readdirSync: vi.fn().mockReturnValue(["chromium-1234"]),
+  };
+});
+
+const mockedExecFileSync = vi.mocked(execFileSync);
+const mockedExecSync = vi.mocked(execSync);
+const mockedExistsSync = vi.mocked(existsSync);
 
 function makeTmpDir(): string {
   const dir = join(tmpdir(), `openflow-browser-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -92,6 +112,138 @@ describe("createBrowserTools", () => {
       const tools2 = createBrowserTools(tmpDir, defaultConfig);
       tools1.resetInstalled();
       expect(tools2.screenshot.name).toBe("browser_screenshot");
+    });
+  });
+});
+
+describe("browser tool execution", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+    mockedExecFileSync.mockReturnValue("ok");
+    mockedExecSync.mockReturnValue("");
+    mockedExistsSync.mockReturnValue(true);
+    vi.mocked(readdirSync).mockReturnValue(["chromium-1234"] as unknown as ReturnType<typeof readdirSync>);
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+    vi.clearAllMocks();
+  });
+
+  describe("screenshot.execute", () => {
+    it("should capture screenshot and return output path", async () => {
+      const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
+      const result = await screenshot.execute({ url: "https://example.com" });
+      expect(result).toContain("Screenshot saved:");
+      expect(result).toContain(".browser");
+      expect(result).toContain("ok");
+    });
+
+    it("should use selector when provided", async () => {
+      const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
+      const result = await screenshot.execute({
+        url: "https://example.com",
+        selector: "#main",
+      });
+      expect(result).toContain("Screenshot saved:");
+    });
+
+    it("should return (no output) when exec returns empty", async () => {
+      mockedExecFileSync.mockReturnValue("");
+
+      const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
+      const result = await screenshot.execute({ url: "https://example.com" });
+      expect(result).toContain("(no output)");
+    });
+
+    it("should throw on timeout", async () => {
+      const err = new Error("killed") as Error & { killed: boolean; stdout: string; stderr: string };
+      err.killed = true;
+      err.stdout = "";
+      err.stderr = "";
+      mockedExecFileSync.mockImplementation(() => { throw err; });
+
+      const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
+      await expect(
+        screenshot.execute({ url: "https://example.com" }),
+      ).rejects.toThrow("timed out");
+    });
+
+    it("should throw on script failure with output", async () => {
+      const err = new Error("failed") as Error & { killed: boolean; stdout: string; stderr: string };
+      err.killed = false;
+      err.stdout = "out";
+      err.stderr = "err";
+      mockedExecFileSync.mockImplementation(() => { throw err; });
+
+      const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
+      await expect(
+        screenshot.execute({ url: "https://example.com" }),
+      ).rejects.toThrow("out\nerr");
+    });
+
+    it("should throw generic message when no output", async () => {
+      const err = new Error("failed") as Error & { killed: boolean; stdout: string; stderr: string };
+      err.killed = false;
+      err.stdout = "";
+      err.stderr = "";
+      mockedExecFileSync.mockImplementation(() => { throw err; });
+
+      const { screenshot } = createBrowserTools(tmpDir, defaultConfig);
+      await expect(
+        screenshot.execute({ url: "https://example.com" }),
+      ).rejects.toThrow("Browser script failed");
+    });
+  });
+
+  describe("execute.execute", () => {
+    it("should execute script and return result", async () => {
+      mockedExecFileSync.mockReturnValue("script output");
+
+      const { execute } = createBrowserTools(tmpDir, defaultConfig);
+      const result = await execute.execute({ script: "console.log(1)" });
+      expect(result).toBe("script output");
+    });
+
+    it("should replace {WORKSPACE} placeholder in script", async () => {
+      const { execute } = createBrowserTools(tmpDir, defaultConfig);
+      await execute.execute({ script: "saveTo({WORKSPACE}/out.txt)" });
+      expect(mockedExecFileSync).toHaveBeenCalledOnce();
+    });
+
+    it("should auto-install chromium when not installed", async () => {
+      mockedExistsSync.mockReturnValue(false);
+
+      const { execute } = createBrowserTools(tmpDir, defaultConfig);
+      const result = await execute.execute({ script: "test" });
+      expect(result).toBe("ok");
+      expect(mockedExecSync).toHaveBeenCalledWith(
+        "npx -y playwright install chromium",
+        expect.anything(),
+      );
+    });
+
+    it("should throw on install failure", async () => {
+      mockedExistsSync.mockReturnValue(false);
+      const err = new Error("install failed") as Error & { stdout: string; stderr: string };
+      err.stdout = "";
+      err.stderr = "npm error";
+      mockedExecSync.mockImplementation(() => { throw err; });
+
+      const { execute } = createBrowserTools(tmpDir, defaultConfig);
+      await expect(
+        execute.execute({ script: "test" }),
+      ).rejects.toThrow("Failed to auto-install Playwright Chromium");
+    });
+
+    it("should not reinstall when already installed", async () => {
+      const { execute } = createBrowserTools(tmpDir, defaultConfig);
+      await execute.execute({ script: "test1" });
+      await execute.execute({ script: "test2" });
+
+      expect(mockedExecSync).not.toHaveBeenCalled();
     });
   });
 });
