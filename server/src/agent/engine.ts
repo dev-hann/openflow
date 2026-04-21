@@ -17,6 +17,7 @@ export interface AgentConfig {
   systemPrompt: string;
   maxToolRounds: number;
   workspace: string;
+  contextSize?: number;
   dailyMemoryDays?: number;
   skills?: SkillsConfig;
 }
@@ -103,7 +104,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
   async function buildConversationContext(sessionId: string, systemPromptOverride?: string): Promise<ChatMessage[]> {
     const systemPrompt = systemPromptOverride || resolveSystemPrompt();
     try {
-      const rawContext = memory.buildContext(sessionId, 50);
+      const rawContext = memory.buildContext(sessionId, config.contextSize ?? 50);
       const contextMessages = await compaction.compactIfNeeded(sessionId, rawContext);
       return [{ role: "system", content: systemPrompt }, ...contextMessages];
     } catch (err: unknown) {
@@ -163,8 +164,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     sessionId: string,
     chatId: number | string | undefined,
     round: number,
-    messages: ChatMessage[],
-  ): Promise<void> {
+  ): Promise<ChatMessage> {
     const toolName = toolCall.function.name;
     let parsedArgs: Record<string, unknown>;
     try {
@@ -174,11 +174,11 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         { sessionId, toolName, rawArgs: toolCall.function.arguments.slice(0, 200) },
         "tool argument parse failed",
       );
-      messages.push({
+      const errorMsg: ChatMessage = {
         role: "tool",
         content: `Failed to parse tool arguments for "${toolName}"`,
         tool_call_id: toolCall.id,
-      });
+      };
       try {
         memory.addMessage({
           sessionId,
@@ -189,7 +189,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       } catch (err: unknown) {
         log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool error");
       }
-      return;
+      return errorMsg;
     }
     log.info({ sessionId, toolName, round }, "executing tool");
 
@@ -198,7 +198,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       log.info({ sessionId, toolName, round }, "tool execution denied by user");
     }
 
-    messages.push({ role: "tool", content: result.content, tool_call_id: toolCall.id });
+    const toolMessage: ChatMessage = { role: "tool", content: result.content, tool_call_id: toolCall.id };
 
     try {
       memory.addMessage({ sessionId, role: "tool", content: result.content, toolCallId: toolCall.id });
@@ -207,6 +207,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     }
 
     log.info({ sessionId, toolName, isError: result.isError, round }, "tool execution completed");
+    return toolMessage;
   }
 
   async function handleMessage(params: HandleMessageParams): Promise<AgentResponse> {
@@ -247,11 +248,14 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
 
       messages.push({ role: "assistant", content: null, tool_calls: response.toolCalls });
       persistMessage(sessionId, { role: "assistant", content: "", toolCalls: response.toolCalls });
-      await Promise.all(
+      const toolResults = await Promise.all(
         response.toolCalls.map((toolCall) =>
-          processToolCall(toolCall, sessionId, chatId, round, messages),
+          processToolCall(toolCall, sessionId, chatId, round),
         ),
       );
+      for (const msg of toolResults) {
+        messages.push(msg);
+      }
     }
 
     const overflowMsg = "Maximum tool call rounds reached. Please continue the conversation.";
