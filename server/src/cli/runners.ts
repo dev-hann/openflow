@@ -108,7 +108,7 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
       wsChannel.broadcastMessage(text);
     },
     sendPhoto: async (_chatId, _photo, _caption) => {
-      log.warn("sendPhoto is not supported via WebSocket channel");
+      throw new Error("sendPhoto is not supported via WebSocket channel");
     },
   };
   agent.updateChannelSender(sender);

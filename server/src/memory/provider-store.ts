@@ -146,8 +146,15 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
     setDefault(id: string): Provider | null {
       const now = nowMs();
       wrapDb("setDefault", () => {
-        stmts.clearDefault.run();
-        stmts.setDefault.run(now, id);
+        db.exec("BEGIN");
+        try {
+          stmts.clearDefault.run();
+          stmts.setDefault.run(now, id);
+          db.exec("COMMIT");
+        } catch (err) {
+          db.exec("ROLLBACK");
+          throw err;
+        }
       });
       const row = wrapDb("setDefault:get", () =>
         stmts.getUpdatedProvider.get(id) as Record<string, unknown> | undefined,
