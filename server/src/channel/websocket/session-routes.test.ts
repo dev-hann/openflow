@@ -240,6 +240,23 @@ describe("session routes", () => {
       });
       expect(getStatusCode()).toBe(400);
     });
+
+    it("should return 400 for delete with nested path", async () => {
+      const route = findRoute("/api/sessions/sess_1/something", "DELETE");
+      if (!route) return;
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "DELETE",
+      });
+      await route.handler(req, res, {
+        path: "/api/sessions/sess_1/something",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(400);
+      const body = JSON.parse(getBody()) as { error: string };
+      expect(body.error).toBe("session_id_required");
+    });
   });
 
   describe("GET /api/sessions/:id/messages", () => {
@@ -319,6 +336,52 @@ describe("session routes", () => {
         50,
         0,
       );
+    });
+
+    it("should handle NaN offset gracefully", async () => {
+      const route = findRoute("/api/sessions/sess_1/messages", "GET");
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        url: "/api/sessions/sess_1/messages?offset=xyz",
+      });
+      await route!.handler(req, res, {
+        path: "/api/sessions/sess_1/messages",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      expect(memoryStore.getVisibleMessages).toHaveBeenCalledWith(
+        "sess_1",
+        50,
+        0,
+      );
+    });
+
+    it("should return messages with content mapped to empty string when null", async () => {
+      const localSetup = createTestSetup();
+      localSetup.memoryStore.getVisibleMessages = vi.fn(() => ({
+        messages: [
+          { role: "user", content: null as unknown as string, createdAt: 123 },
+          { role: "assistant", content: "hello", createdAt: 456 },
+        ],
+        total: 2,
+      }));
+      const route = localSetup.findRoute("/api/sessions/sess_1/messages", "GET");
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        url: "/api/sessions/sess_1/messages",
+      });
+      await route!.handler(req, res, {
+        path: "/api/sessions/sess_1/messages",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as {
+        messages: Array<{ role: string; content: string }>;
+      };
+      expect(body.messages[0]!.content).toBe("");
+      expect(body.messages[1]!.content).toBe("hello");
     });
   });
 

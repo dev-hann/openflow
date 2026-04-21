@@ -108,5 +108,50 @@ void main() {
         ),
       ],
     );
+
+    blocTest<ProvidersCubit, ProvidersState>(
+      'removeProvider removes matching provider',
+      build: () => cubit,
+      seed: () => ProvidersState(
+        providers: [
+          _provider('p1'),
+          _provider('p2'),
+          _provider('p3'),
+        ],
+        activeProviderId: 'p1',
+      ),
+      act: (c) {
+        c.removeProvider('p2');
+      },
+      expect: () => [
+        ProvidersState(
+          providers: [
+            _provider('p1'),
+            _provider('p3'),
+          ],
+          activeProviderId: 'p1',
+        ),
+      ],
+    );
+
+    blocTest<ProvidersCubit, ProvidersState>(
+      'removeProvider clears active when active removed',
+      build: () => cubit,
+      seed: () => ProvidersState(
+        providers: [
+          _provider('p1'),
+          _provider('p2'),
+        ],
+        activeProviderId: 'p1',
+      ),
+      act: (c) {
+        c.removeProvider('p1');
+      },
+      expect: () => [
+        ProvidersState(
+          providers: [_provider('p2')],
+        ),
+      ],
+    );
   });
 }
