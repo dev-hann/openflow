@@ -116,6 +116,20 @@ function rowToApiMessage(row: Record<string, unknown>): VisibleMessage {
   return { ...base, createdAt: row.created_at as number };
 }
 
+function rowToSearchResult(
+  row: Record<string, unknown>,
+  query: string,
+): SearchResult {
+  return {
+    sessionId: row.session_id as string,
+    sessionTitle: row.session_title as string,
+    role: row.role as string,
+    content: row.content as string,
+    timestamp: row.created_at as number,
+    snippet: buildSearchSnippet(row.content as string, query),
+  };
+}
+
 function prepareSessionStatements(db: DatabaseSync) {
   return {
     insertSession: db.prepare(
@@ -266,14 +280,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
         const rows = stmts.searchMessages.all(`%${escaped}%`, limit) as Array<
           Record<string, unknown>
         >;
-        return rows.map((row) => ({
-          sessionId: row.session_id as string,
-          sessionTitle: row.session_title as string,
-          role: row.role as string,
-          content: row.content as string,
-          timestamp: row.created_at as number,
-          snippet: buildSearchSnippet(row.content as string, query),
-        }));
+        return rows.map((row) => rowToSearchResult(row, query));
       });
     },
 
