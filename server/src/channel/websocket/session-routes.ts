@@ -8,6 +8,7 @@ import {
   readJsonBody,
   readJsonObject,
   requireAuth,
+  requireBodyString,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
@@ -110,9 +111,9 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = body.token as string | undefined;
-    const platform = body.platform as string | undefined;
-    const label = body.label as string | undefined;
+    const token = requireBodyString(body, "token");
+    const platform = requireBodyString(body, "platform");
+    const label = requireBodyString(body, "label");
     if (!token) {
       sendJson(res, 400, { error: "token_required" });
       return;
@@ -134,7 +135,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = body.token as string | undefined;
+    const token = requireBodyString(body, "token");
     if (!token) {
       sendJson(res, 400, { error: "token_required" });
       return;

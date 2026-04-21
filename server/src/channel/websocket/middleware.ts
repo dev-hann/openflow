@@ -21,20 +21,30 @@ export function requireAuth(
 ): AuthResult | null {
   const token = extractBearerToken(req);
   if (!token) {
-    sendJson(res, 401, { error: "missing_authorization", message: "Authorization header required" });
+    sendJson(res, 401, {
+      error: "missing_authorization",
+      message: "Authorization header required",
+    });
     return null;
   }
 
   const payload = authService.validateAccessToken(token);
   if (!payload) {
-    sendJson(res, 401, { error: "invalid_token", message: "Access token expired or invalid" });
+    sendJson(res, 401, {
+      error: "invalid_token",
+      message: "Access token expired or invalid",
+    });
     return null;
   }
 
   return { sessionKey: payload.sessionKey };
 }
 
-export function sendJson(res: ServerResponse, status: number, body: unknown): void {
+export function sendJson(
+  res: ServerResponse,
+  status: number,
+  body: unknown,
+): void {
   const json = JSON.stringify(body);
   res.writeHead(status, {
     "Content-Type": "application/json",
@@ -81,11 +91,37 @@ export async function readJsonObject(
 export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
   if (!enabled) return;
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-export function handleOptions(req: IncomingMessage, res: ServerResponse, corsEnabled: boolean): boolean {
+export function requireBodyString(
+  body: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const val = body[key];
+  return typeof val === "string" ? val : undefined;
+}
+
+export function requireBodyStrings(
+  body: Record<string, unknown>,
+  keys: string[],
+): Record<string, string | undefined> {
+  const result: Record<string, string | undefined> = {};
+  for (const key of keys) {
+    result[key] = requireBodyString(body, key);
+  }
+  return result;
+}
+
+export function handleOptions(
+  req: IncomingMessage,
+  res: ServerResponse,
+  corsEnabled: boolean,
+): boolean {
   if (req.method === "OPTIONS") {
     setCorsHeaders(res, corsEnabled);
     res.writeHead(204);
