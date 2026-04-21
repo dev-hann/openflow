@@ -65,41 +65,56 @@ function createMockAuthService(): AuthService {
   } as unknown as AuthService;
 }
 
-function createMockMemoryStore(): MemoryStore {
-  const sessions = new Map<
-    string,
-    { id: string; title: string; createdAt: number; updatedAt: number }
-  >();
-  let msgCounter = 0;
+  function createMockMemoryStore(): MemoryStore {
+    const sessions = new Map<
+      string,
+      { id: string; title: string; createdAt: number; updatedAt: number }
+    >();
+    let msgCounter = 0;
 
-  return {
-    createSession: vi.fn((title?: string) => {
-      const id = `sess_${++msgCounter}`;
-      const now = Date.now();
-      const session = {
-        id,
-        title: title ?? "New Chat",
-        createdAt: now,
-        updatedAt: now,
-      };
-      sessions.set(id, session);
-      return session;
-    }),
-    listSessions: vi.fn(() => Array.from(sessions.values())),
-    getSession: vi.fn((id: string) => sessions.get(id) ?? null),
-    deleteSession: vi.fn((id: string) => {
-      sessions.delete(id);
-    }),
-    addMessage: vi.fn(),
-    getMessages: vi.fn(() => []),
-    getMessageCount: vi.fn(() => 0),
-    getVisibleMessages: vi.fn(() => ({ messages: [], total: 0 })),
-    searchMessages: vi.fn(() => []),
-    buildContext: vi.fn(() => []),
-    close: vi.fn(),
-    getDb: vi.fn(),
-  } as unknown as MemoryStore;
-}
+    return {
+      createSession: vi.fn((title?: string) => {
+        const id = `sess_${++msgCounter}`;
+        const now = Date.now();
+        const session = {
+          id,
+          title: title ?? "New Chat",
+          createdAt: now,
+          updatedAt: now,
+        };
+        sessions.set(id, session);
+        return session;
+      }),
+      listSessions: vi.fn(() => Array.from(sessions.values())),
+      getSession: vi.fn((id: string) => sessions.get(id) ?? null),
+      deleteSession: vi.fn((id: string) => {
+        sessions.delete(id);
+      }),
+      addMessage: vi.fn(),
+      getMessages: vi.fn(() => []),
+      getMessageCount: vi.fn(() => 0),
+      getVisibleMessages: vi.fn(() => ({ messages: [], total: 0 })),
+      searchMessages: vi.fn(() => []),
+      buildContext: vi.fn(() => []),
+      close: vi.fn(),
+      getDb: vi.fn(),
+    } as unknown as MemoryStore;
+  }
+
+  function createMockMemoryStoreWithMessages(): MemoryStore {
+    const base = createMockMemoryStore();
+    return {
+      ...base,
+      getVisibleMessages: vi.fn(() => ({
+        messages: [
+          { role: "user", content: "hello", createdAt: 1000 },
+          { role: "assistant", content: null, createdAt: 2000 },
+          { role: "assistant", content: "world", createdAt: 3000 },
+        ],
+        total: 3,
+      })),
+    } as unknown as MemoryStore;
+  }
 
 function createMockPushTokenStore(): PushTokenStore {
   const tokens = new Map<string, { platform: string; label: string }>();
@@ -119,23 +134,41 @@ function createMockPushTokenStore(): PushTokenStore {
   } as unknown as PushTokenStore;
 }
 
-function createTestSetup() {
-  const authService = createMockAuthService();
-  const memoryStore = createMockMemoryStore();
-  const pushTokenStore = createMockPushTokenStore();
+  function createTestSetup() {
+    const authService = createMockAuthService();
+    const memoryStore = createMockMemoryStore();
+    const pushTokenStore = createMockPushTokenStore();
 
-  const routes = createSessionRoutes({
-    authService,
-    memoryStore,
-    pushTokenStore,
-  });
+    const routes = createSessionRoutes({
+      authService,
+      memoryStore,
+      pushTokenStore,
+    });
 
-  function findRoute(path: string, method: string) {
-    return routes.find((r) => r.match(path, method));
+    function findRoute(path: string, method: string) {
+      return routes.find((r) => r.match(path, method));
+    }
+
+    return { authService, memoryStore, pushTokenStore, routes, findRoute };
   }
 
-  return { authService, memoryStore, pushTokenStore, routes, findRoute };
-}
+  function createTestSetupWithMessages() {
+    const authService = createMockAuthService();
+    const memoryStore = createMockMemoryStoreWithMessages();
+    const pushTokenStore = createMockPushTokenStore();
+
+    const routes = createSessionRoutes({
+      authService,
+      memoryStore,
+      pushTokenStore,
+    });
+
+    function findRoute(path: string, method: string) {
+      return routes.find((r) => r.match(path, method));
+    }
+
+    return { authService, memoryStore, pushTokenStore, routes, findRoute };
+  }
 
 describe("session routes", () => {
   const setup = createTestSetup();
@@ -374,6 +407,30 @@ describe("session routes", () => {
         10,
         20,
       );
+    });
+
+    it("should return messages with transformed fields", async () => {
+      const localSetup = createTestSetupWithMessages();
+      const msgRoute = localSetup.findRoute("/api/sessions/sess_1/messages", "GET");
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        url: "/api/sessions/sess_1/messages",
+      });
+      await msgRoute!.handler(req, res, {
+        path: "/api/sessions/sess_1/messages",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(200);
+      const body = JSON.parse(getBody()) as {
+        messages: Array<{ role: string; content: string; createdAt: number }>;
+        total: number;
+      };
+      expect(body.messages).toHaveLength(3);
+      expect(body.messages[0]).toEqual({ role: "user", content: "hello", createdAt: 1000 });
+      expect(body.messages[1]).toEqual({ role: "assistant", content: "", createdAt: 2000 });
+      expect(body.messages[2]).toEqual({ role: "assistant", content: "world", createdAt: 3000 });
+      expect(body.total).toBe(3);
     });
   });
 

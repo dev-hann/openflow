@@ -244,6 +244,59 @@ describe("provider routes", () => {
       expect(body.id).toBeDefined();
       expect(providerPool.syncFromStore).toHaveBeenCalled();
     });
+
+    it("should create provider as default and switch", async () => {
+      const localSetup = createTestSetup();
+      const route = localSetup.findRoute("/api/providers", "POST");
+      const { res, getStatusCode, getBody } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+        body: {
+          name: "DefaultProvider",
+          baseUrl: "https://api.default.com/v1",
+          apiKey: "sk-test-default",
+          model: "gpt-4",
+          isDefault: true,
+        },
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(201);
+      const body = JSON.parse(getBody()) as { id: string };
+      expect(body.id).toBeDefined();
+      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith(body.id);
+    });
+
+    it("should create provider and run background connectivity check", async () => {
+      const localSetup = createTestSetup();
+      const route = localSetup.findRoute("/api/providers", "POST");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockRejectedValue(new Error("network error")),
+      );
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+        body: {
+          name: "CheckProvider",
+          baseUrl: "https://api.check.com/v1",
+          apiKey: "sk-test-check",
+          model: "gpt-4",
+        },
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(201);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(globalThis.fetch).toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
   });
 
   describe("PUT /api/providers/:id", () => {

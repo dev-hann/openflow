@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+import WebSocket from "ws";
 import { createWebSocketChannel, type WebSocketChannel } from "./server.js";
 import type { AgentEngine } from "../../agent/index.js";
 import type { MemoryStore, ProviderStore } from "../../memory/index.js";
@@ -183,5 +184,57 @@ describe("createWebSocketChannel", () => {
 
       expect(() => channel.broadcastMessage("hello")).not.toThrow();
     });
+  });
+
+  describe("WebSocket connections", () => {
+    it("should close connected clients on stop", async () => {
+      const port = TEST_PORT + 10;
+      channel = createWebSocketChannel(
+        { host: "127.0.0.1", port, cors: false },
+        createMockDeps(),
+      );
+      await channel.start();
+
+      const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+      await new Promise<void>((resolve) => {
+        ws.on("open", () => resolve());
+      });
+
+      const closePromise = new Promise<number>((resolve) => {
+        ws.on("close", (code) => resolve(code));
+      });
+
+      await channel.stop();
+      const code = await closePromise;
+      expect(code).toBe(1001);
+    });
+
+    it("should reject connections beyond MAX_CONNECTIONS limit", async () => {
+      const port = TEST_PORT + 11;
+      channel = createWebSocketChannel(
+        { host: "127.0.0.1", port, cors: false },
+        createMockDeps(),
+      );
+      await channel.start();
+
+      const clients: WebSocket[] = [];
+      for (let i = 0; i < 10; i++) {
+        const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+        await new Promise<void>((resolve) => {
+          ws.on("open", () => resolve());
+        });
+        clients.push(ws);
+      }
+
+      const excess = new WebSocket(`ws://127.0.0.1:${port}`);
+      const closeCode = await new Promise<number | null>((resolve) => {
+        excess.on("close", (code) => resolve(code));
+      });
+      expect(closeCode).toBe(1013);
+
+      for (const ws of clients) {
+        ws.close();
+      }
+    }, 10000);
   });
 });

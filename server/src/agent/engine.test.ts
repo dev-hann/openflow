@@ -13,7 +13,7 @@ import type { LlmClient, LlmResponse } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, existsSync } from "node:fs";
 import { createMemoryStore } from "../memory/store.js";
 import { mockLlmClient, mockToolExecutor } from "./test-helpers.js";
 import { OpenFlowError } from "../utils/errors.js";
@@ -413,6 +413,72 @@ describe("createAgentEngine", () => {
     expect(result.type).toBe("error");
     if (result.type === "error") {
       expect(result.error.code).toBe("LLM_STREAM_ERROR");
+    }
+  });
+
+  it("should auto-create workspace directory when it does not exist", async () => {
+    const llm = mockLlmClient([{ type: "text", content: "ok" }]);
+    const tools = mockToolExecutor({});
+    const newWorkspace = join(testDir, "auto-created-dir-" + Date.now());
+    expect(existsSync(newWorkspace)).toBe(false);
+
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: newWorkspace,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    expect(existsSync(newWorkspace)).toBe(true);
+
+    const session = memory.createSession("Auto Workspace Test");
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "hi",
+    });
+    expect(result.type).toBe("text");
+  });
+
+  it("should wrap non-OpenFlowError in runLlmLoop catch path", async () => {
+    const callCount = { value: 0 };
+    const llm: LlmClient = {
+      chat: vi.fn().mockImplementation(() => {
+        callCount.value++;
+        if (callCount.value === 1) {
+          const toolCallResponse: LlmResponse = {
+            type: "tool_calls",
+            toolCalls: [
+              {
+                id: "tc_1",
+                type: "function" as const,
+                function: { name: "test_tool", arguments: "{}" },
+              },
+            ],
+          };
+          return Promise.resolve(toolCallResponse);
+        }
+        return Promise.reject("raw string error");
+      }),
+      complete: vi.fn(),
+    };
+    const tools = mockToolExecutor({ test_tool: "ok" });
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Raw Error Wrap Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "test",
+    });
+
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error.code).toBe("LLM_REQUEST_FAILED");
     }
   });
 });
