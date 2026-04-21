@@ -2,14 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createNotificationService } from "./push-service.js";
 import type { PushTokenStore, PushTokenRecord } from "./token-store.js";
 
+const mockSendPush = vi.fn().mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
+
 vi.mock("expo-server-sdk", () => {
-  const sendPush = vi.fn().mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
   const isValid = vi.fn((token: string) => token.startsWith("ExponentPushToken["));
   return {
     Expo: Object.assign(
       vi.fn().mockImplementation(() => ({
         chunkPushNotifications: vi.fn((msgs) => [msgs]),
-        sendPushNotificationsAsync: sendPush,
+        sendPushNotificationsAsync: mockSendPush,
       })),
       { isExpoPushToken: isValid },
     ),
@@ -109,6 +110,77 @@ describe("createNotificationService", () => {
         badge: 3,
       });
       expect(ticket.status).toBe("ok");
+    });
+
+    it("should unregister token on DeviceNotRegistered error", async () => {
+      mockSendPush.mockResolvedValueOnce([
+        { status: "error", message: "device not registered", details: { error: "DeviceNotRegistered" } },
+      ]);
+
+      const store = mockTokenStore();
+      const service = createNotificationService({ enabled: true }, store);
+
+      const ticket = await service.send({
+        to: "ExponentPushToken[dead-token]",
+        title: "T",
+        body: "B",
+      });
+      expect(ticket.status).toBe("error");
+      expect(store.unregister).toHaveBeenCalledWith("ExponentPushToken[dead-token]");
+    });
+
+    it("should return error ticket when Expo send throws", async () => {
+      mockSendPush.mockRejectedValueOnce(new Error("network failure"));
+
+      const store = mockTokenStore();
+      const service = createNotificationService({ enabled: true }, store);
+
+      const ticket = await service.send({
+        to: "ExponentPushToken[valid-token]",
+        title: "T",
+        body: "B",
+      });
+      expect(ticket.status).toBe("error");
+      expect(ticket.message).toContain("network failure");
+    });
+
+    it("should touch lastUsed on successful send", async () => {
+      mockSendPush.mockResolvedValueOnce([{ status: "ok", id: "t1" }]);
+
+      const store = mockTokenStore();
+      const service = createNotificationService({ enabled: true }, store);
+
+      await service.send({
+        to: "ExponentPushToken[touch]",
+        title: "T",
+        body: "B",
+      });
+      expect(store.touchLastUsed).toHaveBeenCalledWith("ExponentPushToken[touch]");
+    });
+
+    it("should return empty array from sendAll with empty input", async () => {
+      const store = mockTokenStore();
+      const service = createNotificationService({ enabled: true }, store);
+
+      const tickets = await service.sendAll([]);
+      expect(tickets).toEqual([]);
+    });
+
+    it("should handle generic error response from Expo", async () => {
+      mockSendPush.mockResolvedValueOnce([
+        { status: "error", message: "internal error", details: { error: "InternalServerError" } },
+      ]);
+
+      const store = mockTokenStore();
+      const service = createNotificationService({ enabled: true }, store);
+
+      const ticket = await service.send({
+        to: "ExponentPushToken[valid-token]",
+        title: "T",
+        body: "B",
+      });
+      expect(ticket.status).toBe("error");
+      expect(store.unregister).not.toHaveBeenCalled();
     });
   });
 });
