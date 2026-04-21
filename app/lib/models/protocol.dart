@@ -163,7 +163,7 @@ class SessionInfo extends Equatable {
         id: json['id'] as String,
         title: json['title'] as String? ?? '새 대화',
         createdAt: DateTime.fromMillisecondsSinceEpoch(
-          (json['created_at'] as num).toInt() * 1000,
+          (json['createdAt'] as num).toInt(),
         ),
       );
   final String id;
@@ -178,8 +178,8 @@ class TokenPair extends Equatable {
   const TokenPair({required this.accessToken, required this.refreshToken});
 
   factory TokenPair.fromJson(Map<String, dynamic> json) => TokenPair(
-        accessToken: json['access_token'] as String,
-        refreshToken: json['refresh_token'] as String,
+        accessToken: json['accessToken'] as String,
+        refreshToken: json['refreshToken'] as String,
       );
   final String accessToken;
   final String refreshToken;
@@ -227,26 +227,23 @@ class ProviderInfo extends Equatable {
     required this.baseUrl,
     required this.model,
     required this.createdAt,
-    this.apiKeySet = false,
     this.isActive = false,
   });
 
   factory ProviderInfo.fromJson(Map<String, dynamic> json) => ProviderInfo(
         id: json['id'] as String,
         name: json['name'] as String,
-        baseUrl: json['base_url'] as String,
+        baseUrl: json['baseUrl'] as String,
         model: json['model'] as String? ?? '',
-        apiKeySet: json['api_key_set'] as bool? ?? false,
-        isActive: json['is_active'] as bool? ?? false,
+        isActive: json['isActive'] as bool? ?? false,
         createdAt: DateTime.fromMillisecondsSinceEpoch(
-          (json['created_at'] as num).toInt() * 1000,
+          (json['createdAt'] as num).toInt(),
         ),
       );
   final String id;
   final String name;
   final String baseUrl;
   final String model;
-  final bool apiKeySet;
   final bool isActive;
   final DateTime createdAt;
 
@@ -254,7 +251,6 @@ class ProviderInfo extends Equatable {
     String? name,
     String? baseUrl,
     String? model,
-    bool? apiKeySet,
     bool? isActive,
   }) {
     return ProviderInfo(
@@ -262,7 +258,6 @@ class ProviderInfo extends Equatable {
       name: name ?? this.name,
       baseUrl: baseUrl ?? this.baseUrl,
       model: model ?? this.model,
-      apiKeySet: apiKeySet ?? this.apiKeySet,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt,
     );
@@ -270,5 +265,5 @@ class ProviderInfo extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, name, baseUrl, model, apiKeySet, isActive, createdAt];
+      [id, name, baseUrl, model, isActive, createdAt];
 }

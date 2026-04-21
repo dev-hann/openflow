@@ -44,8 +44,8 @@ void main() {
   group('pairVerify', () {
     test('sends POST /api/auth/pair/verify with pin and label', () async {
       customHandler = (req) => okResponse({
-            'access_token': 'at_test',
-            'refresh_token': 'rt_test',
+            'accessToken': 'at_test',
+            'refreshToken': 'rt_test',
           });
       await apiClient.pairVerify('123456', 'pixel');
       final req = lastRequest();
@@ -60,8 +60,8 @@ void main() {
   group('refreshToken', () {
     test('sends POST /api/auth/refresh with refreshToken field', () async {
       customHandler = (req) => okResponse({
-            'access_token': 'at_new',
-            'refresh_token': 'rt_new',
+            'accessToken': 'at_new',
+            'refreshToken': 'rt_new',
           });
       await apiClient.refreshToken('rt_old');
       final req = lastRequest();
@@ -96,7 +96,7 @@ void main() {
   group('createSession', () {
     test('sends POST /api/sessions', () async {
       customHandler = (req) =>
-          okResponse({'id': 's1', 'title': 'test', 'created_at': 1000});
+          okResponse({'id': 's1', 'title': 'test', 'createdAt': 1000});
       await apiClient.createSession('at_test');
       final req = lastRequest();
       expect(req.method, 'POST');
@@ -139,9 +139,9 @@ void main() {
       customHandler = (req) => okResponse({
             'id': 'p1',
             'name': 'test',
-            'base_url': 'http://x',
+            'baseUrl': 'http://x',
             'model': 'gpt-4',
-            'created_at': 1000,
+            'createdAt': 1000,
           });
       await apiClient.createProvider('at_test', {
         'name': 'test',
@@ -160,9 +160,9 @@ void main() {
       customHandler = (req) => okResponse({
             'id': 'p1',
             'name': 'new',
-            'base_url': 'http://x',
+            'baseUrl': 'http://x',
             'model': 'gpt-4',
-            'created_at': 1000,
+            'createdAt': 1000,
           });
       await apiClient.updateProvider('at_test', 'p1', {'name': 'new'});
       final req = lastRequest();

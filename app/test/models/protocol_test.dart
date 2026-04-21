@@ -153,7 +153,7 @@ void main() {
       final info = SessionInfo.fromJson(const {
         'id': 's1',
         'title': 'Test Session',
-        'created_at': 1700000000,
+        'createdAt': 1700000000,
       });
       expect(info.id, 's1');
       expect(info.title, 'Test Session');
@@ -162,7 +162,7 @@ void main() {
     test('fromJson uses default title when null', () {
       final info = SessionInfo.fromJson(const {
         'id': 's1',
-        'created_at': 1700000000,
+        'createdAt': 1700000000,
       });
       expect(info.title, '새 대화');
     });
@@ -178,8 +178,8 @@ void main() {
   group('TokenPair', () {
     test('fromJson parses correctly', () {
       final pair = TokenPair.fromJson(const {
-        'access_token': 'at_abc',
-        'refresh_token': 'rt_xyz',
+        'accessToken': 'at_abc',
+        'refreshToken': 'rt_xyz',
       });
       expect(pair.accessToken, 'at_abc');
       expect(pair.refreshToken, 'rt_xyz');
@@ -208,15 +208,14 @@ void main() {
       final provider = ProviderInfo.fromJson(const {
         'id': 'p1',
         'name': 'OpenAI',
-        'base_url': 'https://api.openai.com',
+        'baseUrl': 'https://api.openai.com',
         'model': 'gpt-4o',
-        'api_key_set': true,
-        'is_active': true,
-        'created_at': 1700000000,
+        'isActive': true,
+        'createdAt': 1700000000,
       });
       expect(provider.id, 'p1');
       expect(provider.name, 'OpenAI');
-      expect(provider.apiKeySet, true);
+      
       expect(provider.isActive, true);
     });
 
@@ -224,11 +223,11 @@ void main() {
       final provider = ProviderInfo.fromJson(const {
         'id': 'p1',
         'name': 'Test',
-        'base_url': 'http://localhost',
-        'created_at': 1700000000,
+        'baseUrl': 'http://localhost',
+        'createdAt': 1700000000,
       });
       expect(provider.model, '');
-      expect(provider.apiKeySet, false);
+      
       expect(provider.isActive, false);
     });
 

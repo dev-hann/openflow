@@ -142,14 +142,14 @@ String _normalizePath(String path) {
 const Map<String, dynamic> _providerJson = {
   'id': 'p1',
   'name': 'n',
-  'base_url': 'http://x',
+  'baseUrl': 'http://x',
   'model': 'm',
-  'created_at': 0,
+  'createdAt': 0,
 };
 
 Map<String, dynamic> _okBodyFor(String method, String path) {
   if (path.contains('pair/verify') || path.contains('auth/refresh')) {
-    return {'access_token': 'a', 'refresh_token': 'r'};
+    return {'accessToken': 'a', 'refreshToken': 'r'};
   }
   if (path.endsWith('/models')) {
     return {
@@ -172,7 +172,7 @@ Map<String, dynamic> _okBodyFor(String method, String path) {
     return <String, dynamic>{'sessions': <Map<String, dynamic>>[]};
   }
   if (path.endsWith('/sessions') && method == 'POST') {
-    return {'id': 's1', 'title': 't', 'created_at': 1000};
+    return {'id': 's1', 'title': 't', 'createdAt': 1000};
   }
   if (path.contains('/providers/') && method != 'DELETE') {
     return {..._providerJson};
