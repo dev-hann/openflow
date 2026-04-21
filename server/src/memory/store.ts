@@ -174,15 +174,22 @@ export function createMemoryStore(dbPath: string): MemoryStore {
       const now = nowMs();
       const toolCallsJson = params.toolCalls ? JSON.stringify(params.toolCalls) : null;
       wrapDb("addMessage", () => {
-        stmts.insertMessage.run(
-          params.sessionId,
-          params.role,
-          params.content,
-          params.toolCallId ?? null,
-          toolCallsJson,
-          now,
-        );
-        stmts.touchSession.run(now, params.sessionId);
+        db.exec("BEGIN");
+        try {
+          stmts.insertMessage.run(
+            params.sessionId,
+            params.role,
+            params.content,
+            params.toolCallId ?? null,
+            toolCallsJson,
+            now,
+          );
+          stmts.touchSession.run(now, params.sessionId);
+          db.exec("COMMIT");
+        } catch (err) {
+          db.exec("ROLLBACK");
+          throw err;
+        }
       });
     },
 
