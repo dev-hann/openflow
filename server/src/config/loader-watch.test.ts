@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import {
-  mkdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -11,17 +7,19 @@ const { watchFileMock } = vi.hoisted(() => {
   let watcherCallback: () => void = () => {};
   return {
     watchFileMock: Object.assign(
-      vi.fn().mockImplementation((_path: unknown, _opts: unknown, cb: unknown) => {
-        watcherCallback = cb as () => void;
-        return { unref: vi.fn() };
-      }),
+      vi
+        .fn()
+        .mockImplementation((_path: unknown, _opts: unknown, cb: unknown) => {
+          watcherCallback = cb as () => void;
+          return { unref: vi.fn() };
+        }),
       { getCallback: () => watcherCallback },
     ),
   };
 });
 
 vi.mock("node:fs", async (importOriginal) => {
-  const original = await importOriginal() as object;
+  const original = (await importOriginal()) as object;
   return { ...original, watchFile: watchFileMock };
 });
 

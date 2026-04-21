@@ -117,7 +117,9 @@ describe("createFileReadTool", () => {
   });
 
   it("should throw for missing path argument", async () => {
-    await expect(tool.execute({})).rejects.toThrow("Missing or invalid argument: path");
+    await expect(tool.execute({})).rejects.toThrow(
+      "Missing or invalid argument: path",
+    );
   });
 
   it("should throw for non-string path argument", async () => {
@@ -184,16 +186,16 @@ describe("createFileWriteTool", () => {
   });
 
   it("should throw for missing path argument", async () => {
-    await expect(
-      tool.execute({ content: "nope" }),
-    ).rejects.toThrow("Missing or invalid argument: path");
+    await expect(tool.execute({ content: "nope" })).rejects.toThrow(
+      "Missing or invalid argument: path",
+    );
   });
 
   it("should throw for missing content argument", async () => {
     const filePath = join(testDir, "nocontent.txt");
-    await expect(
-      tool.execute({ path: filePath }),
-    ).rejects.toThrow("Missing or invalid argument: content");
+    await expect(tool.execute({ path: filePath })).rejects.toThrow(
+      "Missing or invalid argument: content",
+    );
   });
 });
 

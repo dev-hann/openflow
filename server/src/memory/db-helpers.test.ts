@@ -215,6 +215,45 @@ describe("db-helpers", () => {
     });
   });
 
+  describe("wrapDb busy retry", () => {
+    it("should retry on SQLITE_BUSY error and succeed", () => {
+      const dbPath = join(TEST_DIR, "busy-retry.db");
+      const db = openDatabase(dbPath);
+      try {
+        let callCount = 0;
+        const result = wrapDb("busy-op", () => {
+          callCount++;
+          if (callCount === 1) {
+            const err = new Error("SQLITE_BUSY: database is locked");
+            err.name = "SqliteError";
+            throw err;
+          }
+          return "success";
+        });
+        expect(result).toBe("success");
+        expect(callCount).toBe(2);
+      } finally {
+        db.close();
+      }
+    });
+
+    it("should exhaust retries on persistent SQLITE_BUSY", () => {
+      const dbPath = join(TEST_DIR, "busy-exhaust.db");
+      const db = openDatabase(dbPath);
+      try {
+        expect(() =>
+          wrapDb("busy-exhaust", () => {
+            const err = new Error("SQLITE_BUSY: database is locked");
+            err.name = "SqliteError";
+            throw err;
+          }),
+        ).toThrow("Database operation failed: busy-exhaust");
+      } finally {
+        db.close();
+      }
+    });
+  });
+
   describe("MIGRATIONS", () => {
     it("should contain expected number of migration statements", () => {
       expect(MIGRATIONS.length).toBeGreaterThanOrEqual(4);

@@ -179,11 +179,11 @@ describe("createRoutes", () => {
 
   it("should return 500 when route handler throws unexpected error", async () => {
     const throwingDeps = createMockDeps();
-    (throwingDeps.memoryStore.listSessions as ReturnType<typeof vi.fn>).mockImplementation(
-      () => {
-        throw new Error("unexpected crash");
-      },
-    );
+    (
+      throwingDeps.memoryStore.listSessions as ReturnType<typeof vi.fn>
+    ).mockImplementation(() => {
+      throw new Error("unexpected crash");
+    });
 
     const handleThrowing = createRoutes(throwingDeps);
     const { res, getStatusCode, getBody } = createMockResponse();

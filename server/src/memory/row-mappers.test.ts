@@ -27,19 +27,39 @@ describe("rowToSession", () => {
 
 describe("rowToMessage", () => {
   it("should map a basic user message", () => {
-    const row = { role: "user", content: "hello", tool_call_id: null, tool_calls_json: null };
+    const row = {
+      role: "user",
+      content: "hello",
+      tool_call_id: null,
+      tool_calls_json: null,
+    };
     const result = rowToMessage(row);
     expect(result).toEqual({ role: "user", content: "hello" });
   });
 
   it("should map a tool message with tool_call_id", () => {
-    const row = { role: "tool", content: "result", tool_call_id: "tc_1", tool_calls_json: null };
+    const row = {
+      role: "tool",
+      content: "result",
+      tool_call_id: "tc_1",
+      tool_calls_json: null,
+    };
     const result = rowToMessage(row);
-    expect(result).toEqual({ role: "tool", content: "result", tool_call_id: "tc_1" });
+    expect(result).toEqual({
+      role: "tool",
+      content: "result",
+      tool_call_id: "tc_1",
+    });
   });
 
   it("should map assistant message with tool_calls", () => {
-    const toolCalls = [{ id: "tc_1", type: "function", function: { name: "read", arguments: "{}" } }];
+    const toolCalls = [
+      {
+        id: "tc_1",
+        type: "function",
+        function: { name: "read", arguments: "{}" },
+      },
+    ];
     const row = {
       role: "assistant",
       content: "let me check",
@@ -55,7 +75,13 @@ describe("rowToMessage", () => {
   });
 
   it("should map assistant message with null content and tool_calls", () => {
-    const toolCalls = [{ id: "tc_1", type: "function", function: { name: "read", arguments: "{}" } }];
+    const toolCalls = [
+      {
+        id: "tc_1",
+        type: "function",
+        function: { name: "read", arguments: "{}" },
+      },
+    ];
     const row = {
       role: "assistant",
       content: "",
@@ -124,7 +150,9 @@ describe("rowToSearchResult", () => {
     expect(result.sessionId).toBe("sess_1");
     expect(result.sessionTitle).toBe("Test");
     expect(result.role).toBe("user");
-    expect(result.content).toBe("Hello world, this is a test message about cats");
+    expect(result.content).toBe(
+      "Hello world, this is a test message about cats",
+    );
     expect(result.timestamp).toBe(1000);
     expect(result.snippet).toContain("test");
   });

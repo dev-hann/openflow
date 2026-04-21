@@ -260,7 +260,10 @@ describe("createWsHandler", () => {
           error: { code: "AGENT_ERROR", message: "something broke" },
         }),
       };
-      const handler = createWsHandler({ authService, agentEngine: engineReturningError });
+      const handler = createWsHandler({
+        authService,
+        agentEngine: engineReturningError,
+      });
       const mock = createMockWs();
       handler.handleConnection(mock.ws);
       const authMsg = JSON.stringify({ type: "auth", accessToken: validToken });
@@ -307,13 +310,14 @@ describe("createWsHandler", () => {
       const sentBefore = sent.length;
       emit(
         "message",
-        Buffer.from(
-          JSON.stringify({ type: "auth", accessToken: validToken }),
-        ),
+        Buffer.from(JSON.stringify({ type: "auth", accessToken: validToken })),
       );
 
       expect(sent.length).toBe(sentBefore + 1);
-      const lastMsg = JSON.parse(sent[sent.length - 1]!) as Record<string, unknown>;
+      const lastMsg = JSON.parse(sent[sent.length - 1]!) as Record<
+        string,
+        unknown
+      >;
       expect(lastMsg.type).toBe("error");
     });
   });

@@ -267,7 +267,9 @@ describe("provider routes", () => {
       expect(getStatusCode()).toBe(201);
       const body = JSON.parse(getBody()) as { id: string };
       expect(body.id).toBeDefined();
-      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith(body.id);
+      expect(localSetup.providerPool.switchProvider).toHaveBeenCalledWith(
+        body.id,
+      );
     });
 
     it("should create provider and run background connectivity check", async () => {
@@ -285,6 +287,38 @@ describe("provider routes", () => {
           name: "CheckProvider",
           baseUrl: "https://api.check.com/v1",
           apiKey: "sk-test-check",
+          model: "gpt-4",
+        },
+      });
+      await route!.handler(req, res, {
+        path: "/api/providers",
+        clientIp: "127.0.0.1",
+      });
+      expect(getStatusCode()).toBe(201);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(globalThis.fetch).toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+
+    it("should create provider with successful connectivity check", async () => {
+      const localSetup = createTestSetup();
+      const route = localSetup.findRoute("/api/providers", "POST");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ data: [] }),
+        }),
+      );
+      const { res, getStatusCode } = createMockResponse();
+      const req = createMockRequest({
+        headers: { authorization: VALID_TOKEN },
+        method: "POST",
+        body: {
+          name: "HealthyProvider",
+          baseUrl: "https://api.healthy.com/v1",
+          apiKey: "sk-test-healthy",
           model: "gpt-4",
         },
       });

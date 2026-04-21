@@ -561,4 +561,54 @@ describe("createAgentEngine", () => {
     expect(toolMsg).toBeDefined();
     expect(toolMsg!.content).toBe("result");
   });
+
+  it("should return error when context build fails with non-existent session", async () => {
+    const llm = mockLlmClient([{ type: "text", content: "should not reach" }]);
+    const tools = mockToolExecutor({});
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const failingMemory = {
+      createSession: vi.fn(() => ({
+        id: "sess-ctx-fail",
+        title: "Ctx Fail",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      })),
+      getSession: vi.fn(() => null),
+      listSessions: vi.fn(() => []),
+      deleteSession: vi.fn(),
+      addMessage: vi.fn(),
+      getMessages: vi.fn(() => []),
+      getMessageCount: vi.fn(() => 0),
+      getVisibleMessages: vi.fn(() => ({ messages: [], total: 0 })),
+      searchMessages: vi.fn(() => []),
+      buildContext: vi.fn(() => {
+        throw new Error("context build crashed");
+      }),
+      close: vi.fn(),
+      getDb: vi.fn(),
+    } as unknown as MemoryStore;
+
+    const engine = createAgentEngine({
+      llm: () => llm,
+      memory: failingMemory,
+      tools,
+      config,
+    });
+
+    const result = await engine.handleMessage({
+      sessionId: "sess-ctx-fail",
+      userMessage: "test context failure",
+    });
+
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error.message).toContain("Failed to build context");
+      expect(result.error.code).toBe("DB_ERROR");
+    }
+  });
 });

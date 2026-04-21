@@ -37,9 +37,7 @@ function createMockMemoryStore(): MemoryStore {
   } as unknown as MemoryStore;
 }
 
-function createMockConfirmationHandler(
-  approved: boolean,
-): ConfirmationHandler {
+function createMockConfirmationHandler(approved: boolean): ConfirmationHandler {
   return {
     requestConfirmation: vi.fn(async () => ({ approved })),
   };
@@ -104,9 +102,11 @@ describe("createToolProcessor", () => {
 
   it("should continue when memory.addMessage fails on success path", async () => {
     const failMemory = createMockMemoryStore();
-    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      throw new Error("db locked");
-    });
+    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error("db locked");
+      },
+    );
 
     const { processToolCall } = createToolProcessor({
       tools,
@@ -120,9 +120,11 @@ describe("createToolProcessor", () => {
 
   it("should continue when memory.addMessage fails on parse error path", async () => {
     const failMemory = createMockMemoryStore();
-    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      throw new Error("db locked");
-    });
+    (failMemory.addMessage as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error("db locked");
+      },
+    );
 
     const { processToolCall } = createToolProcessor({
       tools,
@@ -247,11 +249,18 @@ describe("createToolProcessor", () => {
   it("should propagate tool execution errors", async () => {
     const errorTools = createMockToolExecutor({
       results: {
-        read_file: { toolCallId: "call_123", content: "file not found", isError: true },
+        read_file: {
+          toolCallId: "call_123",
+          content: "file not found",
+          isError: true,
+        },
       },
     });
 
-    const { processToolCall } = createToolProcessor({ tools: errorTools, memory });
+    const { processToolCall } = createToolProcessor({
+      tools: errorTools,
+      memory,
+    });
     const result = await processToolCall(BASE_TOOL_CALL, "sess_1", 1, 1);
 
     expect(result.content).toBe("file not found");

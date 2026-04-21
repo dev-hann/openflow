@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { homedir } from "node:os";
 import { resolve, join } from "node:path";
-import { ensureDirSync, resolveHomePath, resolveHomePathToString } from "./fs.js";
+import {
+  ensureDirSync,
+  resolveHomePath,
+  resolveHomePathToString,
+} from "./fs.js";
 import { mkdirSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 
