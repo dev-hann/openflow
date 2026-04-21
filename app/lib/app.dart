@@ -73,8 +73,7 @@ class _MainScreenState extends State<MainScreen> {
           context.read<SessionsCubit>().setActiveSessionId(sessions.first.id);
         }
       }
-    } on Object {
-    }
+    } on Object {}
   }
 
   @override
@@ -110,74 +109,31 @@ class _MainScreenState extends State<MainScreen> {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.menu),
-        onPressed: () => SessionSheet.show(
-          context: context,
-          sessions: context.read<SessionsCubit>().state.sessions,
-          activeSessionId: context.read<SessionsCubit>().state.activeSessionId,
-          onSessionTap: _handleSessionTap,
-          onNewChat: _handleNewChat,
-          onSessionDelete: _handleSessionDelete,
-          onSettings: _handleSettings,
-        ),
+        onPressed: _showSessionSheet,
       ),
       title: GestureDetector(
-        onTap: () => SessionSheet.show(
-          context: context,
-          sessions: context.read<SessionsCubit>().state.sessions,
-          activeSessionId: context.read<SessionsCubit>().state.activeSessionId,
-          onSessionTap: _handleSessionTap,
-          onNewChat: _handleNewChat,
-          onSessionDelete: _handleSessionDelete,
-          onSettings: _handleSettings,
-        ),
-        child: Column(
-          children: [
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleMedium,
-            ),
-            BlocBuilder<ProvidersCubit, ProvidersState>(
-              builder: (context, providersState) {
-                final active = providersState.activeProvider;
-                if (active == null) return const SizedBox.shrink();
-                final label = active.model.isNotEmpty
-                    ? '${active.name} · ${active.model}'
-                    : active.name;
-                return Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+        onTap: _showSessionSheet,
+        child: _AppBarTitle(title: title),
       ),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 16),
-          child: BlocBuilder<AuthCubit, AuthState>(
-            builder: (context, authState) {
-              return Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: authState.isConnected
-                      ? theme.colorScheme.tertiary
-                      : theme.colorScheme.error,
-                ),
-              );
-            },
-          ),
+          child: _ConnectionIndicator(theme: theme),
         ),
       ],
+    );
+  }
+
+  void _showSessionSheet() {
+    final cubit = context.read<SessionsCubit>();
+    SessionSheet.show(
+      context: context,
+      sessions: cubit.state.sessions,
+      activeSessionId: cubit.state.activeSessionId,
+      onSessionTap: _handleSessionTap,
+      onNewChat: _handleNewChat,
+      onSessionDelete: _handleSessionDelete,
+      onSettings: _handleSettings,
     );
   }
 
@@ -208,8 +164,7 @@ class _MainScreenState extends State<MainScreen> {
       if (mounted) {
         context.read<SessionsCubit>().removeSession(id);
       }
-    } on Object {
-    }
+    } on Object {}
   }
 
   void _handleSettings() {
@@ -219,6 +174,70 @@ class _MainScreenState extends State<MainScreen> {
           builder: (_) => const SettingsScreen(),
         ),
       ),
+    );
+  }
+}
+
+class _AppBarTitle extends StatelessWidget {
+  const _AppBarTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium,
+        ),
+        BlocBuilder<ProvidersCubit, ProvidersState>(
+          builder: (context, providersState) {
+            final active = providersState.activeProvider;
+            if (active == null) return const SizedBox.shrink();
+            final label = active.model.isNotEmpty
+                ? '${active.name} · ${active.model}'
+                : active.name;
+            return Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectionIndicator extends StatelessWidget {
+  const _ConnectionIndicator({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        return Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: authState.isConnected
+                ? theme.colorScheme.tertiary
+                : theme.colorScheme.error,
+          ),
+        );
+      },
     );
   }
 }

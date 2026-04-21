@@ -41,9 +41,6 @@ class AdaptiveScaffold extends StatelessWidget {
     final sortedSessions = List<SessionInfo>.from(sessions)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    sortedSessions
-        .indexWhere((s) => s.id == activeSessionId);
-
     return Row(
       children: [
         Container(
@@ -79,64 +76,12 @@ class AdaptiveScaffold extends StatelessWidget {
               ),
               const Divider(height: 1),
               Expanded(
-                child: sortedSessions.isEmpty
-                    ? Center(
-                        child: Text(
-                          '대화가 없습니다',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: sortedSessions.length,
-                        itemBuilder: (context, index) {
-                          final session = sortedSessions[index];
-                          final isActive = session.id == activeSessionId;
-                          return ListTile(
-                            selected: isActive,
-                            selectedTileColor: theme.colorScheme.primaryContainer
-                                .withValues(alpha: 0.3),
-                            leading: const Icon(Icons.chat_bubble_outline, size: 20),
-                            title: Text(
-                              session.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              formatRelativeTime(session.createdAt),
-                              style: theme.textTheme.labelSmall,
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18),
-                              tooltip: '삭제',
-                              onPressed: () async {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('세션 삭제'),
-                                    content: Text("'${session.title}' 세션을 삭제하시겠습니까?"),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, false),
-                                        child: const Text('취소'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx, true),
-                                        child: const Text('삭제'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed ?? false) {
-                                  onSessionDelete(session.id);
-                                }
-                              },
-                            ),
-                            onTap: () => onSessionTap(session.id),
-                          );
-                        },
-                      ),
+                child: _TabletSessionList(
+                  sessions: sortedSessions,
+                  activeSessionId: activeSessionId,
+                  onSessionTap: onSessionTap,
+                  onSessionDelete: onSessionDelete,
+                ),
               ),
               const Divider(height: 1),
               ListTile(
@@ -150,5 +95,90 @@ class AdaptiveScaffold extends StatelessWidget {
         Expanded(child: child),
       ],
     );
+  }
+}
+
+class _TabletSessionList extends StatelessWidget {
+  const _TabletSessionList({
+    required this.sessions,
+    required this.activeSessionId,
+    required this.onSessionTap,
+    required this.onSessionDelete,
+  });
+
+  final List<SessionInfo> sessions;
+  final String? activeSessionId;
+  final ValueChanged<String> onSessionTap;
+  final ValueChanged<String> onSessionDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (sessions.isEmpty) {
+      return Center(
+        child: Text(
+          '대화가 없습니다',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: sessions.length,
+      itemBuilder: (context, index) {
+        final session = sessions[index];
+        final isActive = session.id == activeSessionId;
+        return ListTile(
+          selected: isActive,
+          selectedTileColor:
+              theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+          leading: const Icon(Icons.chat_bubble_outline, size: 20),
+          title: Text(
+            session.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            formatRelativeTime(session.createdAt),
+            style: theme.textTheme.labelSmall,
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            tooltip: '삭제',
+            onPressed: () => _confirmDelete(context, session),
+          ),
+          onTap: () => onSessionTap(session.id),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    SessionInfo session,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('세션 삭제'),
+        content: Text("'${session.title}' 세션을 삭제하시겠습니까?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      onSessionDelete(session.id);
+    }
   }
 }

@@ -94,48 +94,10 @@ class ChatEmptyState extends StatelessWidget {
                 ),
               ),
             if (variant == EmptyStateVariant.empty)
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: Spacing.sm,
-                crossAxisSpacing: Spacing.sm,
-                childAspectRatio: 2.2,
-                children: _suggestions.map((card) {
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    child: InkWell(
-                      onTap: isSending ? null : () => onSuggestion(card.prompt),
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.sm,
-                          vertical: Spacing.xs + 2,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              card.icon,
-                              size: 20,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              card.title,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+              _SuggestionGrid(
+                suggestions: _suggestions,
+                isSending: isSending,
+                onSuggestion: onSuggestion,
               ),
           ],
         ),
@@ -160,4 +122,65 @@ class ChatEmptyState extends StatelessWidget {
         EmptyStateVariant.connecting => '잠시만 기다려주세요',
         EmptyStateVariant.empty => 'AI 비서와 대화를 시작해보세요',
       };
+}
+
+class _SuggestionGrid extends StatelessWidget {
+  const _SuggestionGrid({
+    required this.suggestions,
+    required this.isSending,
+    required this.onSuggestion,
+  });
+
+  final List<_SuggestionCard> suggestions;
+  final bool isSending;
+  final ValueChanged<String> onSuggestion;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: Spacing.sm,
+      crossAxisSpacing: Spacing.sm,
+      childAspectRatio: 2.2,
+      children: suggestions.map((card) {
+        return Card(
+          margin: EdgeInsets.zero,
+          child: InkWell(
+            onTap: isSending ? null : () => onSuggestion(card.prompt),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.sm,
+                vertical: Spacing.xs + 2,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    card.icon,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    card.title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 }

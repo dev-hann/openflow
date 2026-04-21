@@ -170,7 +170,6 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final filtered = _filteredSessions;
     final sorted = List<SessionInfo>.from(filtered)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -178,98 +177,12 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Spacing.md,
-            Spacing.sm,
-            Spacing.md,
-            Spacing.xs,
-          ),
-          child: Center(
-            child: Container(
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
-          child: Row(
-            children: [
-              Text('대화', style: theme.textTheme.titleLarge),
-              const Spacer(),
-              IconButton(
-                onPressed: widget.onNewChat,
-                icon: const Icon(Icons.add),
-                tooltip: '새 대화',
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.md,
-            vertical: Spacing.xs,
-          ),
-          child: TextField(
-            onChanged: (v) => setState(() => _searchQuery = v),
-            decoration: InputDecoration(
-              hintText: '검색...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: Spacing.md,
-                vertical: Spacing.sm,
-              ),
-              isDense: true,
-            ),
-          ),
-        ),
+        _buildHandle(context),
+        _buildHeader(context),
+        _buildSearchField(context),
         const SizedBox(height: Spacing.xs),
         Expanded(
-          child: sorted.isEmpty
-              ? Center(
-                  child: Text(
-                    _searchQuery.isEmpty ? '대화가 없습니다' : '검색 결과가 없습니다',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  controller: widget.scrollController,
-                  padding: const EdgeInsets.only(bottom: Spacing.xl),
-                  itemCount: grouped.entries.fold<int>(
-                    0,
-                    (sum, e) => sum + 1 + e.value.length,
-                  ),
-                  itemBuilder: (context, index) {
-                    var currentIndex = index;
-                    for (final entry in grouped.entries) {
-                      if (currentIndex == 0) {
-                        return SessionGroupHeader(label: entry.key);
-                      }
-                      currentIndex--;
-                      if (currentIndex < entry.value.length) {
-                        final session = entry.value[currentIndex];
-                        return SessionTile(
-                          session: session,
-                          isActive: session.id == widget.activeSessionId,
-                          onTap: () => widget.onSessionTap(session.id),
-                          onLongPress: () => _showSessionActions(session),
-                        );
-                      }
-                      currentIndex -= entry.value.length;
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
+          child: _buildSessionList(context, sorted, grouped),
         ),
         const Divider(height: 1),
         ListTile(
@@ -278,6 +191,116 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
           onTap: widget.onSettings,
         ),
       ],
+    );
+  }
+
+  Widget _buildHandle(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.md,
+        Spacing.sm,
+        Spacing.md,
+        Spacing.xs,
+      ),
+      child: Center(
+        child: Container(
+          width: 32,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      child: Row(
+        children: [
+          Text('대화', style: Theme.of(context).textTheme.titleLarge),
+          const Spacer(),
+          IconButton(
+            onPressed: widget.onNewChat,
+            icon: const Icon(Icons.add),
+            tooltip: '새 대화',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.xs,
+      ),
+      child: TextField(
+        onChanged: (v) => setState(() => _searchQuery = v),
+        decoration: InputDecoration(
+          hintText: '검색...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: Spacing.md,
+            vertical: Spacing.sm,
+          ),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionList(
+    BuildContext context,
+    List<SessionInfo> sorted,
+    Map<String, List<SessionInfo>> grouped,
+  ) {
+    final theme = Theme.of(context);
+
+    if (sorted.isEmpty) {
+      return Center(
+        child: Text(
+          _searchQuery.isEmpty ? '대화가 없습니다' : '검색 결과가 없습니다',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: widget.scrollController,
+      padding: const EdgeInsets.only(bottom: Spacing.xl),
+      itemCount: grouped.entries.fold<int>(
+        0,
+        (sum, e) => sum + 1 + e.value.length,
+      ),
+      itemBuilder: (context, index) {
+        var currentIndex = index;
+        for (final entry in grouped.entries) {
+          if (currentIndex == 0) {
+            return SessionGroupHeader(label: entry.key);
+          }
+          currentIndex--;
+          if (currentIndex < entry.value.length) {
+            final session = entry.value[currentIndex];
+            return SessionTile(
+              session: session,
+              isActive: session.id == widget.activeSessionId,
+              onTap: () => widget.onSessionTap(session.id),
+              onLongPress: () => _showSessionActions(session),
+            );
+          }
+          currentIndex -= entry.value.length;
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 }

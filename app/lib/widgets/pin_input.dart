@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:openflow/constants/dimensions.dart';
-
 class PinInput extends StatelessWidget {
   const PinInput({
     required this.controller,
@@ -12,7 +10,7 @@ class PinInput extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
-  final VoidCallback? onChanged;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {

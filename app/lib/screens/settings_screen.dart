@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
@@ -256,8 +255,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildContent(AuthState authState, ProvidersState providersState) {
-    final theme = Theme.of(context);
-
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
@@ -267,10 +264,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onServerChanged: _handleServerChanged,
           ),
           const Divider(height: 1),
-          ActiveProviderSection(
-            providersState: providersState,
-            onTap: _showModelSheet,
-          ),
+          if (providersState.activeProvider != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              child: ActiveProviderCard(
+                provider: providersState.activeProvider!,
+                onTap: () => _showModelSheet(providersState.activeProvider!),
+              ),
+            ),
           const Divider(height: 1),
           ProviderListSection(
             providersState: providersState,

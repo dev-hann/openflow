@@ -261,7 +261,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         PinInput(
           controller: _pinController,
           focusNode: _pinFocusNode,
-          onChanged: () => setState(() {}),
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: Spacing.lg),
         SizedBox(
