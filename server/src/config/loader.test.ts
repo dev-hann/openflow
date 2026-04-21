@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { loadConfig, resetConfigCache, getConfigPath } from "./loader.js";
+import { loadConfig, resetConfigCache, getConfigPath, initConfig } from "./loader.js";
 
 describe("loadConfig", () => {
   const testDir = join(tmpdir(), "openflow-test-config-" + Date.now());
@@ -17,6 +17,7 @@ describe("loadConfig", () => {
   afterEach(() => {
     resetConfigCache();
     delete process.env.OPENFLOW_CONFIG;
+    delete process.env.OPENFLOW_LOG_LEVEL;
     rmSync(testDir, { recursive: true, force: true });
   });
 
@@ -86,5 +87,51 @@ describe("loadConfig", () => {
     process.env.OPENFLOW_CONFIG = "/tmp/my-config.json";
     expect(getConfigPath()).toBe("/tmp/my-config.json");
     delete process.env.OPENFLOW_CONFIG;
+  });
+
+  it("should set OPENFLOW_LOG_LEVEL from config when not set", () => {
+    writeFileSync(testConfigPath, JSON.stringify({ logging: { level: "debug" }, agent: {}, memory: {} }));
+    delete process.env.OPENFLOW_LOG_LEVEL;
+
+    loadConfig();
+    expect(process.env.OPENFLOW_LOG_LEVEL).toBe("debug");
+  });
+
+  it("should not override OPENFLOW_LOG_LEVEL if already set", () => {
+    writeFileSync(testConfigPath, JSON.stringify({ logging: { level: "debug" }, agent: {}, memory: {} }));
+    process.env.OPENFLOW_LOG_LEVEL = "warn";
+
+    loadConfig();
+    expect(process.env.OPENFLOW_LOG_LEVEL).toBe("warn");
+  });
+});
+
+describe("initConfig", () => {
+  const testDir = join(tmpdir(), "openflow-test-init-" + Date.now());
+  const testConfigPath = join(testDir, "openflow.json");
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("should create config file if it does not exist", () => {
+    initConfig(testConfigPath);
+    expect(existsSync(testConfigPath)).toBe(true);
+    const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<string, unknown>;
+    expect(content.websocket).toBeDefined();
+    expect(content.notification).toBeDefined();
+  });
+
+  it("should not overwrite existing config file", () => {
+    const existing = { websocket: { enabled: false } };
+    writeFileSync(testConfigPath, JSON.stringify(existing));
+
+    initConfig(testConfigPath);
+    const content = JSON.parse(readFileSync(testConfigPath, "utf-8")) as Record<string, unknown>;
+    expect((content.websocket as Record<string, unknown>).enabled).toBe(false);
   });
 });
