@@ -74,4 +74,12 @@ describe("validateUrl", () => {
   it("should block fe80-prefix (IPv6 link-local)", () => {
     expect(() => validateUrl("http://[fe80::1]/")).toThrow("private/internal networks");
   });
+
+  it("should allow fc-domain.com hostname", () => {
+    expect(() => validateUrl("https://fc-domain.com/page")).not.toThrow();
+  });
+
+  it("should allow fe80-shop.com hostname", () => {
+    expect(() => validateUrl("https://fe80-shop.com/")).not.toThrow();
+  });
 });

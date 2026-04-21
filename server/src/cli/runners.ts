@@ -37,7 +37,7 @@ function createAgentDeps(
     llm: () => providerPool.getClient(),
     memory,
     tools,
-    config: { ...config.agent, skills: config.skills },
+    config: { ...config.agent, contextSize: config.memory.contextSize, skills: config.skills },
     confirmationHandler,
     confirmationTimeout: config.tools.confirmationTimeout,
   });

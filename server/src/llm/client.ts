@@ -119,10 +119,15 @@ async function sendRequest(
       }
 
       if (onToken && response.body) {
-        const result = await parseSseStream(response.body, onToken);
-        const duration = Date.now() - startedAt;
-        log.info({ model: config.model, duration, streamed: true }, "LLM request completed");
-        return result;
+        try {
+          const result = await parseSseStream(response.body, onToken);
+          const duration = Date.now() - startedAt;
+          log.info({ model: config.model, duration, streamed: true }, "LLM request completed");
+          return result;
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new OpenFlowError(`Stream error after partial delivery: ${msg}`, "LLM_STREAM_ERROR", err);
+        }
       }
 
       const json = (await response.json()) as unknown;

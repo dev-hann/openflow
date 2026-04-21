@@ -55,8 +55,10 @@ export function validateUrl(url: string): void {
     }
   }
 
-  if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
-    throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+  if (hostname.includes(":")) {
+    if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
+      throw new OpenFlowError("Requests to private/internal networks are blocked", "PERMISSION_DENIED");
+    }
   }
 }
 

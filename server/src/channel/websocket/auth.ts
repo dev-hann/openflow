@@ -86,6 +86,7 @@ export function createAuthService(store?: AuthStore): AuthService {
 
   function createPairingPin(): string {
     cleanExpiredPins();
+    totalFailedAttempts = 0;
     const pinRaw = randomBytes(3).readUIntBE(0, 3);
     const pin = String(100000 + (pinRaw % 900000));
     const now = Date.now();

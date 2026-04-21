@@ -106,6 +106,17 @@ describe("createAuthService", () => {
       }
       expect(service.verifyPinAndIssueTokens(pin, "Legit")).toBeNull();
     });
+
+    it("should reset lockout when new PIN is created", () => {
+      service.createPairingPin();
+      for (let i = 0; i < 5; i++) {
+        expect(service.verifyPinAndIssueTokens("000000", "Attacker")).toBeNull();
+      }
+      const newPin = service.createPairingPin();
+      const tokens = service.verifyPinAndIssueTokens(newPin, "Legit");
+      expect(tokens).toBeTruthy();
+      expect(tokens!.accessToken).toBeTruthy();
+    });
   });
 
   describe("validateAccessToken", () => {
