@@ -17,6 +17,40 @@ function htmlToPlainText(html: string): string {
     .trim();
 }
 
+export function isPrivateHostname(hostname: string): boolean {
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".internal")
+  ) {
+    return true;
+  }
+
+  const isIPv4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
+  if (isIPv4) {
+    const octets = hostname.split(".").map(Number);
+    if (
+      octets[0]! === 10 ||
+      (octets[0]! === 172 && octets[1]! >= 16 && octets[1]! <= 31) ||
+      (octets[0]! === 192 && octets[1]! === 168) ||
+      (octets[0]! === 169 && octets[1]! === 254)
+    ) {
+      return true;
+    }
+  }
+
+  if (hostname.includes(":")) {
+    if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function validateUrl(url: string): void {
   let parsed: URL;
   try {
@@ -35,43 +69,11 @@ export function validateUrl(url: string): void {
     rawHostname.startsWith("[") && rawHostname.endsWith("]")
       ? rawHostname.slice(1, -1)
       : rawHostname;
-  if (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0" ||
-    hostname === "::1" ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".internal")
-  ) {
+  if (isPrivateHostname(hostname)) {
     throw new OpenFlowError(
       "Requests to private/internal networks are blocked",
       "PERMISSION_DENIED",
     );
-  }
-
-  const isIPv4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
-  if (isIPv4) {
-    const octets = hostname.split(".").map(Number);
-    if (
-      octets[0]! === 10 ||
-      (octets[0]! === 172 && octets[1]! >= 16 && octets[1]! <= 31) ||
-      (octets[0]! === 192 && octets[1]! === 168) ||
-      (octets[0]! === 169 && octets[1]! === 254)
-    ) {
-      throw new OpenFlowError(
-        "Requests to private/internal networks are blocked",
-        "PERMISSION_DENIED",
-      );
-    }
-  }
-
-  if (hostname.includes(":")) {
-    if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
-      throw new OpenFlowError(
-        "Requests to private/internal networks are blocked",
-        "PERMISSION_DENIED",
-      );
-    }
   }
 }
 

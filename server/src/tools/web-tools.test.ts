@@ -1,5 +1,64 @@
 import { describe, it, expect } from "vitest";
-import { validateUrl } from "./web-tools.js";
+import { validateUrl, isPrivateHostname } from "./web-tools.js";
+
+describe("isPrivateHostname", () => {
+  it("should detect localhost", () => {
+    expect(isPrivateHostname("localhost")).toBe(true);
+  });
+
+  it("should detect 127.0.0.1", () => {
+    expect(isPrivateHostname("127.0.0.1")).toBe(true);
+  });
+
+  it("should detect 10.x private range", () => {
+    expect(isPrivateHostname("10.0.0.1")).toBe(true);
+  });
+
+  it("should detect 192.168.x private range", () => {
+    expect(isPrivateHostname("192.168.1.1")).toBe(true);
+  });
+
+  it("should detect 172.16-31.x private range", () => {
+    expect(isPrivateHostname("172.16.0.1")).toBe(true);
+    expect(isPrivateHostname("172.31.255.1")).toBe(true);
+  });
+
+  it("should not flag 172.32.x as private", () => {
+    expect(isPrivateHostname("172.32.0.1")).toBe(false);
+  });
+
+  it("should detect 169.254.x link-local", () => {
+    expect(isPrivateHostname("169.254.1.1")).toBe(true);
+  });
+
+  it("should detect IPv6 unique local fc prefix", () => {
+    expect(isPrivateHostname("fc00::1")).toBe(true);
+  });
+
+  it("should detect IPv6 link-local fe80 prefix", () => {
+    expect(isPrivateHostname("fe80::1")).toBe(true);
+  });
+
+  it("should detect .local domains", () => {
+    expect(isPrivateHostname("myserver.local")).toBe(true);
+  });
+
+  it("should detect .internal domains", () => {
+    expect(isPrivateHostname("service.internal")).toBe(true);
+  });
+
+  it("should allow public hostnames", () => {
+    expect(isPrivateHostname("example.com")).toBe(false);
+  });
+
+  it("should allow hostnames starting with 10.", () => {
+    expect(isPrivateHostname("10.example.com")).toBe(false);
+  });
+
+  it("should allow fc-domain.com", () => {
+    expect(isPrivateHostname("fc-domain.com")).toBe(false);
+  });
+});
 
 describe("validateUrl", () => {
   it("should accept valid https URLs", () => {
@@ -15,35 +74,51 @@ describe("validateUrl", () => {
   });
 
   it("should throw on unsupported protocol", () => {
-    expect(() => validateUrl("ftp://example.com/file")).toThrow("Unsupported protocol");
+    expect(() => validateUrl("ftp://example.com/file")).toThrow(
+      "Unsupported protocol",
+    );
   });
 
   it("should block localhost", () => {
-    expect(() => validateUrl("http://localhost:3000/api")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://localhost:3000/api")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block 127.0.0.1", () => {
-    expect(() => validateUrl("http://127.0.0.1/secret")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://127.0.0.1/secret")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block 0.0.0.0", () => {
-    expect(() => validateUrl("http://0.0.0.0/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://0.0.0.0/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block ::1", () => {
-    expect(() => validateUrl("http://[::1]/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://[::1]/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block .local domains", () => {
-    expect(() => validateUrl("http://myserver.local/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://myserver.local/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block .internal domains", () => {
-    expect(() => validateUrl("http://service.internal/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://service.internal/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block 10.x private range", () => {
-    expect(() => validateUrl("http://10.0.0.1/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://10.0.0.1/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should allow hostnames starting with 10.", () => {
@@ -51,12 +126,18 @@ describe("validateUrl", () => {
   });
 
   it("should block 192.168.x private range", () => {
-    expect(() => validateUrl("http://192.168.1.1/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://192.168.1.1/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block 172.16-31.x private range", () => {
-    expect(() => validateUrl("http://172.16.0.1/")).toThrow("private/internal networks");
-    expect(() => validateUrl("http://172.31.255.1/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://172.16.0.1/")).toThrow(
+      "private/internal networks",
+    );
+    expect(() => validateUrl("http://172.31.255.1/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should allow 172.32.x (not in private range)", () => {
@@ -64,15 +145,21 @@ describe("validateUrl", () => {
   });
 
   it("should block 169.254.x link-local", () => {
-    expect(() => validateUrl("http://169.254.1.1/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://169.254.1.1/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block fc-prefix (IPv6 unique local)", () => {
-    expect(() => validateUrl("http://[fc00::1]/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://[fc00::1]/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should block fe80-prefix (IPv6 link-local)", () => {
-    expect(() => validateUrl("http://[fe80::1]/")).toThrow("private/internal networks");
+    expect(() => validateUrl("http://[fe80::1]/")).toThrow(
+      "private/internal networks",
+    );
   });
 
   it("should allow fc-domain.com hostname", () => {

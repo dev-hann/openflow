@@ -1,7 +1,13 @@
 import type { DatabaseSync } from "node:sqlite";
 
 import { createLogger } from "../utils/logger.js";
-import { wrapDb, generateId, nowMs, runMigrations } from "./db-helpers.js";
+import {
+  wrapDb,
+  generateId,
+  nowMs,
+  runMigrations,
+  withTransaction,
+} from "./db-helpers.js";
 
 const log = createLogger("memory/provider");
 
@@ -29,7 +35,10 @@ export interface ProviderStore {
   getProvider(id: string): Provider | null;
   getDefaultProvider(): Provider | null;
   addProvider(params: AddProviderParams): Provider;
-  updateProvider(id: string, params: Partial<Pick<Provider, "name" | "baseUrl" | "apiKey" | "model">>): Provider | null;
+  updateProvider(
+    id: string,
+    params: Partial<Pick<Provider, "name" | "baseUrl" | "apiKey" | "model">>,
+  ): Provider | null;
   deleteProvider(id: string): void;
   setDefault(id: string): Provider | null;
 }
@@ -66,9 +75,8 @@ function prepareProviderStatements(db: DatabaseSync) {
     ),
     deleteProvider: db.prepare("DELETE FROM providers WHERE id = ?"),
     clearDefault: db.prepare("UPDATE providers SET is_default = 0"),
-    setDefault: db.prepare("UPDATE providers SET is_default = 1, updated_at = ? WHERE id = ?"),
-    getUpdatedProvider: db.prepare(
-      "SELECT id, name, base_url, api_key, model, is_default, created_at, updated_at FROM providers WHERE id = ?",
+    setDefault: db.prepare(
+      "UPDATE providers SET is_default = 1, updated_at = ? WHERE id = ?",
     ),
   };
 }
@@ -80,20 +88,26 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
   return {
     listProviders(): Provider[] {
       return wrapDb("listProviders", () =>
-        (stmts.listProviders.all() as Array<Record<string, unknown>>).map(rowToProvider),
+        (stmts.listProviders.all() as Array<Record<string, unknown>>).map(
+          rowToProvider,
+        ),
       );
     },
 
     getProvider(id: string): Provider | null {
       return wrapDb("getProvider", () => {
-        const row = stmts.getProvider.get(id) as Record<string, unknown> | undefined;
+        const row = stmts.getProvider.get(id) as
+          | Record<string, unknown>
+          | undefined;
         return row ? rowToProvider(row) : null;
       });
     },
 
     getDefaultProvider(): Provider | null {
       return wrapDb("getDefaultProvider", () => {
-        const row = stmts.getDefaultProvider.get() as Record<string, unknown> | undefined;
+        const row = stmts.getDefaultProvider.get() as
+          | Record<string, unknown>
+          | undefined;
         return row ? rowToProvider(row) : null;
       });
     },
@@ -103,7 +117,16 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
       const now = nowMs();
       const isDefault = params.isDefault ? 1 : 0;
       wrapDb("addProvider", () =>
-        stmts.insertProvider.run(id, params.name, params.baseUrl, params.apiKey, params.model, isDefault, now, now),
+        stmts.insertProvider.run(
+          id,
+          params.name,
+          params.baseUrl,
+          params.apiKey,
+          params.model,
+          isDefault,
+          now,
+          now,
+        ),
       );
       log.info({ providerId: id, name: params.name }, "provider added");
       return {
@@ -118,7 +141,10 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
       };
     },
 
-    updateProvider(id: string, params: Partial<Pick<Provider, "name" | "baseUrl" | "apiKey" | "model">>): Provider | null {
+    updateProvider(
+      id: string,
+      params: Partial<Pick<Provider, "name" | "baseUrl" | "apiKey" | "model">>,
+    ): Provider | null {
       const now = nowMs();
       wrapDb("updateProvider", () =>
         stmts.updateProviderPartial.run(
@@ -130,8 +156,9 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
           id,
         ),
       );
-      const row = wrapDb("updateProvider:get", () =>
-        stmts.getUpdatedProvider.get(id) as Record<string, unknown> | undefined,
+      const row = wrapDb(
+        "updateProvider:get",
+        () => stmts.getProvider.get(id) as Record<string, unknown> | undefined,
       );
       if (!row) return null;
       log.info({ providerId: id }, "provider updated");
@@ -146,18 +173,14 @@ export function createProviderStore(db: DatabaseSync): ProviderStore {
     setDefault(id: string): Provider | null {
       const now = nowMs();
       wrapDb("setDefault", () => {
-        db.exec("BEGIN");
-        try {
+        withTransaction(db, () => {
           stmts.clearDefault.run();
           stmts.setDefault.run(now, id);
-          db.exec("COMMIT");
-        } catch (err) {
-          db.exec("ROLLBACK");
-          throw err;
-        }
+        });
       });
-      const row = wrapDb("setDefault:get", () =>
-        stmts.getUpdatedProvider.get(id) as Record<string, unknown> | undefined,
+      const row = wrapDb(
+        "setDefault:get",
+        () => stmts.getProvider.get(id) as Record<string, unknown> | undefined,
       );
       if (!row) return null;
       log.info({ providerId: id }, "provider set as default");
