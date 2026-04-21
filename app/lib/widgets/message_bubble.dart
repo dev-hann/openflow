@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
+import 'package:openflow/widgets/code_block.dart';
+import 'package:openflow/widgets/message_actions.dart';
+import 'package:openflow/widgets/streaming_cursor.dart';
 import 'package:openflow/widgets/typing_indicator.dart';
 
 class MessageBubble extends StatefulWidget {
@@ -14,12 +18,17 @@ class MessageBubble extends StatefulWidget {
     super.key,
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
+    this.isLastAssistant = false,
     this.onRetry,
+    this.onEdit,
   });
+
   final ChatMessage message;
   final bool isFirstInGroup;
   final bool isLastInGroup;
+  final bool isLastAssistant;
   final VoidCallback? onRetry;
+  final VoidCallback? onEdit;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -49,27 +58,6 @@ class _MessageBubbleState extends State<MessageBubble> {
     return _cachedStyleSheet!;
   }
 
-  void _showContextMenu() {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.copy),
-              title: const Text('복사'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: widget.message.content));
-                Navigator.pop(ctx);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -96,29 +84,13 @@ class _MessageBubbleState extends State<MessageBubble> {
               Flexible(
                 child: Semantics(
                   label: isUser ? '내 메시지' : 'AI 응답',
-                  child: GestureDetector(
-                    onLongPress: _showContextMenu,
-                    child: _buildBubble(context, theme, isUser),
-                  ),
+                  child: _buildBubble(context, theme, isUser),
                 ),
               ),
             ],
           ),
-          if (widget.isLastInGroup && message.isFailed)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: TextButton.icon(
-                onPressed: widget.onRetry,
-                icon: const Icon(Icons.refresh, size: 14),
-                label: const Text('재시도'),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ),
+          if (widget.isLastInGroup && !message.isStreaming)
+            _buildActions(isUser),
         ],
       ),
     );
@@ -135,6 +107,21 @@ class _MessageBubbleState extends State<MessageBubble> {
           size: 16,
           color: theme.colorScheme.onPrimaryContainer,
         ),
+      ),
+    );
+  }
+
+  Widget _buildActions(bool isUser) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isUser ? 0 : 48,
+        top: 2,
+      ),
+      child: MessageActions(
+        message: widget.message,
+        isLastAssistant: widget.isLastAssistant,
+        onRegenerate: widget.onRetry,
+        onEdit: widget.onEdit,
       ),
     );
   }
@@ -187,7 +174,9 @@ class _MessageBubbleState extends State<MessageBubble> {
               selectable: true,
               styleSheet: _getStyleSheet(theme, fgColor),
             ),
-          if (widget.isLastInGroup) ...[
+          if (message.isStreaming && message.content.isNotEmpty)
+            StreamingCursor(color: theme.colorScheme.primary),
+          if (widget.isLastInGroup && !message.isStreaming) ...[
             const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerRight,

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/config/theme.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/chat_cubit.dart';
+import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/screens/chat_screen.dart';
@@ -14,7 +15,7 @@ import 'package:openflow/screens/onboarding_screen.dart';
 import 'package:openflow/screens/settings_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
-import 'package:openflow/widgets/app_drawer.dart';
+import 'package:openflow/widgets/session_sheet.dart';
 
 class OpenFlowMaterialApp extends StatelessWidget {
   const OpenFlowMaterialApp({super.key});
@@ -72,7 +73,6 @@ class _MainScreenState extends State<MainScreen> {
         }
       }
     } on Object {
-      // Session load failure is non-critical
     }
   }
 
@@ -87,7 +87,6 @@ class _MainScreenState extends State<MainScreen> {
 
         return Scaffold(
           appBar: _buildAppBar(context, title),
-          drawer: _buildDrawer(context, sessionsState),
           body: const ChatScreen(),
         );
       },
@@ -98,16 +97,55 @@ class _MainScreenState extends State<MainScreen> {
     final theme = Theme.of(context);
 
     return AppBar(
-      leading: Builder(
-        builder: (scaffoldContext) => IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+      leading: IconButton(
+        icon: const Icon(Icons.menu),
+        onPressed: () => SessionSheet.show(
+          context: context,
+          sessions: context.read<SessionsCubit>().state.sessions,
+          activeSessionId: context.read<SessionsCubit>().state.activeSessionId,
+          onSessionTap: _handleSessionTap,
+          onNewChat: _handleNewChat,
+          onSessionDelete: _handleSessionDelete,
+          onSettings: _handleSettings,
         ),
       ),
-      title: Text(
-        title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      title: GestureDetector(
+        onTap: () => SessionSheet.show(
+          context: context,
+          sessions: context.read<SessionsCubit>().state.sessions,
+          activeSessionId: context.read<SessionsCubit>().state.activeSessionId,
+          onSessionTap: _handleSessionTap,
+          onNewChat: _handleNewChat,
+          onSessionDelete: _handleSessionDelete,
+          onSettings: _handleSettings,
+        ),
+        child: Column(
+          children: [
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium,
+            ),
+            BlocBuilder<ProvidersCubit, ProvidersState>(
+              builder: (context, providersState) {
+                final active = providersState.activeProvider;
+                if (active == null) return const SizedBox.shrink();
+                final label = active.model.isNotEmpty
+                    ? '${active.name} · ${active.model}'
+                    : active.name;
+                return Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       actions: [
         Padding(
@@ -132,19 +170,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, SessionsState sessionsState) {
-    return AppDrawer(
-      sessions: sessionsState.sessions,
-      activeSessionId: sessionsState.activeSessionId,
-      onSessionTap: _handleSessionTap,
-      onNewChat: _handleNewChat,
-      onSessionDelete: _handleSessionDelete,
-      onSettings: _handleSettings,
-    );
-  }
-
   void _handleSessionTap(String id) {
-    Navigator.of(context).pop();
     final ws = context.read<WebSocketService>();
     final chatCubit = context.read<ChatCubit>();
     context.read<SessionsCubit>().setActiveSessionId(id);
@@ -153,7 +179,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _handleNewChat() {
-    Navigator.of(context).pop();
     final chatCubit = context.read<ChatCubit>();
     context.read<SessionsCubit>().setActiveSessionId(null);
     chatCubit.clearMessages();
@@ -169,17 +194,14 @@ class _MainScreenState extends State<MainScreen> {
         token: token,
       );
       await api.deleteSession(id);
-      if (!context.mounted) return;
       if (mounted) {
         context.read<SessionsCubit>().removeSession(id);
       }
     } on Object {
-      // Session deletion failure is non-critical
     }
   }
 
   void _handleSettings() {
-    Navigator.of(context).pop();
     unawaited(
       Navigator.of(context).push<void>(
         MaterialPageRoute<void>(

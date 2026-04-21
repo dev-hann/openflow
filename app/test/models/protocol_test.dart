@@ -140,11 +140,10 @@ void main() {
       expect(msg, isA<WsPong>());
     });
 
-    test('throws on unknown type', () {
-      expect(
-        () => WsServerMessage.fromJson(const {'type': 'unknown'}),
-        throwsFormatException,
-      );
+    test('returns WsUnknown on unknown type', () {
+      final msg = WsServerMessage.fromJson(const {'type': 'unknown'});
+      expect(msg, isA<WsUnknown>());
+      expect((msg as WsUnknown).rawType, 'unknown');
     });
   });
 

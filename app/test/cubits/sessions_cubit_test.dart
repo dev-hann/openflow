@@ -89,6 +89,7 @@ void main() {
       expect: () => [
         SessionsState(
           sessions: [_session('s2')],
+          activeSessionId: 's2',
         ),
       ],
     );

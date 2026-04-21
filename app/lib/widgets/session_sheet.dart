@@ -1,0 +1,325 @@
+import 'package:flutter/material.dart';
+
+import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/format_time.dart';
+
+class SessionSheet extends StatelessWidget {
+  const SessionSheet({
+    required this.sessions,
+    required this.onSessionTap,
+    required this.onNewChat,
+    required this.onSessionDelete,
+    required this.onSettings,
+    super.key,
+    this.activeSessionId,
+  });
+
+  final List<SessionInfo> sessions;
+  final String? activeSessionId;
+  final ValueChanged<String> onSessionTap;
+  final VoidCallback onNewChat;
+  final ValueChanged<String> onSessionDelete;
+  final VoidCallback onSettings;
+
+  static Future<void> show({
+    required BuildContext context,
+    required List<SessionInfo> sessions,
+    String? activeSessionId,
+    required ValueChanged<String> onSessionTap,
+    required VoidCallback onNewChat,
+    required ValueChanged<String> onSessionDelete,
+    required VoidCallback onSettings,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (_) => SessionSheet(
+        sessions: sessions,
+        activeSessionId: activeSessionId,
+        onSessionTap: onSessionTap,
+        onNewChat: onNewChat,
+        onSessionDelete: onSessionDelete,
+        onSettings: onSettings,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return _SessionSheetContent(
+          sessions: sessions,
+          activeSessionId: activeSessionId,
+          onSessionTap: (id) {
+            Navigator.of(context).pop();
+            onSessionTap(id);
+          },
+          onNewChat: () {
+            Navigator.of(context).pop();
+            onNewChat();
+          },
+          onSessionDelete: onSessionDelete,
+          onSettings: () {
+            Navigator.of(context).pop();
+            onSettings();
+          },
+          scrollController: scrollController,
+        );
+      },
+    );
+  }
+}
+
+class _SessionSheetContent extends StatefulWidget {
+  const _SessionSheetContent({
+    required this.sessions,
+    required this.activeSessionId,
+    required this.onSessionTap,
+    required this.onNewChat,
+    required this.onSessionDelete,
+    required this.onSettings,
+    required this.scrollController,
+  });
+
+  final List<SessionInfo> sessions;
+  final String? activeSessionId;
+  final ValueChanged<String> onSessionTap;
+  final VoidCallback onNewChat;
+  final ValueChanged<String> onSessionDelete;
+  final VoidCallback onSettings;
+  final ScrollController scrollController;
+
+  @override
+  State<_SessionSheetContent> createState() => _SessionSheetContentState();
+}
+
+class _SessionSheetContentState extends State<_SessionSheetContent> {
+  String _searchQuery = '';
+
+  List<SessionInfo> get _filteredSessions {
+    if (_searchQuery.isEmpty) return widget.sessions;
+    final q = _searchQuery.toLowerCase();
+    return widget.sessions.where((s) => s.title.toLowerCase().contains(q)).toList();
+  }
+
+  Map<String, List<SessionInfo>> _groupSessions(List<SessionInfo> sessions) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final weekAgo = today.subtract(const Duration(days: 7));
+
+    final groups = <String, List<SessionInfo>>{
+      '오늘': [],
+      '어제': [],
+      '지난 7일': [],
+      '이전': [],
+    };
+
+    for (final session in sessions) {
+      final date = DateTime(
+        session.createdAt.year,
+        session.createdAt.month,
+        session.createdAt.day,
+      );
+      if (date == today) {
+        groups['오늘']!.add(session);
+      } else if (date == yesterday) {
+        groups['어제']!.add(session);
+      } else if (date.isAfter(weekAgo)) {
+        groups['지난 7일']!.add(session);
+      } else {
+        groups['이전']!.add(session);
+      }
+    }
+
+    return groups..removeWhere((_, v) => v.isEmpty);
+  }
+
+  void _showSessionActions(SessionInfo session) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('세션 삭제'),
+              onTap: () {
+                Navigator.pop(ctx);
+                widget.onSessionDelete(session.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final filtered = _filteredSessions;
+    final sorted = List<SessionInfo>.from(filtered)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final grouped = _groupSessions(sorted);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.md,
+            Spacing.sm,
+            Spacing.md,
+            Spacing.xs,
+          ),
+          child: Center(
+            child: Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+          child: Row(
+            children: [
+              Text('대화', style: theme.textTheme.titleLarge),
+              const Spacer(),
+              IconButton(
+                onPressed: widget.onNewChat,
+                icon: const Icon(Icons.add),
+                tooltip: '새 대화',
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.md,
+            vertical: Spacing.xs,
+          ),
+          child: TextField(
+            onChanged: (v) => setState(() => _searchQuery = v),
+            decoration: InputDecoration(
+              hintText: '검색...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: Spacing.md,
+                vertical: Spacing.sm,
+              ),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(height: Spacing.xs),
+        Expanded(
+          child: sorted.isEmpty
+              ? Center(
+                  child: Text(
+                    _searchQuery.isEmpty ? '대화가 없습니다' : '검색 결과가 없습니다',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  controller: widget.scrollController,
+                  padding: const EdgeInsets.only(bottom: Spacing.xl),
+                  itemCount: grouped.entries.fold<int>(
+                    0,
+                    (sum, e) => sum + 1 + e.value.length,
+                  ),
+                  itemBuilder: (context, index) {
+                    var currentIndex = index;
+                    for (final entry in grouped.entries) {
+                      if (currentIndex == 0) {
+                        return _buildGroupHeader(entry.key, theme);
+                      }
+                      currentIndex--;
+                      if (currentIndex < entry.value.length) {
+                        final session = entry.value[currentIndex];
+                        return _buildSessionTile(session, theme);
+                      }
+                      currentIndex -= entry.value.length;
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+        ),
+        const Divider(height: 1),
+        ListTile(
+          leading: const Icon(Icons.settings_outlined),
+          title: const Text('설정'),
+          onTap: widget.onSettings,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupHeader(String label, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.md,
+        Spacing.md,
+        Spacing.md,
+        Spacing.xs,
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionTile(SessionInfo session, ThemeData theme) {
+    final isActive = session.id == widget.activeSessionId;
+
+    return ListTile(
+      selected: isActive,
+      selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+      leading: const Icon(Icons.chat_bubble_outline, size: 20),
+      title: Text(
+        session.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        formatRelativeTime(session.createdAt),
+        style: theme.textTheme.labelSmall,
+      ),
+      trailing: isActive
+          ? Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+            )
+          : null,
+      onTap: () => widget.onSessionTap(session.id),
+      onLongPress: () => _showSessionActions(session),
+    );
+  }
+}

@@ -74,6 +74,7 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void removeFailedPair() {
+    if (state.messages.isEmpty) return;
     final messages = List<ChatMessage>.of(state.messages);
     int lastFailedIdx = -1;
     for (var i = messages.length - 1; i >= 0; i--) {
@@ -82,9 +83,10 @@ class ChatCubit extends Cubit<ChatState> {
         break;
       }
     }
+    if (lastFailedIdx == -1) return;
     if (lastFailedIdx > 0) {
       messages.removeRange(lastFailedIdx - 1, lastFailedIdx + 1);
-    } else if (lastFailedIdx == 0) {
+    } else {
       messages.removeAt(0);
     }
     emit(state.copyWith(messages: messages));

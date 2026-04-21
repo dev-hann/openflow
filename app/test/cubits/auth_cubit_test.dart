@@ -56,6 +56,7 @@ void main() {
         await c.loadAuth();
       },
       expect: () => [
+        const AuthState(isLoading: true),
         AuthState(storedAuth: _testAuth()),
       ],
     );
@@ -69,7 +70,10 @@ void main() {
       act: (c) async {
         await c.loadAuth();
       },
-      expect: () => <AuthState>[],
+      expect: () => [
+        const AuthState(isLoading: true),
+        const AuthState(),
+      ],
     );
 
     blocTest<AuthCubit, AuthState>(
