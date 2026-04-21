@@ -9,7 +9,6 @@ import 'package:openflow/widgets/message_bubble.dart';
 class MessageList extends StatefulWidget {
   const MessageList({
     required this.messages,
-    required this.onScrollStateChange,
     super.key,
     this.onRetry,
     this.onLoadMore,
@@ -19,7 +18,6 @@ class MessageList extends StatefulWidget {
   });
 
   final List<ChatMessage> messages;
-  final ValueChanged<bool> onScrollStateChange;
   final VoidCallback? onRetry;
   final VoidCallback? onLoadMore;
   final ValueChanged<String>? onEdit;
@@ -62,8 +60,7 @@ class MessageListState extends State<MessageList> {
     final currentScroll = _controller.position.pixels;
     final nearBottom = maxScroll - currentScroll < 100;
     if (nearBottom != _isNearBottom) {
-      _isNearBottom = nearBottom;
-      widget.onScrollStateChange(!_isNearBottom);
+      setState(() => _isNearBottom = nearBottom);
     }
 
     if (currentScroll < 100 && widget.hasMore && !widget.isLoadingMore) {
@@ -84,44 +81,62 @@ class MessageListState extends State<MessageList> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: _controller,
-      padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-      itemCount: widget.messages.length + (widget.isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == 0 && widget.isLoadingMore) {
-          return const Padding(
-            padding: EdgeInsets.all(Spacing.md),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+    return Stack(
+      children: [
+        ListView.builder(
+          controller: _controller,
+          padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+          itemCount: widget.messages.length + (widget.isLoadingMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == 0 && widget.isLoadingMore) {
+              return const Padding(
+                padding: EdgeInsets.all(Spacing.md),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
+            final adjustedIndex = widget.isLoadingMore ? index - 1 : index;
+            final message = widget.messages[adjustedIndex];
+            final prevSame = adjustedIndex > 0 &&
+                widget.messages[adjustedIndex - 1].role == message.role;
+            final nextSame = adjustedIndex < widget.messages.length - 1 &&
+                widget.messages[adjustedIndex + 1].role == message.role;
+
+            final isLastAssistant =
+                adjustedIndex == widget.messages.length - 1 &&
+                    message.role == MessageRole.assistant;
+
+            return MessageBubble(
+              message: message,
+              isFirstInGroup: !prevSame,
+              isLastInGroup: !nextSame,
+              isLastAssistant: isLastAssistant,
+              onRetry: message.isFailed ? widget.onRetry : null,
+              onEdit: message.role == MessageRole.user && widget.onEdit != null
+                  ? () => widget.onEdit!(message.content)
+                  : null,
+            );
+          },
+        ),
+        if (!_isNearBottom)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Semantics(
+              label: '맨 아래로 스크롤',
+              button: true,
+              child: FloatingActionButton.small(
+                onPressed: scrollToBottom,
+                child: const Icon(Icons.keyboard_double_arrow_down),
               ),
             ),
-          );
-        }
-        final adjustedIndex = widget.isLoadingMore ? index - 1 : index;
-        final message = widget.messages[adjustedIndex];
-        final prevSame =
-            adjustedIndex > 0 && widget.messages[adjustedIndex - 1].role == message.role;
-        final nextSame = adjustedIndex < widget.messages.length - 1 &&
-            widget.messages[adjustedIndex + 1].role == message.role;
-
-        final isLastAssistant = adjustedIndex == widget.messages.length - 1 &&
-            message.role == MessageRole.assistant;
-
-        return MessageBubble(
-          message: message,
-          isFirstInGroup: !prevSame,
-          isLastInGroup: !nextSame,
-          isLastAssistant: isLastAssistant,
-          onRetry: message.isFailed ? widget.onRetry : null,
-          onEdit: message.role == MessageRole.user && widget.onEdit != null
-              ? () => widget.onEdit!(message.content)
-              : null,
-        );
-      },
+          ),
+      ],
     );
   }
 }

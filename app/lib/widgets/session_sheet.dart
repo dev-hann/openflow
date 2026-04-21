@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
-import 'package:openflow/utils/format_time.dart';
+import 'package:openflow/widgets/session_tile.dart';
 
 class SessionSheet extends StatelessWidget {
   const SessionSheet({
@@ -109,7 +109,9 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
   List<SessionInfo> get _filteredSessions {
     if (_searchQuery.isEmpty) return widget.sessions;
     final q = _searchQuery.toLowerCase();
-    return widget.sessions.where((s) => s.title.toLowerCase().contains(q)).toList();
+    return widget.sessions
+        .where((s) => s.title.toLowerCase().contains(q))
+        .toList();
   }
 
   Map<String, List<SessionInfo>> _groupSessions(List<SessionInfo> sessions) {
@@ -251,12 +253,17 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
                     var currentIndex = index;
                     for (final entry in grouped.entries) {
                       if (currentIndex == 0) {
-                        return _buildGroupHeader(entry.key, theme);
+                        return SessionGroupHeader(label: entry.key);
                       }
                       currentIndex--;
                       if (currentIndex < entry.value.length) {
                         final session = entry.value[currentIndex];
-                        return _buildSessionTile(session, theme);
+                        return SessionTile(
+                          session: session,
+                          isActive: session.id == widget.activeSessionId,
+                          onTap: () => widget.onSessionTap(session.id),
+                          onLongPress: () => _showSessionActions(session),
+                        );
                       }
                       currentIndex -= entry.value.length;
                     }
@@ -271,55 +278,6 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
           onTap: widget.onSettings,
         ),
       ],
-    );
-  }
-
-  Widget _buildGroupHeader(String label, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.md,
-        Spacing.md,
-        Spacing.md,
-        Spacing.xs,
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSessionTile(SessionInfo session, ThemeData theme) {
-    final isActive = session.id == widget.activeSessionId;
-
-    return ListTile(
-      selected: isActive,
-      selectedTileColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-      leading: const Icon(Icons.chat_bubble_outline, size: 20),
-      title: Text(
-        session.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        formatRelativeTime(session.createdAt),
-        style: theme.textTheme.labelSmall,
-      ),
-      trailing: isActive
-          ? Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-            )
-          : null,
-      onTap: () => widget.onSessionTap(session.id),
-      onLongPress: () => _showSessionActions(session),
     );
   }
 }

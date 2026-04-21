@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/chat_cubit.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
@@ -15,6 +14,7 @@ import 'package:openflow/widgets/chat_empty_state.dart'
     show ChatEmptyState, EmptyStateVariant;
 import 'package:openflow/widgets/input_bar.dart';
 import 'package:openflow/widgets/message_list.dart';
+import 'package:openflow/widgets/thinking_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -25,7 +25,6 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final GlobalKey<MessageListState> _listKey = GlobalKey();
-  bool _scrolledUp = false;
   Timer? _sendTimeout;
   String? _lastUserMessage;
   String? _loadedSessionId;
@@ -98,10 +97,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         authCubit.state.storedAuth!.serverUrl,
         token: token,
       );
-      final result = await api.fetchMessages(
-        sessionId,
-        offset: offset,
-      );
+      final result = await api.fetchMessages(sessionId, offset: offset);
       if (!mounted) return;
 
       final chatCubit = context.read<ChatCubit>();
@@ -165,35 +161,30 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<String?> _ensureSession(String token) async {
+    final sessionsCubit = context.read<SessionsCubit>();
+    final existingId = sessionsCubit.state.activeSessionId;
+    if (existingId != null) return existingId;
+
+    final api = createApiClient(
+      context.read<AuthCubit>().state.storedAuth!.serverUrl,
+      token: token,
+    );
+    final session = await api.createSession();
+    sessionsCubit.addSession(session);
+    return session.id;
+  }
+
   Future<void> _sendMessage(String text) async {
     final authCubit = context.read<AuthCubit>();
     final chatCubit = context.read<ChatCubit>();
-    final sessionsCubit = context.read<SessionsCubit>();
     final ws = context.read<WebSocketService>();
 
     final token = await authCubit.getValidToken();
     if (token == null) return;
 
-    var sessionId = sessionsCubit.state.activeSessionId;
-
-    if (sessionId == null) {
-      try {
-        final api = createApiClient(
-          authCubit.state.storedAuth!.serverUrl,
-          token: token,
-        );
-        final session = await api.createSession();
-        sessionsCubit.addSession(session);
-        sessionId = session.id;
-      } on Object catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('세션 생성 실패: $e')),
-          );
-        }
-        return;
-      }
-    }
+    final sessionId = await _ensureSession(token);
+    if (sessionId == null || !mounted) return;
 
     final userMsg = ChatMessage(
       id: _generateId(),
@@ -227,16 +218,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   void _retryLastMessage() {
-    final chatCubit = context.read<ChatCubit>();
     final lastUserText = _lastUserMessage;
     if (lastUserText == null) return;
-    chatCubit.removeFailedPair();
+    context.read<ChatCubit>().removeFailedPair();
     unawaited(_sendMessage(lastUserText));
   }
 
   void _editMessage(String text) {
-    final chatCubit = context.read<ChatCubit>();
-    chatCubit.removeFailedPair();
+    context.read<ChatCubit>().removeFailedPair();
     unawaited(_sendMessage(text));
   }
 
@@ -289,83 +278,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   onSuggestion: _sendMessage,
                   onReconnect: _reconnect,
                 )
-              : Stack(
-                  children: [
-                    MessageList(
-                      key: _listKey,
-                      messages: chatState.messages,
-                      onScrollStateChange: (scrolledUp) =>
-                          setState(() => _scrolledUp = scrolledUp),
-                      onRetry: _retryLastMessage,
-                      onEdit: _editMessage,
-                      onLoadMore: _loadMoreMessages,
-                      hasMore: chatState.messages.length < _totalMessages,
-                      isLoadingMore: _isLoadingHistory,
-                    ),
-                    if (_scrolledUp)
-                      Positioned(
-                        bottom: 16,
-                        right: 16,
-                        child: Semantics(
-                          label: '맨 아래로 스크롤',
-                          button: true,
-                          child: FloatingActionButton.small(
-                            onPressed: () =>
-                                _listKey.currentState?.scrollToBottom(),
-                            child: const Icon(
-                              Icons.keyboard_double_arrow_down,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+              : MessageList(
+                  key: _listKey,
+                  messages: chatState.messages,
+                  onRetry: _retryLastMessage,
+                  onEdit: _editMessage,
+                  onLoadMore: _loadMoreMessages,
+                  hasMore: chatState.messages.length < _totalMessages,
+                  isLoadingMore: _isLoadingHistory,
                 ),
         ),
-        if (chatState.isSending) _buildThinkingIndicator(context),
+        if (chatState.isSending) const ThinkingIndicator(),
         InputBar(
           onSend: _sendMessage,
           disabled: chatState.isSending,
         ),
       ],
-    );
-  }
-
-  Widget _buildThinkingIndicator(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      color: theme.colorScheme.surface,
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: Spacing.md),
-          childrenPadding: const EdgeInsets.only(
-            left: Spacing.md,
-            right: Spacing.md,
-            bottom: Spacing.sm,
-          ),
-          leading: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          title: Text(
-            '생각 중...',
-            style: theme.textTheme.labelMedium,
-          ),
-          children: [
-            Text(
-              'AI가 응답을 생성하고 있습니다...',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

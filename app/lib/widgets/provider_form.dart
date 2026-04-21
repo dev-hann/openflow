@@ -69,50 +69,40 @@ class _ProviderFormState extends State<ProviderForm> {
     });
   }
 
+  Future<ApiClient?> _getApi() async {
+    final cubit = context.read<AuthCubit>();
+    final token = await cubit.getValidToken();
+    if (token == null || !mounted) return null;
+    return createApiClient(cubit.state.storedAuth!.serverUrl, token: token);
+  }
+
+  void _setVerifyError(String error) {
+    if (!mounted) return;
+    setState(() {
+      _verifying = false;
+      _verifyResult = VerifyResult(ok: false, error: error);
+    });
+  }
+
   Future<void> _verify() async {
     final name = _nameController.text.trim();
     final baseUrl = normalizeUrl(_urlController.text);
     final apiKey = _apiKeyController.text.trim();
-
     if (name.isEmpty || baseUrl.isEmpty) return;
-
-    setState(() {
-      _verifying = true;
-      _verifyResult = null;
-    });
+    setState(() { _verifying = true; _verifyResult = null; });
 
     try {
-      final authCubit = context.read<AuthCubit>();
-      final token = await authCubit.getValidToken();
-      if (token == null || !mounted) return;
-
-      final api = createApiClient(
-        authCubit.state.storedAuth!.serverUrl,
-        token: token,
-      );
+      final api = await _getApi();
+      if (api == null) return;
 
       ProviderInfo provider;
       if (widget.editProvider != null) {
-        final params = <String, dynamic>{
-          'name': name,
-          'baseUrl': baseUrl,
-        };
+        final params = <String, dynamic>{'name': name, 'baseUrl': baseUrl};
         if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
-        provider = await api.updateProvider(
-          widget.editProvider!.id,
-          params,
-        );
+        provider = await api.updateProvider(widget.editProvider!.id, params);
       } else {
         if (apiKey.isEmpty) {
-          if (mounted) {
-            setState(() {
-              _verifying = false;
-              _verifyResult = const VerifyResult(
-                ok: false,
-                error: 'API Key를 입력해주세요',
-              );
-            });
-          }
+          _setVerifyError('API Key를 입력해주세요');
           return;
         }
         provider = await api.createProvider({
@@ -125,13 +115,9 @@ class _ProviderFormState extends State<ProviderForm> {
       }
 
       _savedProviderId = provider.id;
-
       await api.verifyProvider(provider.id);
-      final models = await api.fetchProviderModels(provider.id)
-        ..sort();
-
+      final models = await api.fetchProviderModels(provider.id)..sort();
       if (!mounted) return;
-
       setState(() {
         _verifying = false;
         _verifyResult = VerifyResult(ok: true, models: models);
@@ -140,11 +126,7 @@ class _ProviderFormState extends State<ProviderForm> {
         }
       });
     } on Object catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _verifying = false;
-        _verifyResult = VerifyResult(ok: false, error: e.toString());
-      });
+      _setVerifyError(e.toString());
     }
   }
 
@@ -160,7 +142,6 @@ class _ProviderFormState extends State<ProviderForm> {
       );
       return;
     }
-
     if (widget.editProvider == null && apiKey.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('API Key를 입력해주세요')),
@@ -168,60 +149,12 @@ class _ProviderFormState extends State<ProviderForm> {
       return;
     }
 
-    final authCubit = context.read<AuthCubit>();
-    final token = await authCubit.getValidToken();
-    if (token == null || !mounted) return;
-
-    final api = createApiClient(
-      authCubit.state.storedAuth!.serverUrl,
-      token: token,
-    );
-
+    final api = await _getApi();
+    if (api == null) return;
     setState(() => _submitting = true);
 
     try {
-      if (_savedProviderId != null) {
-        final updated = await api.updateProvider(
-          _savedProviderId!,
-          {'model': model},
-        );
-        if (mounted) {
-          if (widget.editProvider != null) {
-            context.read<ProvidersCubit>().updateProvider(updated);
-          } else {
-            final cubit = context.read<ProvidersCubit>();
-            cubit.setProviders([...cubit.state.providers, updated]);
-          }
-        }
-      } else if (widget.editProvider != null) {
-        final params = <String, dynamic>{
-          'name': name,
-          'baseUrl': baseUrl,
-          'model': model,
-        };
-        if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
-
-        final updated = await api.updateProvider(
-          widget.editProvider!.id,
-          params,
-        );
-        if (mounted) {
-          context.read<ProvidersCubit>().updateProvider(updated);
-        }
-      } else {
-        final provider = await api.createProvider({
-          'name': name,
-          'baseUrl': baseUrl,
-          'apiKey': apiKey,
-          'model': model,
-          'isDefault': true,
-        });
-        if (mounted) {
-          final cubit = context.read<ProvidersCubit>();
-          cubit.setProviders([...cubit.state.providers, provider]);
-        }
-      }
-
+      await _persistProvider(api, name: name, baseUrl: baseUrl, apiKey: apiKey, model: model);
       if (mounted) widget.onComplete();
     } on Object catch (e) {
       if (mounted) {
@@ -231,6 +164,41 @@ class _ProviderFormState extends State<ProviderForm> {
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _persistProvider(
+    ApiClient api, {
+    required String name,
+    required String baseUrl,
+    required String apiKey,
+    required String model,
+  }) async {
+    final cubit = context.read<ProvidersCubit>();
+    if (_savedProviderId != null) {
+      final updated = await api.updateProvider(_savedProviderId!, {'model': model});
+      if (!mounted) return;
+      if (widget.editProvider != null) {
+        cubit.updateProvider(updated);
+      } else {
+        cubit.setProviders([...cubit.state.providers, updated]);
+      }
+    } else if (widget.editProvider != null) {
+      final params = <String, dynamic>{'name': name, 'baseUrl': baseUrl, 'model': model};
+      if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
+      final updated = await api.updateProvider(widget.editProvider!.id, params);
+      if (!mounted) return;
+      cubit.updateProvider(updated);
+    } else {
+      final provider = await api.createProvider({
+        'name': name,
+        'baseUrl': baseUrl,
+        'apiKey': apiKey,
+        'model': model,
+        'isDefault': true,
+      });
+      if (!mounted) return;
+      cubit.setProviders([...cubit.state.providers, provider]);
     }
   }
 
@@ -286,12 +254,9 @@ class _ProviderFormState extends State<ProviderForm> {
                 hintText: widget.editProvider != null ? '변경 시에만 입력' : null,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscureApiKey
-                        ? Icons.visibility_off
-                        : Icons.visibility,
+                    _obscureApiKey ? Icons.visibility_off : Icons.visibility,
                   ),
-                  onPressed: () =>
-                      setState(() => _obscureApiKey = !_obscureApiKey),
+                  onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
                 ),
               ),
               obscureText: _obscureApiKey,
