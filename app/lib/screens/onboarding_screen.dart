@@ -8,7 +8,9 @@ import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/widgets/pin_input.dart';
 import 'package:openflow/widgets/provider_form.dart';
+import 'package:openflow/widgets/step_indicator.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({required this.onComplete, super.key});
@@ -174,7 +176,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               const SizedBox(height: Spacing.xxl),
-              _buildStepIndicator(),
+              StepIndicator(currentIndex: _step.index, totalSteps: 3),
               const SizedBox(height: Spacing.lg),
               Expanded(child: _buildStep()),
               if (_error != null)
@@ -187,26 +189,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        3,
-        (i) => Container(
-          width: i == _step.index ? 24 : 8,
-          height: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: i == _step.index
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outlineVariant,
-            borderRadius: BorderRadius.circular(4),
           ),
         ),
       ),
@@ -276,8 +258,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: Spacing.lg),
-        _buildPinBoxes(),
-        Offstage(child: _buildPinTextField()),
+        PinInput(
+          controller: _pinController,
+          focusNode: _pinFocusNode,
+          onChanged: () => setState(() {}),
+        ),
         const SizedBox(height: Spacing.lg),
         SizedBox(
           width: double.infinity,
@@ -293,54 +278,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPinBoxes() {
-    return GestureDetector(
-      onTap: _pinFocusNode.requestFocus,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(6, (i) {
-          return Container(
-            width: 44,
-            height: 52,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              i < _pinController.text.length ? _pinController.text[i] : '',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  Widget _buildPinTextField() {
-    return SizedBox(
-      width: 200,
-      child: TextField(
-        controller: _pinController,
-        focusNode: _pinFocusNode,
-        keyboardType: TextInputType.number,
-        maxLength: 6,
-        autofocus: true,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 24, letterSpacing: 8),
-        decoration: const InputDecoration(
-          counterText: '',
-          border: InputBorder.none,
-        ),
-        onChanged: (_) => setState(() {}),
-        onSubmitted: (_) => _submitPin(),
-      ),
     );
   }
 
