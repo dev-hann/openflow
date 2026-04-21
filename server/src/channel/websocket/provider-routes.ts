@@ -283,13 +283,13 @@ export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   return [
     route("/api/providers", "GET", handleProvidersList),
     route("/api/providers", "POST", handleProviderCreate),
+    route("/api/providers/current", "PUT", handleProviderSwitch),
     routePattern(/^\/api\/providers\/[^/]+$/, "PUT", (req, res, ctx) =>
       handleProviderUpdate(req, res, ctx.path),
     ),
     routePattern(/^\/api\/providers\/[^/]+$/, "DELETE", (req, res, ctx) =>
       handleProviderDelete(req, res, ctx.path),
     ),
-    route("/api/providers/current", "PUT", handleProviderSwitch),
     routePattern(/^\/api\/providers\/[^/]+\/verify$/, "POST", (req, res, ctx) =>
       handleProviderVerify(req, res, ctx.path),
     ),
