@@ -36,6 +36,20 @@ describe("withRetry", () => {
     ).rejects.toThrow("always fail");
   });
 
+  it("should respect explicit maxAttempts shorter than delays", async () => {
+    let attempt = 0;
+    await expect(
+      withRetry(
+        () => {
+          attempt++;
+          throw new Error("fail");
+        },
+        { delays: [1, 1, 1], maxAttempts: 2 },
+      ),
+    ).rejects.toThrow("fail");
+    expect(attempt).toBe(2);
+  });
+
   it("should respect shouldRetry returning false", async () => {
     let attempt = 0;
     await expect(
@@ -132,6 +146,20 @@ describe("withSyncRetry", () => {
     );
     expect(result).toBe("ok");
     expect(attempt).toBe(2);
+  });
+
+  it("should exhaust all retry attempts and throw", () => {
+    let attempt = 0;
+    expect(() =>
+      withSyncRetry(
+        () => {
+          attempt++;
+          throw new Error("busy");
+        },
+        () => true,
+      ),
+    ).toThrow("busy");
+    expect(attempt).toBe(4);
   });
 });
 

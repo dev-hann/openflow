@@ -481,4 +481,84 @@ describe("createAgentEngine", () => {
       expect(result.error.code).toBe("LLM_REQUEST_FAILED");
     }
   });
+
+  it("should return error when signal aborts during tool call loop", async () => {
+    const controller = new AbortController();
+    const toolCallResponse: LlmResponse = {
+      type: "tool_calls",
+      toolCalls: [
+        {
+          id: "tc_1",
+          type: "function" as const,
+          function: { name: "test_tool", arguments: "{}" },
+        },
+      ],
+    };
+    const llm: LlmClient = {
+      chat: vi.fn().mockImplementation(() => {
+        controller.abort();
+        return Promise.resolve(toolCallResponse);
+      }),
+      complete: vi.fn(),
+    };
+    const tools = mockToolExecutor({ test_tool: "ok" });
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Mid-loop Abort Test");
+
+    const result = await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "abort mid-loop",
+      signal: controller.signal,
+    });
+
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error.code).toBe("LLM_TIMEOUT");
+    }
+  });
+
+  it("should persist assistant tool_calls message before processing tools", async () => {
+    const toolCallResponse: LlmResponse = {
+      type: "tool_calls",
+      toolCalls: [
+        {
+          id: "tc_persist",
+          type: "function" as const,
+          function: { name: "test_tool", arguments: '{"a":"b"}' },
+        },
+      ],
+    };
+    const llm = mockLlmClient([
+      toolCallResponse,
+      { type: "text", content: "final" },
+    ]);
+    const tools = mockToolExecutor({ test_tool: "result" });
+    const config: AgentConfig = {
+      systemPrompt: "",
+      maxToolRounds: 5,
+      workspace: testDir,
+    };
+
+    const engine = createAgentEngine({ llm, memory, tools, config });
+    const session = memory.createSession("Persist Test");
+
+    await engine.handleMessage({
+      sessionId: session.id,
+      userMessage: "run tool",
+    });
+
+    const messages = memory.getMessages(session.id);
+    const assistantMsg = messages.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    expect(assistantMsg!.content).toBeNull();
+    const toolMsg = messages.find((m) => m.role === "tool");
+    expect(toolMsg).toBeDefined();
+    expect(toolMsg!.content).toBe("result");
+  });
 });

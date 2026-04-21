@@ -208,6 +208,64 @@ describe("runServer", () => {
 
     await runServer(config);
 
-    expect(mockNotifyAll).toHaveBeenCalled();
+    expect(mockNotifyAll).toHaveBeenCalledWith("OpenFlow", "Server up!");
+  });
+
+  it("should send stop notification during cleanup when enabled", async () => {
+    process.exit = vi.fn() as unknown as typeof process.exit;
+    const mockNotifyAll = vi.fn().mockResolvedValue(undefined);
+    const { createNotificationService } =
+      await import("../notification/index.js");
+    vi.mocked(createNotificationService).mockImplementation(
+      () =>
+        ({
+          send: vi.fn().mockResolvedValue(undefined),
+          sendAll: vi.fn().mockResolvedValue([]),
+          notifyAll: mockNotifyAll,
+        }) as unknown as ReturnType<typeof createNotificationService>,
+    );
+
+    const { runServer } = await import("./runners.js");
+    const config = createTestConfig({
+      notification: { enabled: true, onStart: "Server up!", onStop: "Bye!" },
+      agent: { ...createTestConfig().agent, workspace: testDir },
+    });
+
+    await runServer(config);
+
+    const listeners = process.listeners("SIGTERM");
+    const cleanup = listeners[listeners.length - 1] as () => Promise<void>;
+    await cleanup();
+
+    expect(mockNotifyAll).toHaveBeenCalledWith("OpenFlow", "Bye!");
+  });
+
+  it("should handle notification failure gracefully during cleanup", async () => {
+    process.exit = vi.fn() as unknown as typeof process.exit;
+    const mockNotifyAll = vi.fn().mockRejectedValue(new Error("push down"));
+    const { createNotificationService } =
+      await import("../notification/index.js");
+    vi.mocked(createNotificationService).mockImplementation(
+      () =>
+        ({
+          send: vi.fn().mockResolvedValue(undefined),
+          sendAll: vi.fn().mockResolvedValue([]),
+          notifyAll: mockNotifyAll,
+        }) as unknown as ReturnType<typeof createNotificationService>,
+    );
+
+    const { runServer } = await import("./runners.js");
+    const config = createTestConfig({
+      notification: { enabled: true, onStart: "up", onStop: "down" },
+      agent: { ...createTestConfig().agent, workspace: testDir },
+    });
+
+    await runServer(config);
+
+    const listeners = process.listeners("SIGINT");
+    const cleanup = listeners[listeners.length - 1] as () => Promise<void>;
+    await cleanup();
+
+    expect(mockWsChannel.stop).toHaveBeenCalled();
   });
 });
