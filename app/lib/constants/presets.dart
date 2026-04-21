@@ -23,14 +23,14 @@ const kProviderPresets = <ProviderPreset>[
     id: 'zai-coding-global',
     label: 'ZAI Coding Plan',
     hint: '글로벌 엔드포인트',
-    baseUrl: 'https://api.zai-coding.com/v1',
+    baseUrl: 'https://api.z.ai/api/coding/paas/v4',
     needsApiKey: true,
   ),
   ProviderPreset(
     id: 'zai-coding-china',
     label: 'ZAI Coding Plan',
     hint: '중국 엔드포인트',
-    baseUrl: 'https://api.zai-coding.cn/v1',
+    baseUrl: 'https://api.z.ai/api/coding/paas/v4',
     needsApiKey: true,
   ),
   ProviderPreset(
