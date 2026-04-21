@@ -1,5 +1,5 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:openflow/services/update_service.dart';
 
@@ -7,15 +7,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      const MethodChannel('dev.fluttercommunity.plus/package_info'),
-      (call) async => {
-            'appName': 'OpenFlow',
-            'packageName': 'com.example.openflow',
-            'version': '1.0.0',
-            'buildNumber': '1',
-          },
+    PackageInfo.setMockInitialValues(
+      appName: 'OpenFlow',
+      packageName: 'com.example.openflow',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
     );
   });
 
