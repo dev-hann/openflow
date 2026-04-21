@@ -27,14 +27,18 @@ class UpdateState extends Equatable {
     int? downloadProgress,
     String? downloadedFilePath,
     String? errorMessage,
+    bool clearError = false,
+    bool clearDownloadedFile = false,
   }) {
     return UpdateState(
       currentVersion: currentVersion ?? this.currentVersion,
       status: status ?? this.status,
       release: release ?? this.release,
       downloadProgress: downloadProgress ?? this.downloadProgress,
-      downloadedFilePath: downloadedFilePath ?? this.downloadedFilePath,
-      errorMessage: errorMessage ?? this.errorMessage,
+      downloadedFilePath: clearDownloadedFile
+          ? null
+          : (downloadedFilePath ?? this.downloadedFilePath),
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
@@ -70,7 +74,7 @@ class UpdateCubit extends Cubit<UpdateState> {
   }
 
   Future<void> checkForUpdate() async {
-    emit(state.copyWith(status: UpdateStatus.checking, errorMessage: null));
+    emit(state.copyWith(status: UpdateStatus.checking, clearError: true));
     try {
       final release = await _updateService.checkForUpdate();
       if (release != null) {
@@ -96,6 +100,8 @@ class UpdateCubit extends Cubit<UpdateState> {
     emit(state.copyWith(
       status: UpdateStatus.downloading,
       downloadProgress: 0,
+      clearError: true,
+      clearDownloadedFile: true,
     ));
 
     try {
