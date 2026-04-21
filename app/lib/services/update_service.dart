@@ -1,11 +1,12 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:equatable/equatable.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
-class ReleaseAsset {
-  ReleaseAsset({
+class ReleaseAsset extends Equatable {
+  const ReleaseAsset({
     required this.name,
     required this.downloadUrl,
     required this.size,
@@ -13,10 +14,13 @@ class ReleaseAsset {
   final String name;
   final String downloadUrl;
   final int size;
+
+  @override
+  List<Object?> get props => [name, downloadUrl, size];
 }
 
-class ReleaseInfo {
-  ReleaseInfo({
+class ReleaseInfo extends Equatable {
+  const ReleaseInfo({
     required this.tagName,
     required this.version,
     required this.releaseNotes,
@@ -28,6 +32,9 @@ class ReleaseInfo {
   final String releaseNotes;
   final String htmlUrl;
   final List<ReleaseAsset> assets;
+
+  @override
+  List<Object?> get props => [tagName, version, releaseNotes, htmlUrl, assets];
 }
 
 class UpdateService {
@@ -71,16 +78,14 @@ class UpdateService {
       final htmlUrl = (data['html_url'] as String?) ?? '';
 
       final assetsList = data['assets'] as List<dynamic>? ?? [];
-      final assets = assetsList
-          .map((a) {
-            final asset = a as Map<String, dynamic>;
-            return ReleaseAsset(
-              name: (asset['name'] as String?) ?? '',
-              downloadUrl: (asset['browser_download_url'] as String?) ?? '',
-              size: (asset['size'] as int?) ?? 0,
-            );
-          })
-          .toList();
+      final assets = assetsList.map((a) {
+        final asset = a as Map<String, dynamic>;
+        return ReleaseAsset(
+          name: (asset['name'] as String?) ?? '',
+          downloadUrl: (asset['browser_download_url'] as String?) ?? '',
+          size: (asset['size'] as int?) ?? 0,
+        );
+      }).toList();
 
       return ReleaseInfo(
         tagName: tagName,
