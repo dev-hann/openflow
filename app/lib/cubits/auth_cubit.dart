@@ -24,12 +24,13 @@ class AuthState extends Equatable {
     bool? isConnected,
     bool? isLoading,
     String? errorMessage,
+    bool clearError = false,
   }) {
     return AuthState(
       storedAuth: storedAuth ?? this.storedAuth,
       isConnected: isConnected ?? this.isConnected,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
@@ -105,7 +106,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   void clearError() {
-    emit(state.copyWith());
+    emit(state.copyWith(clearError: true));
   }
 
   Future<void> saveAuth(StoredAuth auth) async {

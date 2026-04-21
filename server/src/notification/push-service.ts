@@ -16,7 +16,11 @@ interface PushService {
 }
 
 export interface NotificationService extends PushService {
-  notifyAll(title: string, body: string, data?: Record<string, unknown>): Promise<void>;
+  notifyAll(
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+  ): Promise<void>;
 }
 
 export function createNotificationService(
@@ -40,23 +44,44 @@ export function createNotificationService(
 
   const expo = new Expo();
 
-  function processTicket(r: { status: string; message?: string; details?: unknown }, recipientToken: string): PushTicket {
+  interface ExpoPushResult {
+    status: "ok" | "error";
+    id?: string;
+    message?: string;
+    details?: { error?: string };
+  }
+
+  function processTicket(
+    r: ExpoPushResult,
+    recipientToken: string,
+  ): PushTicket {
     if (r.status === "error") {
-      log.error({ details: r.details, message: r.message }, "push notification error");
-      const details = r.details as { error?: string } | undefined;
-      if (details?.error === "DeviceNotRegistered") {
+      log.error(
+        { details: r.details, message: r.message },
+        "push notification error",
+      );
+      if (r.details?.error === "DeviceNotRegistered") {
         tokenStore.unregister(recipientToken);
       }
     }
     return {
-      id: r.status === "ok" ? (r as { id?: string }).id ?? "unknown" : "unknown",
-      status: r.status as "ok" | "error",
+      id: r.status === "ok" ? (r.id ?? "unknown") : "unknown",
+      status: r.status,
       message: r.status === "error" ? r.message : undefined,
-      details: r.status === "error" ? r.details as { error?: string } | undefined : undefined,
+      details: r.status === "error" ? r.details : undefined,
     };
   }
 
-  async function sendPushChunks(messages: Array<{ to: string; title?: string; body?: string; data?: Record<string, unknown>; sound?: string; badge?: number }>): Promise<PushTicket[]> {
+  async function sendPushChunks(
+    messages: Array<{
+      to: string;
+      title?: string;
+      body?: string;
+      data?: Record<string, unknown>;
+      sound?: string;
+      badge?: number;
+    }>,
+  ): Promise<PushTicket[]> {
     const tickets: PushTicket[] = [];
     for (const msg of messages) {
       const chunks = expo.chunkPushNotifications([msg]);
@@ -73,19 +98,28 @@ export function createNotificationService(
 
   async function send(message: PushMessage): Promise<PushTicket> {
     if (!Expo.isExpoPushToken(message.to)) {
-      log.warn({ token: String(message.to).slice(0, 8) + "..." }, "invalid Expo push token");
-      return { id: "invalid", status: "error", message: "Invalid Expo push token" };
+      log.warn(
+        { token: String(message.to).slice(0, 8) + "..." },
+        "invalid Expo push token",
+      );
+      return {
+        id: "invalid",
+        status: "error",
+        message: "Invalid Expo push token",
+      };
     }
 
     try {
-      const tickets = await sendPushChunks([{
-        to: message.to,
-        title: message.title,
-        body: message.body,
-        data: message.data,
-        sound: message.sound ?? "default",
-        badge: message.badge,
-      }]);
+      const tickets = await sendPushChunks([
+        {
+          to: message.to,
+          title: message.title,
+          body: message.body,
+          data: message.data,
+          sound: message.sound ?? "default",
+          badge: message.badge,
+        },
+      ]);
       return tickets[0] ?? { id: "no-ticket", status: "ok" };
     } catch (err: unknown) {
       log.error({ err }, "failed to send push notification");
@@ -103,7 +137,11 @@ export function createNotificationService(
     return results;
   }
 
-  async function notifyAll(title: string, body: string, data?: Record<string, unknown>): Promise<void> {
+  async function notifyAll(
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+  ): Promise<void> {
     const tokens = tokenStore.getAll();
     if (tokens.length === 0) {
       log.debug("no push tokens registered, skipping broadcast");
