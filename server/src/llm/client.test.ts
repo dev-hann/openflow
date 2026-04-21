@@ -135,5 +135,91 @@ describe("createLlmClient", () => {
         client.chat({ messages: [{ role: "user", content: "Hi" }] }),
       ).rejects.toThrow("No choices");
     });
+
+    it("should throw on null response", async () => {
+      vi.stubGlobal("fetch", mockFetch({
+        ok: true,
+        json: () => Promise.resolve(null),
+      }));
+
+      const client = createLlmClient(baseConfig);
+      await expect(
+        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
+      ).rejects.toThrow("Invalid LLM response");
+    });
+
+    it("should throw on missing message in choice", async () => {
+      vi.stubGlobal("fetch", mockFetch({
+        ok: true,
+        json: () => Promise.resolve({ choices: [{ message: null }] }),
+      }));
+
+      const client = createLlmClient(baseConfig);
+      await expect(
+        client.chat({ messages: [{ role: "user", content: "Hi" }] }),
+      ).rejects.toThrow("Invalid message");
+    });
+
+    it("should return empty string on null content in complete", async () => {
+      vi.stubGlobal("fetch", mockFetch({
+        ok: true,
+        json: () => Promise.resolve({
+          choices: [{ message: { role: "assistant", content: null } }],
+        }),
+      }));
+
+      const client = createLlmClient(baseConfig);
+      const result = await client.complete({
+        messages: [{ role: "user", content: "Hi" }],
+      });
+      expect(result).toBe("");
+    });
+  });
+
+  describe("retry behavior", () => {
+    it("should throw on abort signal", async () => {
+      vi.stubGlobal("fetch", mockFetch({
+        ok: true,
+        json: () => Promise.resolve({
+          choices: [{ message: { role: "assistant", content: "hi" } }],
+        }),
+      }));
+
+      const controller = new AbortController();
+      controller.abort();
+
+      const client = createLlmClient(baseConfig);
+      await expect(
+        client.chat({
+          messages: [{ role: "user", content: "Hi" }],
+          signal: controller.signal,
+        }),
+      ).rejects.toThrow();
+    });
+
+    it("should not retry on 4xx client error", async () => {
+      vi.stubGlobal("fetch", mockFetch({
+        ok: false,
+        status: 400,
+        text: () => Promise.resolve("Bad Request"),
+      }));
+
+      const client = createLlmClient(baseConfig);
+      await expect(
+        client.complete({ messages: [{ role: "user", content: "Hi" }] }),
+      ).rejects.toThrow("LLM API error 400");
+      expect(fetch).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("base URL handling", () => {
+    it("should handle trailing slash in baseUrl", async () => {
+      const config = { ...baseConfig, baseUrl: "https://api.example.com/v1/" };
+      const client = createLlmClient(config);
+      await client.complete({ messages: [{ role: "user", content: "Hi" }] });
+
+      const [url] = (fetch as ReturnType<typeof mockFetch>).mock.calls[0]!;
+      expect(url).toBe("https://api.example.com/v1/chat/completions");
+    });
   });
 });
