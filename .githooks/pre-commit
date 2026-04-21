@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+STAGED=$(git diff --cached --name-only)
+
+if echo "$STAGED" | grep -q "^server/"; then
+  echo "running server checks..."
+  (cd server && pnpm typecheck && pnpm lint && pnpm test)
+fi
+
+if echo "$STAGED" | grep -qE "^app/(lib|test)/"; then
+  echo "running app checks..."
+  (cd app && flutter analyze && flutter test)
+fi

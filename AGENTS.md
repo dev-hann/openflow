@@ -3,117 +3,63 @@
 ## 프로젝트 개요
 
 - 초경량 개인 AI 비서 (3초 이내 기동)
-- 서버: TypeScript (ESM), Node.js 22+
-- 앱: Flutter 3.29+, Dart 3.6+
+- 서버: TypeScript (ESM), Node.js 22+ / 앱: Flutter 3.29+, Dart 3.6+
 - 통신: WebSocket + REST API, OpenAI 호환 LLM
-- **전체 스펙 및 기능 명세:** [`SPEC.md`](./SPEC.md) 참조
-
-## 구성요소별 개발 지침
-
-- **서버 (`server/`):** [`server/AGENTS.md`](./server/AGENTS.md)
-- **모바일 앱 (`app/`):** [`app/AGENTS.md`](./app/AGENTS.md)
-
-## 프로젝트 구조
-
-```
-openflow/
-├── server/                    # 서버 (TypeScript / Node.js)
-│   ├── src/
-│   │   ├── bin.ts             # CLI 진입점
-│   │   ├── index.ts           # 공개 API
-│   │   ├── config/            # 설정 로더 + Zod 스키마
-│   │   ├── cli/               # CLI 명령어 러너
-│   │   ├── llm/               # OpenAI 호환 HTTP 클라이언트
-│   │   ├── agent/             # 에이전트 루프 + 프롬프트 빌더
-│   │   ├── memory/            # SQLite 저장소
-│   │   ├── tools/             # 도구 레지스트리 + 실행기
-│   │   ├── channel/           # WebSocket + REST API 서버 (모바일 앱 연동)
-│   │   ├── notification/      # Expo 푸시 알림 서비스
-│   │   ├── generated/         # openapi-typescript 생성 타입
-│   │   └── utils/             # 로거, 에러 타입
-│   ├── AGENTS.md              # 서버 개발 지침
-│   └── ...
-│
-├── app/                       # 모바일 앱 (Flutter / Dart)
-│   ├── lib/
-│   │   ├── main.dart          # 진입점 + DI
-│   │   ├── app.dart           # MaterialApp, MainScreen
-│   │   ├── config/            # 테마 설정
-│   │   ├── constants/         # 디자인 토큰, 프로바이더 프리셋
-│   │   ├── models/
-│   │   │   ├── generated/     # openapi-generator 생성 모델
-│   │   │   └── protocol.dart  # WS 메시지 타입 (sealed class)
-│   │   ├── services/          # API 클라이언트, WebSocket, 인증 저장소
-│   │   ├── cubits/            # 상태 관리 (Auth, Chat, Sessions, Providers, Settings)
-│   │   ├── screens/           # 온보딩, 채팅, 설정, 프로바이더 편집
-│   │   ├── widgets/           # 재사용 위젯
-│   │   └── utils/             # URL 정규화, 시간 포맷
-│   ├── AGENTS.md              # 앱 개발 지침
-│   └── ...
-│
-├── openapi.yaml               # API 계약 SSOT (Single Source of Truth)
-├── SPEC.md                    # 전체 스펙 및 기능 명세
-├── ADR.md                     # 아키텍처 결정 기록
-├── API_INTERFACE_CONTRACT.md  # 모듈간 인터페이스 계약서
-└── AGENTS.md                  # 이 파일
-```
+- **전체 스펙:** [`SPEC.md`](./SPEC.md)
+- **서버 지침:** [`server/AGENTS.md`](./server/AGENTS.md)
+- **앱 지침:** [`app/AGENTS.md`](./app/AGENTS.md)
 
 ## API-First 워크플로우
 
-**`openapi.yaml`이 API 계약의 단일 진실 공급원(SSOT)이다.**
+**`openapi.yaml`이 API 계약의 SSOT이다. 코드 먼저 수정하고 스펙을 나중에 맞추지 않는다.**
 
-### API 변경 프로세스
-
-1. `openapi.yaml`을 먼저 수정한다
+1. `openapi.yaml` 수정
 2. 서버: `cd server && npx openapi-typescript ../openapi.yaml -o src/generated/api.ts`
 3. 앱: `openapi-generator-cli generate -i openapi.yaml -g dart -o app/lib/models/generated`
-4. 생성된 타입/모델을 기반으로 구현한다
-5. **절대 코드를 먼저 수정하고 스펙을 나중에 맞추지 않는다**
-
-### 규칙
-
-- 새 엔드포인트 추가, 필드 변경, 응답 스키마 수정 시 반드시 `openapi.yaml`부터 시작
-- 생성된 코드(`generated/`)는 수동 수정 금지 — 재생성으로 덮어씀
-- 서버 라우트 핸들러는 생성된 타입으로 응답 형태를 보장
-- 앱의 API 응답 모델은 생성된 모델을 사용
-
-## 파일 참조 규칙
-
-- 코드 참조 시 항상 프로젝트 루트 상대 경로 사용 (예: `server/src/llm/client.ts:42`, `app/lib/services/websocket_service.dart:42`)
-- 절대 경로(`~/...`, `/home/...`) 사용 금지
-
-## 작업 방식
-
-### 병렬 서브태스크
-
-- 모든 작업을 기능 단위로 분할하여 서브태스크로 병렬 실행
-- 각 서브태스크는 독립된 git worktree에서 작업하여 충돌 방지
-- 서브태스크 간 파일 충돌이 발생하지 않도록 작업 단위 설계
-
-### Git 워크트리
-
-- 서브태스크 실행 시 `git worktree add`로 격리된 작업 공간 생성
-- 워크트리 경로: `.worktrees/<branch-name>` 규칙 사용
-- 작업 완료 후 메인 워크트리에서 병합
-- 병합 완료 후 `git worktree remove`로 정리
-- `.worktrees/`는 `.gitignore`에 추가
+4. 생성된 타입/모델 기반으로 구현
+5. `generated/` 수동 수정 금지 — 재생성으로 덮어씀
 
 ## 커밋 메시지
 
-- 형식: `모듈: 동작 설명` (영어)
-- 예시: `llm: add retry with exponential backoff`, `app: add provider edit screen`, `openapi: add session title field`
-- 명령문 스타일 (동사 원형)
-- `openapi.yaml` 변경 시 커밋 메시지에 `openapi:` 프리픽스 사용
+- 형식: `모듈: 동작 설명` (영어, 명령문)
+- 예시: `llm: add retry with exponential backoff`, `app: add provider edit screen`
 
-## 문서 유지보수
+## 작업 방식
 
-- 코드 변경이 `SPEC.md`의 내용에 영향을 주는 경우 (새 모듈/도구 추가, API 라우트 변경, 설정 스키마 변경, 아키텍처 경계 변경 등), 변경 사항을 반영하여 `SPEC.md`도 함께 업데이트
-- `openapi.yaml` 변경 시 관련 문서(`SPEC.md`, `API_INTERFACE_CONTRACT.md`) 동기화
+- 기능 단위로 서브태스크 분할하여 병렬 실행
+- 서브태스크는 독립된 git worktree (`.worktrees/<branch>`)에서 작업
+- 완료 후 메인 워크트리에서 병합 → `git worktree remove`
 
 ## 보안
 
-- API 키, 토큰을 로그에 출력 금지
-- 실제 시크릿 커밋 금지
+- API 키/토큰 로그 출력 금지, 실제 시크릿 커밋 금지
 - 예시/테스트에는 가짜 값 사용 (`sk-test-...`, `123456:ABC-DEF`)
-- 셸 도구는 `workspace` 디렉토리로 제한
-- HTTP 도구는 SSRF 방지 적용
+- 셸 도구는 `workspace` 제한, HTTP 도구는 SSRF 방지
+
+## 배포 (Release)
+
+**반드시 `scripts/release.sh`를 통해 배포한다.** 직접 태그 생성 금지.
+
+```bash
+./scripts/release.sh 0.5.0
+```
+
+스크립트가 자동으로: 버전 검증 → `pubspec.yaml` 수정 (`{버전}+{빌드번호}`) → `flutter pub get` → 커밋 → 태그 → 푸시
+
+### CI/CD
+
+`v*` 태그 푸시 → GitHub Actions → APK 빌드 → GitHub Releases 업로드
+
+### 인앱 업데이트
+
+- `app/lib/services/update_service.dart` — GitHub Releases API 조회, semver 비교, dio APK 다운로드
+- `app/lib/cubits/update_cubit.dart` — 상태: idle → checking → available → downloading → readyToInstall → error
+- 설정 화면에서 확인 → 다운로드(진행률 바) → 설치 (Package Installer, 실패 시 브라우저 폴백)
+
+## 커밋 전 필수 검증
+
+**pre-commit 훅이 자동 실행된다. (`git commit --no-verify`로 우회 가능하지만 권장하지 않음)**
+
+- 서버 파일 변경 시: `cd server && pnpm typecheck && pnpm lint && pnpm test`
+- 앱 파일 변경 시: `cd app && flutter analyze && flutter test`
+- **검증 실패 시 커밋이 거부된다. 먼저 수정 후 재커밋한다.**
