@@ -1,0 +1,535 @@
+openapi: 3.1.0
+info:
+  title: OpenFlow API
+  version: 0.2.0
+  description: OpenFlow personal AI assistant server API
+
+servers:
+  - url: http://localhost:9800
+    description: Local development
+
+paths:
+  /api/auth/pair/init:
+    post:
+      operationId: pairInit
+      summary: Create pairing PIN
+      tags: [Auth]
+      responses:
+        "200":
+          description: PIN created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PairInitResponse"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/pair/verify:
+    post:
+      operationId: pairVerify
+      summary: Verify PIN and issue tokens
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PairVerifyRequest"
+      responses:
+        "200":
+          description: Tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPairResponse"
+        "400":
+          description: PIN required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid or expired PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Refresh access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPairResponse"
+        "400":
+          description: Refresh token required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/unpair:
+    delete:
+      operationId: unpair
+      summary: Unpair device
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Device unpaired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  /api/status:
+    get:
+      operationId: getStatus
+      summary: Check server status
+      tags: [System]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Server status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+
+  /api/sessions:
+    get:
+      operationId: listSessions
+      summary: List chat sessions
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Session list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResponse"
+    post:
+      operationId: createSession
+      summary: Create a new session
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSessionResponse"
+
+  /api/sessions/{sessionId}:
+    delete:
+      operationId: deleteSession
+      summary: Delete a session
+      tags: [Sessions]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Session deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  /api/providers:
+    get:
+      operationId: listProviders
+      summary: List providers
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Provider list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderListResponse"
+    post:
+      operationId: createProvider
+      summary: Create a provider
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProviderRequest"
+      responses:
+        "201":
+          description: Provider created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderResponse"
+
+  /api/providers/{providerId}:
+    put:
+      operationId: updateProvider
+      summary: Update a provider
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProviderRequest"
+      responses:
+        "200":
+          description: Provider updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderResponse"
+    delete:
+      operationId: deleteProvider
+      summary: Delete a provider
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderId"
+      responses:
+        "200":
+          description: Provider deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  /api/providers/current:
+    put:
+      operationId: switchProvider
+      summary: Switch active provider
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SwitchProviderRequest"
+      responses:
+        "200":
+          description: Provider switched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SwitchProviderResponse"
+
+  /api/providers/{providerId}/verify:
+    post:
+      operationId: verifyProvider
+      summary: Verify provider connectivity
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderId"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyProviderResponse"
+
+  /api/providers/{providerId}/models:
+    get:
+      operationId: fetchProviderModels
+      summary: Fetch available models from provider
+      tags: [Providers]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderId"
+      responses:
+        "200":
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderModelsResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Access token from pair/verify or refresh
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ProviderId:
+      name: providerId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+      required: [ok]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    PairInitResponse:
+      type: object
+      properties:
+        expiresInMs:
+          type: integer
+          example: 300000
+      required: [expiresInMs]
+
+    PairVerifyRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+          example: "123456"
+        label:
+          type: string
+          example: "pixel"
+      required: [pin]
+
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required: [refreshToken]
+
+    TokenPairResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        sessionKey:
+          type: string
+        accessExpiresAt:
+          type: integer
+          description: Epoch milliseconds
+        refreshExpiresAt:
+          type: integer
+          description: Epoch milliseconds
+      required: [accessToken, refreshToken, sessionKey, accessExpiresAt, refreshExpiresAt]
+
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+      required: [status]
+
+    CreateSessionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+
+    CreateSessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+      required: [id, title]
+
+    SessionInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        createdAt:
+          type: integer
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          description: Epoch milliseconds
+        messageCount:
+          type: integer
+      required: [id, title, createdAt, updatedAt, messageCount]
+
+    SessionListResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionInfo"
+      required: [sessions]
+
+    CreateProviderRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        baseUrl:
+          type: string
+        apiKey:
+          type: string
+        model:
+          type: string
+        isDefault:
+          type: boolean
+          default: false
+      required: [name, baseUrl, apiKey, model]
+
+    UpdateProviderRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        baseUrl:
+          type: string
+        apiKey:
+          type: string
+        model:
+          type: string
+
+    ProviderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        baseUrl:
+          type: string
+        apiKey:
+          type: string
+          description: Masked API key (e.g. "sk-t••••1234")
+        model:
+          type: string
+        isDefault:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: integer
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          description: Epoch milliseconds
+      required: [id, name, baseUrl, apiKey, model, isDefault, isActive, createdAt, updatedAt]
+
+    ProviderListResponse:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderResponse"
+        activeProviderId:
+          type: string
+          nullable: true
+      required: [providers, activeProviderId]
+
+    SwitchProviderRequest:
+      type: object
+      properties:
+        providerId:
+          type: string
+      required: [providerId]
+
+    SwitchProviderResponse:
+      type: object
+      properties:
+        providerId:
+          type: string
+      required: [providerId]
+
+    VerifyProviderResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        error:
+          type: string
+          description: Present only when ok is false
+      required: [ok]
+
+    ProviderModelsResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            type: string
+      required: [models]

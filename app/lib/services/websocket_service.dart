@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/normalize_url.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef WsMessageCallback = void Function(WsServerMessage);
 typedef NoArgsCallback = void Function();

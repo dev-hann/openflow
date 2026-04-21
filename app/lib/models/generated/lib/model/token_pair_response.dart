@@ -1,0 +1,149 @@
+//
+// AUTO-GENERATED FILE, DO NOT MODIFY!
+//
+// @dart=2.18
+
+// ignore_for_file: unused_element, unused_import
+// ignore_for_file: always_put_required_named_parameters_first
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: lines_longer_than_80_chars
+
+part of openapi.api;
+
+class TokenPairResponse {
+  /// Returns a new [TokenPairResponse] instance.
+  TokenPairResponse({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.sessionKey,
+    required this.accessExpiresAt,
+    required this.refreshExpiresAt,
+  });
+
+  String accessToken;
+
+  String refreshToken;
+
+  String sessionKey;
+
+  /// Epoch milliseconds
+  int accessExpiresAt;
+
+  /// Epoch milliseconds
+  int refreshExpiresAt;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is TokenPairResponse &&
+    other.accessToken == accessToken &&
+    other.refreshToken == refreshToken &&
+    other.sessionKey == sessionKey &&
+    other.accessExpiresAt == accessExpiresAt &&
+    other.refreshExpiresAt == refreshExpiresAt;
+
+  @override
+  int get hashCode =>
+    // ignore: unnecessary_parenthesis
+    (accessToken.hashCode) +
+    (refreshToken.hashCode) +
+    (sessionKey.hashCode) +
+    (accessExpiresAt.hashCode) +
+    (refreshExpiresAt.hashCode);
+
+  @override
+  String toString() => 'TokenPairResponse[accessToken=$accessToken, refreshToken=$refreshToken, sessionKey=$sessionKey, accessExpiresAt=$accessExpiresAt, refreshExpiresAt=$refreshExpiresAt]';
+
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{};
+      json[r'accessToken'] = this.accessToken;
+      json[r'refreshToken'] = this.refreshToken;
+      json[r'sessionKey'] = this.sessionKey;
+      json[r'accessExpiresAt'] = this.accessExpiresAt;
+      json[r'refreshExpiresAt'] = this.refreshExpiresAt;
+    return json;
+  }
+
+  /// Returns a new [TokenPairResponse] instance and imports its values from
+  /// [value] if it's a [Map], null otherwise.
+  // ignore: prefer_constructors_over_static_methods
+  static TokenPairResponse? fromJson(dynamic value) {
+    if (value is Map) {
+      final json = value.cast<String, dynamic>();
+
+      // Ensure that the map contains the required keys.
+      // Note 1: the values aren't checked for validity beyond being non-null.
+      // Note 2: this code is stripped in release mode!
+      assert(() {
+        assert(json.containsKey(r'accessToken'), 'Required key "TokenPairResponse[accessToken]" is missing from JSON.');
+        assert(json[r'accessToken'] != null, 'Required key "TokenPairResponse[accessToken]" has a null value in JSON.');
+        assert(json.containsKey(r'refreshToken'), 'Required key "TokenPairResponse[refreshToken]" is missing from JSON.');
+        assert(json[r'refreshToken'] != null, 'Required key "TokenPairResponse[refreshToken]" has a null value in JSON.');
+        assert(json.containsKey(r'sessionKey'), 'Required key "TokenPairResponse[sessionKey]" is missing from JSON.');
+        assert(json[r'sessionKey'] != null, 'Required key "TokenPairResponse[sessionKey]" has a null value in JSON.');
+        assert(json.containsKey(r'accessExpiresAt'), 'Required key "TokenPairResponse[accessExpiresAt]" is missing from JSON.');
+        assert(json[r'accessExpiresAt'] != null, 'Required key "TokenPairResponse[accessExpiresAt]" has a null value in JSON.');
+        assert(json.containsKey(r'refreshExpiresAt'), 'Required key "TokenPairResponse[refreshExpiresAt]" is missing from JSON.');
+        assert(json[r'refreshExpiresAt'] != null, 'Required key "TokenPairResponse[refreshExpiresAt]" has a null value in JSON.');
+        return true;
+      }());
+
+      return TokenPairResponse(
+        accessToken: mapValueOfType<String>(json, r'accessToken')!,
+        refreshToken: mapValueOfType<String>(json, r'refreshToken')!,
+        sessionKey: mapValueOfType<String>(json, r'sessionKey')!,
+        accessExpiresAt: mapValueOfType<int>(json, r'accessExpiresAt')!,
+        refreshExpiresAt: mapValueOfType<int>(json, r'refreshExpiresAt')!,
+      );
+    }
+    return null;
+  }
+
+  static List<TokenPairResponse> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <TokenPairResponse>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = TokenPairResponse.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
+
+  static Map<String, TokenPairResponse> mapFromJson(dynamic json) {
+    final map = <String, TokenPairResponse>{};
+    if (json is Map && json.isNotEmpty) {
+      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      for (final entry in json.entries) {
+        final value = TokenPairResponse.fromJson(entry.value);
+        if (value != null) {
+          map[entry.key] = value;
+        }
+      }
+    }
+    return map;
+  }
+
+  // maps a json object with a list of TokenPairResponse-objects as value to a dart map
+  static Map<String, List<TokenPairResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+    final map = <String, List<TokenPairResponse>>{};
+    if (json is Map && json.isNotEmpty) {
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
+      for (final entry in json.entries) {
+        map[entry.key] = TokenPairResponse.listFromJson(entry.value, growable: growable,);
+      }
+    }
+    return map;
+  }
+
+  /// The list of required keys that must be present in a JSON.
+  static const requiredKeys = <String>{
+    'accessToken',
+    'refreshToken',
+    'sessionKey',
+    'accessExpiresAt',
+    'refreshExpiresAt',
+  };
+}
+
