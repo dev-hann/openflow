@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
+import 'package:openflow/utils/session_grouper.dart';
 import 'package:openflow/widgets/session_tile.dart';
 
 class SessionSheet extends StatelessWidget {
@@ -114,39 +115,6 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
         .toList();
   }
 
-  Map<String, List<SessionInfo>> _groupSessions(List<SessionInfo> sessions) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final weekAgo = today.subtract(const Duration(days: 7));
-
-    final groups = <String, List<SessionInfo>>{
-      '오늘': [],
-      '어제': [],
-      '지난 7일': [],
-      '이전': [],
-    };
-
-    for (final session in sessions) {
-      final date = DateTime(
-        session.createdAt.year,
-        session.createdAt.month,
-        session.createdAt.day,
-      );
-      if (date == today) {
-        groups['오늘']!.add(session);
-      } else if (date == yesterday) {
-        groups['어제']!.add(session);
-      } else if (date.isAfter(weekAgo)) {
-        groups['지난 7일']!.add(session);
-      } else {
-        groups['이전']!.add(session);
-      }
-    }
-
-    return groups..removeWhere((_, v) => v.isEmpty);
-  }
-
   void _showSessionActions(SessionInfo session) {
     showModalBottomSheet<void>(
       context: context,
@@ -173,7 +141,7 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
     final filtered = _filteredSessions;
     final sorted = List<SessionInfo>.from(filtered)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final grouped = _groupSessions(sorted);
+    final grouped = groupSessionsByDate(sorted);
 
     return Column(
       children: [

@@ -17,11 +17,12 @@ class ChatState extends Equatable {
     List<ChatMessage>? messages,
     bool? isSending,
     String? errorMessage,
+    bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isSending: isSending ?? this.isSending,
-      errorMessage: errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
@@ -113,6 +114,6 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void clearError() {
-    emit(state.copyWith(errorMessage: null));
+    emit(state.copyWith(clearError: true));
   }
 }
