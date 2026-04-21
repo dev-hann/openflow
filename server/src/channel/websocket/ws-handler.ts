@@ -40,6 +40,7 @@ export function createWsHandler(deps: WsHandlerDeps) {
 
   function handleConnection(ws: WebSocket): void {
     let authenticated = false;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
     const authTimeout = setTimeout(() => {
       if (!authenticated) {
         ws.close(4001, "authentication timeout");
@@ -47,7 +48,7 @@ export function createWsHandler(deps: WsHandlerDeps) {
     }, 10_000);
     authTimeout.unref();
 
-    ws.on("message", (raw: Buffer) => {
+    function onAuthMessage(raw: Buffer): void {
       if (authenticated) return;
 
       const text = raw.toString("utf-8");
@@ -64,15 +65,25 @@ export function createWsHandler(deps: WsHandlerDeps) {
       ws.send(serializeWsServerMessage({ type: "auth_ok" }));
       log.info({ sessionKey: state.sessionKey }, "WS client authenticated");
 
-      ws.removeAllListeners("message");
+      ws.off("message", onAuthMessage);
       ws.on("message", (rawInner: Buffer) => {
         handleMessage(ws, state, rawInner.toString("utf-8")).catch((err) => {
           log.error({ err }, "WS message handler error");
         });
       });
-    });
+
+      heartbeat = setInterval(() => {
+        if (ws.readyState === ws.OPEN) {
+          ws.ping();
+        }
+      }, 30_000);
+      heartbeat.unref();
+    }
+
+    ws.on("message", onAuthMessage);
 
     ws.on("close", () => {
+      if (heartbeat) clearInterval(heartbeat);
       const clientState = clients.get(ws);
       clients.delete(ws);
       if (clientState) {

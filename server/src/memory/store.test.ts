@@ -148,6 +148,52 @@ describe("createMemoryStore", () => {
     });
   });
 
+  describe("getVisibleMessages", () => {
+    it("should return only user and assistant messages", () => {
+      const session = store.createSession("Visible");
+      store.addMessage({ sessionId: session.id, role: "user", content: "hello" });
+      store.addMessage({ sessionId: session.id, role: "assistant", content: "hi", toolCalls: [{ id: "tc1", type: "function" as const, function: { name: "shell", arguments: "{}" } }] });
+      store.addMessage({ sessionId: session.id, role: "tool", content: "result", toolCallId: "tc1" });
+      store.addMessage({ sessionId: session.id, role: "assistant", content: "done" });
+
+      const { messages, total } = store.getVisibleMessages(session.id);
+      expect(total).toBe(3);
+      expect(messages).toHaveLength(3);
+      expect(messages.every((m) => m.role === "user" || m.role === "assistant")).toBe(true);
+      expect(messages[0]!.content).toBe("hello");
+      expect(messages[2]!.content).toBe("done");
+    });
+
+    it("should respect limit and offset", () => {
+      const session = store.createSession("Page");
+      for (let i = 0; i < 10; i++) {
+        store.addMessage({ sessionId: session.id, role: "user", content: `msg ${i}` });
+      }
+
+      const page1 = store.getVisibleMessages(session.id, 3, 0);
+      expect(page1.messages).toHaveLength(3);
+      expect(page1.total).toBe(10);
+
+      const page2 = store.getVisibleMessages(session.id, 3, 3);
+      expect(page2.messages).toHaveLength(3);
+      expect(page2.messages[0]!.content).toBe("msg 3");
+    });
+
+    it("should include createdAt timestamp", () => {
+      const session = store.createSession("Timestamps");
+      store.addMessage({ sessionId: session.id, role: "user", content: "hello" });
+
+      const { messages } = store.getVisibleMessages(session.id);
+      expect(messages[0]!.createdAt).toBeGreaterThan(0);
+    });
+
+    it("should return empty for nonexistent session", () => {
+      const { messages, total } = store.getVisibleMessages("nonexistent");
+      expect(messages).toHaveLength(0);
+      expect(total).toBe(0);
+    });
+  });
+
   describe("buildContext", () => {
     it("should return recent messages within maxSize", () => {
       const session = store.createSession("Context");
