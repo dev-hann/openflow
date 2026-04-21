@@ -50,8 +50,8 @@ class WsChatMsg extends WsClientMessage {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'chat',
-        'session_id': sessionId,
+        'type': 'message',
+        'sessionId': sessionId,
         'content': content,
       };
 }
@@ -63,7 +63,7 @@ class WsSwitchSession extends WsClientMessage {
   @override
   Map<String, dynamic> toJson() => {
         'type': 'switch_session',
-        'session_id': sessionId,
+        'sessionId': sessionId,
       };
 }
 
@@ -80,7 +80,7 @@ class WsAuth extends WsClientMessage {
   @override
   Map<String, dynamic> toJson() => {
         'type': 'auth',
-        'access_token': accessToken,
+        'accessToken': accessToken,
       };
 }
 
@@ -89,22 +89,22 @@ sealed class WsServerMessage {
   static WsServerMessage fromJson(Map<String, dynamic> json) {
     return switch (json['type'] as String) {
       'token' => WsTokenChunk(
-          sessionId: json['session_id'] as String,
+          sessionId: json['sessionId'] as String,
           content: json['content'] as String,
         ),
       'response' => WsResponse(
-          sessionId: json['session_id'] as String,
+          sessionId: json['sessionId'] as String,
           content: json['content'] as String,
         ),
       'error' => WsError(
-          sessionId: json['session_id'] as String? ?? '',
+          sessionId: json['sessionId'] as String? ?? '',
           code: json['code'] as String? ?? 'UNKNOWN',
           message: json['message'] as String? ?? '',
         ),
       'auth_required' => const WsAuthRequired(),
       'auth_ok' => const WsAuthOk(),
       'session_switched' => WsSessionSwitched(
-          sessionId: json['session_id'] as String,
+          sessionId: json['sessionId'] as String,
         ),
       'pong' => const WsPong(),
       _ => throw FormatException('Unknown WS message type: ${json['type']}'),

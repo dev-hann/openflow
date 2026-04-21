@@ -22,6 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   _Step _step = _Step.server;
   final _serverController = TextEditingController();
   final _pinController = TextEditingController();
+  final _pinFocusNode = FocusNode();
   bool _loading = false;
   String? _error;
 
@@ -29,6 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _serverController.dispose();
     _pinController.dispose();
+    _pinFocusNode.dispose();
     super.dispose();
   }
 
@@ -211,8 +213,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: Spacing.lg),
         _buildPinBoxes(),
-        const SizedBox(height: Spacing.md),
-        _buildPinTextField(),
+        Offstage(child: _buildPinTextField()),
         const SizedBox(height: Spacing.lg),
         SizedBox(
           width: double.infinity,
@@ -232,26 +233,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPinBoxes() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(6, (i) {
-        return Container(
-          width: 44,
-          height: 52,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
+    return GestureDetector(
+      onTap: () => _pinFocusNode.requestFocus(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(6, (i) {
+          return Container(
+            width: 44,
+            height: 52,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              borderRadius: BorderRadius.circular(12),
             ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            i < _pinController.text.length ? _pinController.text[i] : '',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-        );
-      }),
+            alignment: Alignment.center,
+            child: Text(
+              i < _pinController.text.length ? _pinController.text[i] : '',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -260,8 +264,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       width: 200,
       child: TextField(
         controller: _pinController,
+        focusNode: _pinFocusNode,
         keyboardType: TextInputType.number,
         maxLength: 6,
+        autofocus: true,
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 24, letterSpacing: 8),
         decoration: const InputDecoration(

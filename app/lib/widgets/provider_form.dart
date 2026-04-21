@@ -1,8 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/constants/presets.dart';
+import 'package:openflow/cubits/auth_cubit.dart';
+import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
+import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
 import 'package:openflow/widgets/verify_section.dart';
 
@@ -28,6 +36,7 @@ class _ProviderFormState extends State<ProviderForm> {
   ProviderPreset? _selectedPreset;
   String? _selectedModel;
   bool _verifying = false;
+  bool _submitting = false;
   VerifyResult? _verifyResult;
 
   @override
@@ -71,25 +80,111 @@ class _ProviderFormState extends State<ProviderForm> {
     });
 
     try {
-      final response = await HttpClientProvider.verify(
-        url,
-        _apiKeyController.text,
-      );
-      setState(() {
-        _verifying = false;
-        _verifyResult = VerifyResult(
-          ok: true,
-          models: response,
-        );
-        if (response.isNotEmpty && _selectedModel == null) {
-          _selectedModel = response.first;
-        }
-      });
+      final base = url.replaceFirst(RegExp(r'/+$'), '');
+      final response = await http
+          .get(
+            Uri.parse('$base/models'),
+            headers: {'Authorization': 'Bearer ${_apiKeyController.text}'},
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = json['data'] as List<dynamic>? ?? [];
+        final models = (data
+                .map((m) => (m as Map<String, dynamic>)['id'] as String)
+                .toList())
+          ..sort();
+        setState(() {
+          _verifying = false;
+          _verifyResult = VerifyResult(ok: true, models: models);
+          if (models.isNotEmpty && _selectedModel == null) {
+            _selectedModel = models.first;
+          }
+        });
+      } else {
+        setState(() {
+          _verifying = false;
+          _verifyResult =
+              VerifyResult(ok: false, error: 'HTTP ${response.statusCode}');
+        });
+      }
     } on Object catch (e) {
+      if (!mounted) return;
       setState(() {
         _verifying = false;
         _verifyResult = VerifyResult(ok: false, error: e.toString());
       });
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    final name = _nameController.text.trim();
+    final baseUrl = normalizeUrl(_urlController.text);
+    final apiKey = _apiKeyController.text.trim();
+    final model = _selectedModel ?? '';
+
+    if (name.isEmpty || baseUrl.isEmpty || model.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이름, URL, 모델은 필수입니다')),
+      );
+      return;
+    }
+
+    if (widget.editProvider == null && apiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('API Key를 입력해주세요')),
+      );
+      return;
+    }
+
+    final authCubit = context.read<AuthCubit>();
+    final token = await authCubit.getValidToken();
+    if (token == null || !mounted) return;
+
+    final api = createApiClient(authCubit.state.storedAuth!.serverUrl);
+
+    setState(() => _submitting = true);
+
+    try {
+      if (widget.editProvider != null) {
+        final params = <String, dynamic>{
+          'name': name,
+          'baseUrl': baseUrl,
+          'model': model,
+        };
+        if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
+
+        final updated =
+            await api.updateProvider(token, widget.editProvider!.id, params);
+        if (mounted) {
+          context.read<ProvidersCubit>().updateProvider(updated);
+        }
+      } else {
+        final provider = await api.createProvider(token, {
+          'name': name,
+          'baseUrl': baseUrl,
+          'apiKey': apiKey,
+          'model': model,
+          'isDefault': true,
+        });
+        if (mounted) {
+          final cubit = context.read<ProvidersCubit>();
+          cubit.setProviders([...cubit.state.providers, provider]);
+        }
+      }
+
+      if (mounted) widget.onComplete();
+    } on Object catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Provider 저장 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -139,9 +234,10 @@ class _ProviderFormState extends State<ProviderForm> {
             const SizedBox(height: Spacing.md),
             TextField(
               controller: _apiKeyController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'API Key',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                hintText: widget.editProvider != null ? '변경 시에만 입력' : null,
               ),
               obscureText: true,
             ),
@@ -164,24 +260,19 @@ class _ProviderFormState extends State<ProviderForm> {
                 ),
               const Spacer(),
               FilledButton(
-                onPressed: _handleSubmit,
-                child: Text(widget.editProvider != null ? '저장' : '완료'),
+                onPressed: _submitting ? null : _handleSubmit,
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(widget.editProvider != null ? '저장' : '완료'),
               ),
             ],
           ),
         ],
       ),
     );
-  }
-
-  void _handleSubmit() {
-    widget.onComplete();
-  }
-}
-
-class HttpClientProvider {
-  static Future<List<String>> verify(String url, String apiKey) async {
-    // Placeholder - actual implementation in screen
-    return [];
   }
 }

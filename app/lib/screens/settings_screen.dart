@@ -60,10 +60,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final providersCubit = context.read<ProvidersCubit>();
     final settingsCubit = context.read<SettingsCubit>();
     ws.disconnect();
-    await authCubit.clearAll();
     sessionsCubit.setSessions([]);
     providersCubit.setProviders([]);
     settingsCubit.clearServerUrl();
+    await authCubit.clearAll();
+    if (mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Future<void> _switchProvider(String providerId) async {

@@ -69,6 +69,7 @@ class WebSocketService {
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl!));
+      send(WsAuth(accessToken: _accessToken!));
       _subscription = _channel!.stream.listen(
         _handleData,
         onError: _handleError,

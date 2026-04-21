@@ -59,8 +59,8 @@ void main() {
     test('WsChatMsg serializes correctly', () {
       const msg = WsChatMsg(sessionId: 's1', content: 'hello');
       final json = msg.toJson();
-      expect(json['type'], 'chat');
-      expect(json['session_id'], 's1');
+      expect(json['type'], 'message');
+      expect(json['sessionId'], 's1');
       expect(json['content'], 'hello');
     });
 
@@ -68,7 +68,7 @@ void main() {
       const msg = WsSwitchSession(sessionId: 's2');
       final json = msg.toJson();
       expect(json['type'], 'switch_session');
-      expect(json['session_id'], 's2');
+      expect(json['sessionId'], 's2');
     });
 
     test('WsPing serializes correctly', () {
@@ -80,7 +80,7 @@ void main() {
       const msg = WsAuth(accessToken: 'at_test123');
       final json = msg.toJson();
       expect(json['type'], 'auth');
-      expect(json['access_token'], 'at_test123');
+      expect(json['accessToken'], 'at_test123');
     });
   });
 
@@ -88,7 +88,7 @@ void main() {
     test('parses token chunk', () {
       final msg = WsServerMessage.fromJson(const {
         'type': 'token',
-        'session_id': 's1',
+        'sessionId': 's1',
         'content': 'Hello',
       });
       expect(msg, isA<WsTokenChunk>());
@@ -100,7 +100,7 @@ void main() {
     test('parses response', () {
       final msg = WsServerMessage.fromJson(const {
         'type': 'response',
-        'session_id': 's1',
+        'sessionId': 's1',
         'content': 'Done',
       });
       expect(msg, isA<WsResponse>());
@@ -129,7 +129,7 @@ void main() {
     test('parses session_switched', () {
       final msg = WsServerMessage.fromJson(const {
         'type': 'session_switched',
-        'session_id': 's3',
+        'sessionId': 's3',
       });
       expect(msg, isA<WsSessionSwitched>());
       expect((msg as WsSessionSwitched).sessionId, 's3');
