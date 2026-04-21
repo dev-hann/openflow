@@ -9,6 +9,7 @@ import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/widgets/preset_selector.dart';
 import 'package:openflow/widgets/verify_section.dart';
 
 class ProviderForm extends StatefulWidget {
@@ -89,7 +90,10 @@ class _ProviderFormState extends State<ProviderForm> {
     final baseUrl = normalizeUrl(_urlController.text);
     final apiKey = _apiKeyController.text.trim();
     if (name.isEmpty || baseUrl.isEmpty) return;
-    setState(() { _verifying = true; _verifyResult = null; });
+    setState(() {
+      _verifying = true;
+      _verifyResult = null;
+    });
 
     try {
       final api = await _getApi();
@@ -116,7 +120,8 @@ class _ProviderFormState extends State<ProviderForm> {
 
       _savedProviderId = provider.id;
       await api.verifyProvider(provider.id);
-      final models = await api.fetchProviderModels(provider.id)..sort();
+      final models = await api.fetchProviderModels(provider.id)
+        ..sort();
       if (!mounted) return;
       setState(() {
         _verifying = false;
@@ -154,7 +159,8 @@ class _ProviderFormState extends State<ProviderForm> {
     setState(() => _submitting = true);
 
     try {
-      await _persistProvider(api, name: name, baseUrl: baseUrl, apiKey: apiKey, model: model);
+      await _persistProvider(api,
+          name: name, baseUrl: baseUrl, apiKey: apiKey, model: model);
       if (mounted) widget.onComplete();
     } on Object catch (e) {
       if (mounted) {
@@ -176,7 +182,8 @@ class _ProviderFormState extends State<ProviderForm> {
   }) async {
     final cubit = context.read<ProvidersCubit>();
     if (_savedProviderId != null) {
-      final updated = await api.updateProvider(_savedProviderId!, {'model': model});
+      final updated =
+          await api.updateProvider(_savedProviderId!, {'model': model});
       if (!mounted) return;
       if (widget.editProvider != null) {
         cubit.updateProvider(updated);
@@ -184,7 +191,11 @@ class _ProviderFormState extends State<ProviderForm> {
         cubit.setProviders([...cubit.state.providers, updated]);
       }
     } else if (widget.editProvider != null) {
-      final params = <String, dynamic>{'name': name, 'baseUrl': baseUrl, 'model': model};
+      final params = <String, dynamic>{
+        'name': name,
+        'baseUrl': baseUrl,
+        'model': model
+      };
       if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
       final updated = await api.updateProvider(widget.editProvider!.id, params);
       if (!mounted) return;
@@ -204,30 +215,16 @@ class _ProviderFormState extends State<ProviderForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Spacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.editProvider == null) ...[
-            Text('프리셋 선택', style: theme.textTheme.labelLarge),
-            const SizedBox(height: Spacing.sm),
-            Wrap(
-              spacing: Spacing.xs,
-              runSpacing: Spacing.xs,
-              children: kProviderPresets.map((preset) {
-                final selected = _selectedPreset?.id == preset.id;
-                return ChoiceChip(
-                  label: Text(preset.label),
-                  selected: selected,
-                  onSelected: (_) => _selectPreset(preset),
-                );
-              }).toList(),
+          if (widget.editProvider == null)
+            PresetSelector(
+              selectedPreset: _selectedPreset,
+              onSelected: _selectPreset,
             ),
-            const SizedBox(height: Spacing.lg),
-          ],
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(
@@ -256,7 +253,8 @@ class _ProviderFormState extends State<ProviderForm> {
                   icon: Icon(
                     _obscureApiKey ? Icons.visibility_off : Icons.visibility,
                   ),
-                  onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
+                  onPressed: () =>
+                      setState(() => _obscureApiKey = !_obscureApiKey),
                 ),
               ),
               obscureText: _obscureApiKey,
