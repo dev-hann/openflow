@@ -53,11 +53,7 @@ describe("createToolExecutor", () => {
         sendMessage: async () => {},
         sendPhoto: async () => {},
       };
-      const executor = createToolExecutor(
-        defaultConfig,
-        testDir,
-        sender,
-      );
+      const executor = createToolExecutor(defaultConfig, testDir, sender);
       const names = executor.getDefinitions().map((d) => d.function.name);
       expect(names).toContain("send_message");
       expect(names).toContain("send_image");
@@ -180,6 +176,78 @@ describe("createToolExecutor", () => {
         });
         expect(result.isError).toBe(true);
       }, 10_000);
+    });
+  });
+
+  describe("shell error handling", () => {
+    it("should return error when command exits with non-zero code", async () => {
+      const executor = createToolExecutor(defaultConfig, testDir);
+      const result = await executor.execute({
+        id: "1",
+        name: "shell",
+        arguments: { command: "exit 1" },
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain("Tool error");
+    });
+
+    it("should return error output for failing command", async () => {
+      const executor = createToolExecutor(defaultConfig, testDir);
+      const result = await executor.execute({
+        id: "1",
+        name: "shell",
+        arguments: { command: "echo 'fail msg' >&2 && exit 1" },
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain("fail msg");
+    });
+  });
+
+  describe("updateSender()", () => {
+    it("should replace sender tools", async () => {
+      const sender = {
+        sendMessage: async () => {},
+        sendPhoto: async () => {},
+      };
+      const executor = createToolExecutor(defaultConfig, testDir, sender);
+      const names = executor.getDefinitions().map((d) => d.function.name);
+      expect(names).toContain("send_message");
+      expect(names).toContain("send_image");
+
+      const newSender = {
+        sendMessage: async () => {},
+        sendPhoto: async () => {},
+      };
+      executor.updateSender(newSender);
+
+      const updatedNames = executor.getDefinitions().map((d) => d.function.name);
+      expect(updatedNames).toContain("send_message");
+      expect(updatedNames).toContain("send_image");
+    });
+  });
+
+  describe("browser tools registration", () => {
+    it("should include screenshot and browser_execute when browser enabled", () => {
+      const config: ToolsConfig = {
+        ...defaultConfig,
+        browser: { enabled: true, timeout: 30_000, headless: true },
+      };
+      const executor = createToolExecutor(config, testDir);
+      const names = executor.getDefinitions().map((d) => d.function.name);
+      expect(names).toContain("browser_screenshot");
+      expect(names).toContain("browser_execute");
+    });
+  });
+
+  describe("http_request tool registration", () => {
+    it("should include http_request when enabled", () => {
+      const config: ToolsConfig = {
+        ...defaultConfig,
+        httpRequest: { enabled: true },
+      };
+      const executor = createToolExecutor(config, testDir);
+      const names = executor.getDefinitions().map((d) => d.function.name);
+      expect(names).toContain("http_request");
     });
   });
 

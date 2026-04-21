@@ -7,7 +7,10 @@ import { createWorkspaceLoader } from "./workspace.js";
 let testDir: string;
 
 beforeEach(() => {
-  testDir = join(tmpdir(), `openflow-test-workspace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  testDir = join(
+    tmpdir(),
+    `openflow-test-workspace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  );
   mkdirSync(testDir, { recursive: true });
 });
 
@@ -121,5 +124,54 @@ describe("createWorkspaceLoader", () => {
   it("should return persona path", () => {
     const loader = createWorkspaceLoader({ workspaceDir: testDir });
     expect(loader.getPersonaPath()).toBe(join(testDir, "PERSONA.md"));
+  });
+
+  it("should write persona content", () => {
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    loader.writePersona("You are a coding assistant.");
+    const content = readFileSync(join(testDir, "PERSONA.md"), "utf-8");
+    expect(content).toBe("You are a coding assistant.");
+  });
+
+  it("should overwrite existing persona", () => {
+    writeFileSync(join(testDir, "PERSONA.md"), "Old persona", "utf-8");
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    loader.writePersona("New persona");
+    const content = readFileSync(join(testDir, "PERSONA.md"), "utf-8");
+    expect(content).toBe("New persona");
+  });
+
+  it("should write user content", () => {
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    loader.writeUser("- Name: Test\n- Language: Korean");
+    const content = readFileSync(join(testDir, "USER.md"), "utf-8");
+    expect(content).toContain("Korean");
+  });
+
+  it("should overwrite existing user content", () => {
+    writeFileSync(join(testDir, "USER.md"), "Old user info", "utf-8");
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    loader.writeUser("New user info");
+    const content = readFileSync(join(testDir, "USER.md"), "utf-8");
+    expect(content).toBe("New user info");
+  });
+
+  it("should detect persona file existence with hasPersona", () => {
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    expect(loader.hasPersona()).toBe(false);
+    writeFileSync(join(testDir, "PERSONA.md"), "A persona", "utf-8");
+    expect(loader.hasPersona()).toBe(true);
+  });
+
+  it("should truncate total daily memory when exceeding MAX_DAILY_TOTAL_CHARS", () => {
+    const dailyDir = join(testDir, "daily");
+    mkdirSync(dailyDir, { recursive: true });
+    writeFileSync(join(dailyDir, "2026-04-17.md"), "x".repeat(1500), "utf-8");
+    writeFileSync(join(dailyDir, "2026-04-18.md"), "y".repeat(1500), "utf-8");
+
+    const loader = createWorkspaceLoader({ workspaceDir: testDir, dailyMemoryDays: 14 });
+    const files = loader.loadAll();
+    expect(files.dailyMemory).not.toBeNull();
+    expect(files.dailyMemory!.length).toBeLessThan(3000);
   });
 });
