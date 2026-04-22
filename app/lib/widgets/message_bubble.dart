@@ -188,21 +188,6 @@ class _MessageBubbleState extends State<MessageBubble> {
 
   Widget _buildBubble(BuildContext context, ThemeData theme, bool isUser) {
     final message = widget.message;
-    final radius = BorderRadius.only(
-      topLeft: isUser || !widget.isFirstInGroup
-          ? const Radius.circular(16)
-          : const Radius.circular(4),
-      topRight: !isUser || !widget.isFirstInGroup
-          ? const Radius.circular(16)
-          : const Radius.circular(4),
-      bottomLeft: isUser || !widget.isLastInGroup
-          ? const Radius.circular(16)
-          : const Radius.circular(4),
-      bottomRight: !isUser || !widget.isLastInGroup
-          ? const Radius.circular(16)
-          : const Radius.circular(4),
-    );
-
     final bgColor = isUser
         ? theme.colorScheme.primary
         : theme.colorScheme.surfaceContainerHighest;
@@ -216,43 +201,70 @@ class _MessageBubbleState extends State<MessageBubble> {
       ),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: radius,
+        borderRadius: _buildRadius(isUser),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (message.isStreaming && message.content.isEmpty)
-            TypingIndicator(color: fgColor)
-          else if (isUser)
-            SelectableText(
-              message.content,
-              style: TextStyle(color: fgColor, fontSize: 15),
-            )
-          else
-            MarkdownBody(
-              data: message.content,
-              selectable: true,
-              extensionSet: md.ExtensionSet.gitHubWeb,
-              styleSheet: _getStyleSheet(theme, fgColor),
-              onTapLink: _handleLinkTap,
-            ),
-          if (message.isStreaming && message.content.isNotEmpty)
-            StreamingCursor(color: theme.colorScheme.primary),
-          if (widget.isLastInGroup && !message.isStreaming) ...[
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                formatTime(message.timestamp),
-                style: TextStyle(
-                  color: fgColor.withValues(alpha: 0.6),
-                  fontSize: 11,
-                ),
+      child: _buildContent(context, theme, isUser, fgColor),
+    );
+  }
+
+  BorderRadius _buildRadius(bool isUser) {
+    return BorderRadius.only(
+      topLeft: isUser || !widget.isFirstInGroup
+          ? const Radius.circular(16)
+          : const Radius.circular(4),
+      topRight: !isUser || !widget.isFirstInGroup
+          ? const Radius.circular(16)
+          : const Radius.circular(4),
+      bottomLeft: isUser || !widget.isLastInGroup
+          ? const Radius.circular(16)
+          : const Radius.circular(4),
+      bottomRight: !isUser || !widget.isLastInGroup
+          ? const Radius.circular(16)
+          : const Radius.circular(4),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    bool isUser,
+    Color fgColor,
+  ) {
+    final message = widget.message;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (message.isStreaming && message.content.isEmpty)
+          TypingIndicator(color: fgColor)
+        else if (isUser)
+          SelectableText(
+            message.content,
+            style: TextStyle(color: fgColor, fontSize: 15),
+          )
+        else
+          MarkdownBody(
+            data: message.content,
+            selectable: true,
+            extensionSet: md.ExtensionSet.gitHubWeb,
+            styleSheet: _getStyleSheet(theme, fgColor),
+            onTapLink: _handleLinkTap,
+          ),
+        if (message.isStreaming && message.content.isNotEmpty)
+          StreamingCursor(color: theme.colorScheme.primary),
+        if (widget.isLastInGroup && !message.isStreaming) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              formatTime(message.timestamp),
+              style: TextStyle(
+                color: fgColor.withValues(alpha: 0.6),
+                fontSize: 11,
               ),
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }
