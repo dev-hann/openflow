@@ -103,6 +103,42 @@ async function handleStreamResponse(
   }
 }
 
+function classifyAttemptError(err: unknown): never | RetrySignal {
+  if (err instanceof OpenFlowError) throw err;
+  if (err instanceof Error && err.name === "AbortError") {
+    throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return { __retry: true, errorMessage: msg, cause: err } satisfies RetrySignal;
+}
+
+async function processResponse(
+  response: Response,
+  config: LlmConfig,
+  onToken: ((token: string) => void) | undefined,
+  startedAt: number,
+): Promise<unknown> {
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status >= 500)
+      return { __retry: true, status: response.status, body: text } satisfies RetrySignal;
+    const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
+    throw new OpenFlowError(
+      `LLM API error ${response.status}: ${safeText}`,
+      "LLM_REQUEST_FAILED",
+    );
+  }
+
+  if (onToken && response.body) {
+    return await handleStreamResponse(response.body, config, onToken, startedAt);
+  }
+
+  const json = (await response.json()) as unknown;
+  const duration = Date.now() - startedAt;
+  log.info({ model: config.model, duration, streamed: false }, "LLM request completed");
+  return json;
+}
+
 async function sendSingleAttempt(
   url: string,
   headers: Record<string, string>,
@@ -124,33 +160,9 @@ async function sendSingleAttempt(
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-
-    if (!response.ok) {
-      const text = await response.text();
-      if (response.status >= 500)
-        return { __retry: true, status: response.status, body: text } satisfies RetrySignal;
-      const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
-      throw new OpenFlowError(
-        `LLM API error ${response.status}: ${safeText}`,
-        "LLM_REQUEST_FAILED",
-      );
-    }
-
-    if (onToken && response.body) {
-      return await handleStreamResponse(response.body, config, onToken, startedAt);
-    }
-
-    const json = (await response.json()) as unknown;
-    const duration = Date.now() - startedAt;
-    log.info({ model: config.model, duration, streamed: false }, "LLM request completed");
-    return json;
+    return await processResponse(response, config, onToken, startedAt);
   } catch (err: unknown) {
-    if (err instanceof OpenFlowError) throw err;
-    if (err instanceof Error && err.name === "AbortError") {
-      throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
-    }
-    const msg = err instanceof Error ? err.message : String(err);
-    return { __retry: true, errorMessage: msg, cause: err } satisfies RetrySignal;
+    return classifyAttemptError(err);
   } finally {
     clearTimeout(timeout);
     if (signal) signal.removeEventListener("abort", abortHandler);
