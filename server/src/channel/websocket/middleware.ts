@@ -1,6 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+
 import type { AuthService } from "./auth.js";
 import { createLogger } from "../../utils/logger.js";
+import { OpenFlowError } from "../../utils/errors.js";
 
 const log = createLogger("ws/middleware");
 
@@ -58,7 +60,7 @@ export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
     const buf = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
     totalSize += buf.length;
     if (totalSize > MAX_BODY_SIZE) {
-      throw new Error("request body too large");
+      throw new OpenFlowError("request body too large", "PERMISSION_DENIED");
     }
     chunks.push(buf);
   }
