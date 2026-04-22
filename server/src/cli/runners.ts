@@ -1,4 +1,5 @@
 import { createLogger } from "../utils/logger.js";
+import { OpenFlowError } from "../utils/errors.js";
 import { createProviderPool } from "../llm/pool.js";
 import { createMemoryStore } from "../memory/store.js";
 import { createProviderStore } from "../memory/provider-store.js";
@@ -112,7 +113,10 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
       wsChannel.broadcastMessage(text);
     },
     sendPhoto: async (_chatId, _photo, _caption) => {
-      throw new Error("sendPhoto is not supported via WebSocket channel");
+      throw new OpenFlowError(
+        "sendPhoto is not supported via WebSocket channel",
+        "PERMISSION_DENIED",
+      );
     },
   };
   agent.updateChannelSender(sender);
