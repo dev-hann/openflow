@@ -24,47 +24,11 @@ class ProviderListSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Spacing.md,
-            Spacing.md,
-            Spacing.md,
-            Spacing.sm,
-          ),
-          child: Row(
-            children: [
-              Text(
-                'Provider',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('추가'),
-              ),
-            ],
-          ),
-        ),
-        if (providersState.providers.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(Spacing.xl),
-            child: Center(
-              child: Text(
-                '등록된 Provider가 없습니다',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
+        _buildHeader(context),
+        if (providersState.providers.isEmpty) _buildEmptyState(context),
         ...providersState.providers.map((provider) {
           final isActive = provider.id == providersState.activeProviderId;
           final isSwitching = providersState.isSwitching && !isActive;
@@ -79,6 +43,49 @@ class ProviderListSection extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.md,
+        Spacing.md,
+        Spacing.md,
+        Spacing.sm,
+      ),
+      child: Row(
+        children: [
+          Text(
+            'Provider',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('추가'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.xl),
+      child: Center(
+        child: Text(
+          '등록된 Provider가 없습니다',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 }
