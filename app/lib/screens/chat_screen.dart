@@ -68,9 +68,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void _connectWebSocket() {
     final authState = context.read<AuthCubit>().state;
     if (authState.storedAuth == null) return;
-
     final ws = context.read<WebSocketService>();
-
     ws.onConnected = () {
       if (mounted) context.read<AuthCubit>().setConnected(true);
     };
@@ -78,7 +76,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       if (mounted) context.read<AuthCubit>().setConnected(false);
     };
     ws.onMessage = _handleWsMessage;
-
     ws.connect(
       authState.storedAuth!.serverUrl,
       authState.storedAuth!.accessToken,
@@ -96,9 +93,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final authCubit = context.read<AuthCubit>();
     final token = await authCubit.getValidToken();
     if (token == null || !mounted) return;
-
     setState(() => _isLoadingHistory = true);
-
     try {
       final api = createApiClient(
         authCubit.state.storedAuth!.serverUrl,
@@ -106,7 +101,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       );
       final result = await api.fetchMessages(sessionId, offset: offset);
       if (!mounted) return;
-
       final chatCubit = context.read<ChatCubit>();
       if (offset == 0) {
         _serverLoadedCount = result.messages.length;
@@ -132,11 +126,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (_isLoadingMore) return;
     final sessionId = _loadedSessionId;
     if (sessionId == null) return;
-    final currentCount = _serverLoadedCount;
-    if (currentCount >= _totalMessages) return;
+    if (_serverLoadedCount >= _totalMessages) return;
     setState(() => _isLoadingMore = true);
     try {
-      await _loadMessages(sessionId, offset: currentCount);
+      await _loadMessages(sessionId, offset: _serverLoadedCount);
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
     }
@@ -145,7 +138,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void _handleWsMessage(WsServerMessage message) {
     if (!mounted) return;
     final chatCubit = context.read<ChatCubit>();
-
     switch (message) {
       case WsTokenChunk(:final content):
         chatCubit.appendToLastMessage(content);
@@ -177,7 +169,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final sessionsCubit = context.read<SessionsCubit>();
     final existingId = sessionsCubit.state.activeSessionId;
     if (existingId != null) return existingId;
-
     if (_isCreatingSession) return null;
     _isCreatingSession = true;
     try {
@@ -197,13 +188,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final authCubit = context.read<AuthCubit>();
     final chatCubit = context.read<ChatCubit>();
     final ws = context.read<WebSocketService>();
-
     final token = await authCubit.getValidToken();
     if (token == null) return;
-
     final sessionId = await _ensureSession(token);
     if (sessionId == null || !mounted) return;
-
     final userMsg = ChatMessage(
       id: _generateId(),
       role: MessageRole.user,
@@ -217,16 +205,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       isStreaming: true,
       timestamp: DateTime.now(),
     );
-
     chatCubit.addMessage(userMsg);
     chatCubit.addMessage(assistantMsg);
     chatCubit.setSending(true);
-
     _lastUserMessage = text;
     ws.send(WsChatMsg(sessionId: sessionId, content: text));
-
     _resetSendTimeout();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listKey.currentState?.scrollToBottom();
     });
@@ -251,9 +235,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     unawaited(_sendMessage(text));
   }
 
-  void _reconnect() {
-    _connectWebSocket();
-  }
+  void _reconnect() => _connectWebSocket();
 
   String _generateId() =>
       '_msg_${DateTime.now().millisecondsSinceEpoch}_${++_msgCounter}';
@@ -272,7 +254,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 onReconnect: _reconnect,
               );
             }
-
             if (!authState.isConnected) {
               return ChatEmptyState(
                 variant: EmptyStateVariant.connecting,
@@ -281,15 +262,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 onReconnect: _reconnect,
               );
             }
-
-            return _buildChatContent(context, chatState);
+            return _buildChatContent(chatState);
           },
         );
       },
     );
   }
 
-  Widget _buildChatContent(BuildContext context, ChatState chatState) {
+  Widget _buildChatContent(ChatState chatState) {
     return Column(
       children: [
         Expanded(
@@ -311,10 +291,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                 ),
         ),
         if (chatState.isSending) const ThinkingIndicator(),
-        InputBar(
-          onSend: _sendMessage,
-          disabled: chatState.isSending,
-        ),
+        InputBar(onSend: _sendMessage, disabled: chatState.isSending),
       ],
     );
   }
