@@ -140,8 +140,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: _step.index > 0
           ? AppBar(
@@ -151,46 +149,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             )
           : null,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.lg),
-          child: Column(
-            children: [
-              const SizedBox(height: Spacing.xxl),
-              Icon(
-                Icons.auto_awesome,
-                size: 64,
-                color: theme.colorScheme.primary,
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.lg),
+        child: Column(
+          children: [
+            const SizedBox(height: Spacing.xxl),
+            Icon(
+              Icons.auto_awesome,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: Spacing.lg),
+            Text(
+              'OpenFlow',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: Spacing.lg),
-              Text(
-                'OpenFlow',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+            ),
+            const SizedBox(height: Spacing.sm),
+            Text(
+              '개인 AI 비서',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: Spacing.xxl),
+            StepIndicator(currentIndex: _step.index),
+            const SizedBox(height: Spacing.lg),
+            Expanded(child: _buildStep()),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: Spacing.md),
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                  textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: Spacing.sm),
-              Text(
-                '개인 AI 비서',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: Spacing.xxl),
-              StepIndicator(currentIndex: _step.index, totalSteps: 3),
-              const SizedBox(height: Spacing.lg),
-              Expanded(child: _buildStep()),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: Spacing.md),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(color: theme.colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
       ),
     );
