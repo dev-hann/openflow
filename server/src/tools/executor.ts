@@ -5,7 +5,7 @@ import { OpenFlowError } from "../utils/errors.js";
 import { createBrowserTools } from "./browser.js";
 import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 import { isExecError } from "./types.js";
-import { truncate } from "./utils.js";
+import { truncate, requireString, optionalNumber } from "./utils.js";
 import { webFetchTool, webSearchTool, httpClientTool } from "./web-tools.js";
 import { createFileReadTool, createFileWriteTool, createListDirTool } from "./file-tools.js";
 import { createSendMessageTool, createSendImageTool } from "./channel-tools.js";
@@ -68,8 +68,8 @@ function createShellTool(workspace: string): InternalTool {
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const command = args.command as string;
-      const timeout = (args.timeout as number) || 30_000;
+      const command = requireString(args, "command");
+      const timeout = optionalNumber(args, "timeout") ?? 30_000;
       try {
         const result = execSync(command, {
           timeout,
@@ -104,7 +104,7 @@ function registerDefaultTools(
       async execute(args: Record<string, unknown>): Promise<string> {
         return baseShellTool.execute({
           ...args,
-          timeout: (args.timeout as number) || config.shell.timeout,
+          timeout: optionalNumber(args, "timeout") ?? config.shell.timeout,
         });
       },
     };

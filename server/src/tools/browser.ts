@@ -8,6 +8,7 @@ import { OpenFlowError } from "../utils/errors.js";
 import { ensureDirSync } from "../utils/fs.js";
 import type { InternalTool } from "./types.js";
 import { isExecError } from "./types.js";
+import { requireString, optionalString, optionalNumber } from "./utils.js";
 
 const log = createLogger("browser");
 
@@ -155,11 +156,11 @@ export function createBrowserTools(workspace: string, config: BrowserConfig): Br
     async execute(args: Record<string, unknown>): Promise<string> {
       ensureInstalled();
 
-      const url = args.url as string;
-      const fullPage = (args.fullPage as boolean) ?? true;
-      const width = (args.width as number) || 1280;
-      const height = (args.height as number) || 720;
-      const selector = args.selector as string | undefined;
+      const url = requireString(args, "url");
+      const fullPage = (args.fullPage as boolean | undefined) ?? true;
+      const width = optionalNumber(args, "width") ?? 1280;
+      const height = optionalNumber(args, "height") ?? 720;
+      const selector = optionalString(args, "selector");
 
       const screenshotDir = ensureScreenshotDir(workspace);
       const filename = `screenshot-${Date.now()}.png`;
@@ -218,7 +219,7 @@ import { chromium } from 'playwright';
     async execute(args: Record<string, unknown>): Promise<string> {
       ensureInstalled();
 
-      const script = (args.script as string).replace(
+      const script = requireString(args, "script").replace(
         /\{WORKSPACE\}/g,
         JSON.stringify(workspace).slice(1, -1),
       );

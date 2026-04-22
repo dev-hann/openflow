@@ -1,5 +1,31 @@
 import { OpenFlowError } from "../utils/errors.js";
 
+export function requireString(args: Record<string, unknown>, key: string): string {
+  const value = args[key];
+  if (typeof value !== "string" || value.length === 0) {
+    throw new OpenFlowError(`Missing or invalid argument: ${key}`, "TOOL_EXECUTION_FAILED");
+  }
+  return value;
+}
+
+export function requireNumber(args: Record<string, unknown>, key: string): number {
+  const value = args[key];
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    throw new OpenFlowError(`Missing or invalid argument: ${key}`, "TOOL_EXECUTION_FAILED");
+  }
+  return value;
+}
+
+export function optionalString(args: Record<string, unknown>, key: string): string | undefined {
+  const value = args[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+export function optionalNumber(args: Record<string, unknown>, key: string): number | undefined {
+  const value = args[key];
+  return typeof value === "number" && !Number.isNaN(value) ? value : undefined;
+}
+
 export function truncate(str: string, maxLen: number): string {
   if (str.length <= maxLen) return str;
   return str.slice(0, maxLen) + `\n... (truncated, ${str.length} bytes total)`;

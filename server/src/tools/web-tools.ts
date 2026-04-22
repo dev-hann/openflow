@@ -1,5 +1,5 @@
 import type { InternalTool } from "./types.js";
-import { truncate, fetchWithRedirects, parseHeadersJson } from "./utils.js";
+import { truncate, fetchWithRedirects, parseHeadersJson, requireString, optionalString, optionalNumber } from "./utils.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 
@@ -95,8 +95,8 @@ export const webFetchTool: InternalTool = {
     },
   },
   async execute(args: Record<string, unknown>): Promise<string> {
-    const url = args.url as string;
-    const maxLen = (args.maxLength as number) || 10_000;
+    const url = requireString(args, "url");
+    const maxLen = optionalNumber(args, "maxLength") ?? 10_000;
     validateUrl(url);
     try {
       const html = await withRetry(
@@ -140,8 +140,8 @@ export const webSearchTool: InternalTool = {
     },
   },
   async execute(args: Record<string, unknown>): Promise<string> {
-    const query = args.query as string;
-    const maxResults = (args.maxResults as number) || 5;
+    const query = requireString(args, "query");
+    const maxResults = optionalNumber(args, "maxResults") ?? 5;
     try {
       const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
       const html = await withRetry(
@@ -200,10 +200,10 @@ export const httpClientTool: InternalTool = {
     },
   },
   async execute(args: Record<string, unknown>): Promise<string> {
-    const url = args.url as string;
-    const method = (args.method as string).toUpperCase();
-    const headers = parseHeadersJson(args.headers as string | undefined);
-    const body = args.body as string | undefined;
+    const url = requireString(args, "url");
+    const method = requireString(args, "method").toUpperCase();
+    const headers = parseHeadersJson(optionalString(args, "headers"));
+    const body = optionalString(args, "body");
     validateUrl(url);
 
     try {

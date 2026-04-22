@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { OpenFlowError } from "../utils/errors.js";
 import type { InternalTool, ChannelSender } from "./types.js";
 import { validateWorkspacePath } from "./file-tools.js";
+import { requireString, optionalString } from "./utils.js";
 
 export function createSendMessageTool(sender: ChannelSender): InternalTool {
   return {
@@ -27,7 +28,7 @@ export function createSendMessageTool(sender: ChannelSender): InternalTool {
     },
     async execute(args: Record<string, unknown>): Promise<string> {
       const chatId = args.chatId as number;
-      const text = args.text as string;
+      const text = requireString(args, "text");
       await sender.sendMessage(chatId, text);
       return "OK";
     },
@@ -66,8 +67,8 @@ export function createSendImageTool(sender: ChannelSender, workspace: string): I
     },
     async execute(args: Record<string, unknown>): Promise<string> {
       const chatId = args.chatId as number;
-      const source = args.source as string;
-      const caption = args.caption as string | undefined;
+      const source = requireString(args, "source");
+      const caption = optionalString(args, "caption");
 
       if (source.startsWith("http://") || source.startsWith("https://")) {
         await sender.sendPhoto(chatId, source, caption);

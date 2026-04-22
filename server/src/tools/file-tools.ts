@@ -12,17 +12,9 @@ import { dirname, join, resolve } from "node:path";
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError } from "../utils/errors.js";
 import type { InternalTool } from "./types.js";
-import { truncate } from "./utils.js";
+import { truncate, requireString } from "./utils.js";
 
 const log = createLogger("tools/file");
-
-function requireString(args: Record<string, unknown>, key: string): string {
-  const value = args[key];
-  if (typeof value !== "string" || value.length === 0) {
-    throw new OpenFlowError(`Missing or invalid argument: ${key}`, "TOOL_EXECUTION_FAILED");
-  }
-  return value;
-}
 
 export function validateWorkspacePath(p: string, workspace: string): string {
   const resolved = resolve(p);
