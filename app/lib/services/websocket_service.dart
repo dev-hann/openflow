@@ -46,11 +46,13 @@ class WebSocketService {
     _authFailed = false;
     _reconnectAttempts = 0;
     _connectionState = WsConnectionState.connecting;
+    _pendingMessages.clear();
     _doConnect();
   }
 
   void disconnect() {
     _intentionalDisconnect = true;
+    _pendingMessages.clear();
     _connectionState = WsConnectionState.disconnected;
     _cleanup();
   }
@@ -77,6 +79,9 @@ class WebSocketService {
     _pingTimer?.cancel();
     _cleanup();
     _disposed = true;
+    onConnected = null;
+    onDisconnected = null;
+    onMessage = null;
   }
 
   String _buildWsUrl(String serverUrl) {
@@ -91,7 +96,7 @@ class WebSocketService {
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl!));
-      send(WsAuth(accessToken: _accessToken!));
+      _channel!.sink.add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
       _subscription = _channel!.stream.listen(
         _handleData,
         onError: _handleError,
@@ -109,7 +114,7 @@ class WebSocketService {
 
       switch (message) {
         case WsAuthRequired():
-          send(WsAuth(accessToken: _accessToken!));
+          _channel?.sink.add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
         case WsAuthOk():
           _reconnectAttempts = 0;
           _connectionState = WsConnectionState.connected;
@@ -122,6 +127,7 @@ class WebSocketService {
         case WsResponse():
         case WsError():
         case WsSessionSwitched():
+        case WsNotification():
         case WsUnknown():
           onMessage?.call(message);
       }
@@ -142,6 +148,7 @@ class WebSocketService {
   void _handleDone() => _handleDisconnect();
 
   void _handleDisconnect() {
+    if (_connectionState == WsConnectionState.disconnected) return;
     _stopPing();
     _connectionState = WsConnectionState.disconnected;
     onDisconnected?.call();

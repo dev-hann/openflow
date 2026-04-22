@@ -86,7 +86,11 @@ class ChatCubit extends Cubit<ChatState> {
     }
     if (lastFailedIdx == -1) return;
     if (lastFailedIdx > 0) {
-      messages.removeRange(lastFailedIdx - 1, lastFailedIdx + 1);
+      if (messages[lastFailedIdx - 1].role == MessageRole.user) {
+        messages.removeRange(lastFailedIdx - 1, lastFailedIdx + 1);
+      } else {
+        messages.removeAt(lastFailedIdx);
+      }
     } else {
       messages.removeAt(0);
     }

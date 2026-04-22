@@ -97,7 +97,10 @@ class _ProviderFormState extends State<ProviderForm> {
 
     try {
       final api = await _getApi();
-      if (api == null) return;
+      if (api == null || !mounted) {
+        if (mounted) setState(() => _verifying = false);
+        return;
+      }
 
       ProviderInfo provider;
       if (widget.editProvider != null) {
@@ -113,12 +116,15 @@ class _ProviderFormState extends State<ProviderForm> {
           'name': name,
           'baseUrl': baseUrl,
           'apiKey': apiKey,
-          'model': '',
+          'model': 'placeholder',
           'isDefault': true,
         });
       }
 
       _savedProviderId = provider.id;
+      if (widget.editProvider != null && mounted) {
+        context.read<ProvidersCubit>().updateProvider(provider);
+      }
       await api.verifyProvider(provider.id);
       final models = await api.fetchProviderModels(provider.id)
         ..sort();

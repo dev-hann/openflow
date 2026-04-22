@@ -94,8 +94,8 @@ class UpdateService {
         htmlUrl: htmlUrl,
         assets: assets,
       );
-    } on DioException {
-      return null;
+    } on DioException catch (e) {
+      throw Exception('업데이트 확인 실패: ${e.message}');
     }
   }
 
@@ -141,8 +141,10 @@ class UpdateService {
   }
 
   int _compareVersions(String a, String b) {
-    final partsA = a.split('.').map(int.parse).toList();
-    final partsB = b.split('.').map(int.parse).toList();
+    final cleanA = a.split(RegExp(r'[-+]')).first;
+    final cleanB = b.split(RegExp(r'[-+]')).first;
+    final partsA = cleanA.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+    final partsB = cleanB.split('.').map((s) => int.tryParse(s) ?? 0).toList();
 
     for (var i = 0; i < partsA.length || i < partsB.length; i++) {
       final va = i < partsA.length ? partsA[i] : 0;

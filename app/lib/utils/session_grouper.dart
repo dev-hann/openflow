@@ -3,8 +3,8 @@ import 'package:openflow/models/protocol.dart';
 Map<String, List<SessionInfo>> groupSessionsByDate(List<SessionInfo> sessions) {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
-  final yesterday = today.subtract(const Duration(days: 1));
-  final weekAgo = today.subtract(const Duration(days: 7));
+  final yesterday = DateTime(now.year, now.month, now.day - 1);
+  final weekAgo = DateTime(now.year, now.month, now.day - 7);
 
   final groups = <String, List<SessionInfo>>{
     '오늘': [],

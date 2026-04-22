@@ -106,9 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         token: token,
       );
       await api.switchProvider(providerId);
-      providersCubit.setActiveProviderId(providerId);
       final providers = await api.listProviders();
-      providersCubit.setProviders(providers);
+      if (mounted) providersCubit.setProviders(providers);
     } on Object catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -228,14 +227,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _navigateToProviderEdit([ProviderInfo? provider]) {
-    unawaited(
-      Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => ProviderEditScreen(provider: provider),
-        ),
+  Future<void> _navigateToProviderEdit([ProviderInfo? provider]) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ProviderEditScreen(provider: provider),
       ),
     );
+    if (mounted) unawaited(_loadData());
   }
 
   @override

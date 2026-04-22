@@ -41,9 +41,22 @@ class MessageListState extends State<MessageList> {
   @override
   void didUpdateWidget(covariant MessageList oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.messages.isEmpty) return;
     if (widget.messages.length > oldWidget.messages.length &&
         oldWidget.messages.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => scrollToBottom());
+      return;
+    }
+    if (_isNearBottom) {
+      final oldLast =
+          oldWidget.messages.isNotEmpty ? oldWidget.messages.last : null;
+      final newLast = widget.messages.last;
+      if (newLast.content != oldLast?.content ||
+          widget.messages.length != oldWidget.messages.length) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_isNearBottom) scrollToBottom();
+        });
+      }
     }
   }
 
@@ -112,6 +125,7 @@ class MessageListState extends State<MessageList> {
                     message.role == MessageRole.assistant;
 
             return MessageBubble(
+              key: ValueKey(message.id),
               message: message,
               isFirstInGroup: !prevSame,
               isLastInGroup: !nextSame,

@@ -12,5 +12,6 @@ String formatRelativeTime(DateTime dt) {
 
   if (diff == 0) return formatTime(dt);
   if (diff == 1) return '어제';
+  if (dt.year != now.year) return '${dt.year}년 ${dt.month}월 ${dt.day}일';
   return '${dt.month}월 ${dt.day}일';
 }

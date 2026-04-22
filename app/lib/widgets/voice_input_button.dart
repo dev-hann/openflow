@@ -32,7 +32,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
+    );
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
@@ -70,20 +70,23 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     }
   }
 
-  void _startListening() {
-    _speech.listen(
+  Future<void> _startListening() async {
+    setState(() => _isListening = true);
+    _controller.repeat(reverse: true);
+    final systemLocale = await _speech.systemLocale();
+    await _speech.listen(
       onResult: (result) {
         if (result.finalResult) {
           widget.onResult(result.recognizedWords);
         }
       },
-      localeId: 'ko_KR',
+      localeId: systemLocale?.localeId ?? 'ko_KR',
     );
-    setState(() => _isListening = true);
   }
 
   void _stopListening() {
     _speech.stop();
+    _controller.stop();
     if (mounted) {
       setState(() => _isListening = false);
     }

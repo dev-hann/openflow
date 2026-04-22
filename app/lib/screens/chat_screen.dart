@@ -28,15 +28,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Timer? _sendTimeout;
   String? _lastUserMessage;
   String? _loadedSessionId;
+  late final WebSocketService _ws;
   int _totalMessages = 0;
+  int _serverLoadedCount = 0;
   bool _isLoadingHistory = false;
   bool _isLoadingMore = false;
+  bool _isCreatingSession = false;
   int _msgCounter = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _ws = context.read<WebSocketService>();
     _connectWebSocket();
     unawaited(_loadInitialMessages());
   }
@@ -45,6 +49,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _sendTimeout?.cancel();
+    _ws.onConnected = null;
+    _ws.onDisconnected = null;
+    _ws.onMessage = null;
     super.dispose();
   }
 
@@ -102,8 +109,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
       final chatCubit = context.read<ChatCubit>();
       if (offset == 0) {
+        _serverLoadedCount = result.messages.length;
         chatCubit.setMessages(result.messages.reversed.toList());
       } else {
+        _serverLoadedCount += result.messages.length;
         chatCubit.prependMessages(result.messages.reversed.toList());
       }
       _loadedSessionId = sessionId;
@@ -123,7 +132,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (_isLoadingMore) return;
     final sessionId = _loadedSessionId;
     if (sessionId == null) return;
-    final currentCount = context.read<ChatCubit>().state.messages.length;
+    final currentCount = _serverLoadedCount;
     if (currentCount >= _totalMessages) return;
     setState(() => _isLoadingMore = true);
     try {
@@ -140,6 +149,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     switch (message) {
       case WsTokenChunk(:final content):
         chatCubit.appendToLastMessage(content);
+        _resetSendTimeout();
       case WsResponse(:final content):
         chatCubit.finalizeLastMessage(content);
         _sendTimeout?.cancel();
@@ -150,12 +160,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           SnackBar(content: Text('오류: $message')),
         );
       case WsSessionSwitched(:final sessionId):
+        _sendTimeout?.cancel();
         context.read<SessionsCubit>().setActiveSessionId(sessionId);
         chatCubit.clearMessages();
         unawaited(_loadMessages(sessionId));
       case WsAuthRequired():
       case WsAuthOk():
       case WsPong():
+      case WsNotification():
       case WsUnknown():
         break;
     }
@@ -166,13 +178,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final existingId = sessionsCubit.state.activeSessionId;
     if (existingId != null) return existingId;
 
-    final api = createApiClient(
-      context.read<AuthCubit>().state.storedAuth!.serverUrl,
-      token: token,
-    );
-    final session = await api.createSession();
-    sessionsCubit.addSession(session);
-    return session.id;
+    if (_isCreatingSession) return null;
+    _isCreatingSession = true;
+    try {
+      final api = createApiClient(
+        context.read<AuthCubit>().state.storedAuth!.serverUrl,
+        token: token,
+      );
+      final session = await api.createSession();
+      sessionsCubit.addSession(session);
+      return session.id;
+    } finally {
+      _isCreatingSession = false;
+    }
   }
 
   Future<void> _sendMessage(String text) async {
@@ -207,13 +225,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _lastUserMessage = text;
     ws.send(WsChatMsg(sessionId: sessionId, content: text));
 
-    _sendTimeout?.cancel();
-    _sendTimeout = Timer(const Duration(seconds: 60), () {
-      if (mounted) chatCubit.markLastMessageFailed();
-    });
+    _resetSendTimeout();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listKey.currentState?.scrollToBottom();
+    });
+  }
+
+  void _resetSendTimeout() {
+    _sendTimeout?.cancel();
+    _sendTimeout = Timer(const Duration(seconds: 60), () {
+      if (mounted) context.read<ChatCubit>().markLastMessageFailed();
     });
   }
 
@@ -284,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   onRetry: _retryLastMessage,
                   onEdit: _editMessage,
                   onLoadMore: _loadMoreMessages,
-                  hasMore: chatState.messages.length < _totalMessages,
+                  hasMore: _serverLoadedCount < _totalMessages,
                   isLoadingMore: _isLoadingHistory,
                 ),
         ),

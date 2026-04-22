@@ -91,7 +91,7 @@ class UpdateSection extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.xs),
             TextButton(
-              onPressed: updateCubit.reset,
+              onPressed: updateCubit.checkForUpdate,
               child: const Text('다시 시도'),
             ),
           ],

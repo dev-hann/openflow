@@ -66,8 +66,10 @@ void main() {
       },
       act: (c) => c.checkForUpdate(),
       expect: () => [
-        const UpdateState(status: UpdateStatus.checking, errorMessage: null),
+        const UpdateState(currentVersion: '1.0.0'),
+        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.checking, errorMessage: null),
         UpdateState(
+          currentVersion: '1.0.0',
           status: UpdateStatus.available,
           release: ReleaseInfo(
             tagName: 'v1.1.0',
@@ -91,8 +93,9 @@ void main() {
       build: () => cubit,
       act: (c) => c.checkForUpdate(),
       expect: () => [
-        const UpdateState(status: UpdateStatus.checking, errorMessage: null),
-        const UpdateState(status: UpdateStatus.upToDate),
+        const UpdateState(currentVersion: '1.0.0'),
+        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.checking, errorMessage: null),
+        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.upToDate),
       ],
     );
 
@@ -105,8 +108,10 @@ void main() {
       },
       act: (c) => c.checkForUpdate(),
       expect: () => [
-        const UpdateState(status: UpdateStatus.checking, errorMessage: null),
+        const UpdateState(currentVersion: '1.0.0'),
+        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.checking, errorMessage: null),
         const UpdateState(
+          currentVersion: '1.0.0',
           status: UpdateStatus.error,
           errorMessage: 'Exception: network error',
         ),

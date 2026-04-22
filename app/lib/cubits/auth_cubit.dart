@@ -45,10 +45,14 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> loadAuth() async {
     emit(state.copyWith(isLoading: true));
-    final auth = await storage.loadAuth();
-    if (auth != null) {
-      emit(state.copyWith(storedAuth: auth, isLoading: false));
-    } else {
+    try {
+      final auth = await storage.loadAuth();
+      if (auth != null) {
+        emit(state.copyWith(storedAuth: auth, isLoading: false));
+      } else {
+        emit(state.copyWith(isLoading: false));
+      }
+    } on Object {
       emit(state.copyWith(isLoading: false));
     }
   }
@@ -90,7 +94,7 @@ class AuthCubit extends Cubit<AuthState> {
         serverUrl: auth.serverUrl,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        pairedAt: auth.pairedAt,
+        pairedAt: DateTime.now(),
       );
       await storage.saveAuth(updated);
       emit(state.copyWith(storedAuth: updated));

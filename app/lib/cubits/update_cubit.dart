@@ -74,6 +74,7 @@ class UpdateCubit extends Cubit<UpdateState> {
   }
 
   Future<void> checkForUpdate() async {
+    await loadCurrentVersion();
     emit(state.copyWith(status: UpdateStatus.checking, clearError: true));
     try {
       final release = await _updateService.checkForUpdate();

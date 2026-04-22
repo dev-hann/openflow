@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:openflow/models/protocol.dart';
@@ -19,7 +20,8 @@ class AuthStorage {
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
       return StoredAuth.fromJson(json);
-    } on Object {
+    } on Object catch (e) {
+      debugPrint('[AuthStorage] Failed to load auth: $e');
       return null;
     }
   }

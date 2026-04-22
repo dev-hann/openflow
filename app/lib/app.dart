@@ -162,7 +162,19 @@ class _MainScreenState extends State<MainScreen> {
       );
       await api.deleteSession(id);
       if (mounted) {
+        final wasActive =
+            context.read<SessionsCubit>().state.activeSessionId == id;
         context.read<SessionsCubit>().removeSession(id);
+        if (wasActive) {
+          final chatCubit = context.read<ChatCubit>();
+          final ws = context.read<WebSocketService>();
+          final newActiveId =
+              context.read<SessionsCubit>().state.activeSessionId;
+          chatCubit.clearMessages();
+          if (newActiveId != null) {
+            ws.send(WsSwitchSession(sessionId: newActiveId));
+          }
+        }
       }
     } on Object {}
   }

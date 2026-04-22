@@ -83,6 +83,29 @@ class ApiClient {
 
   Map<String, dynamic> _parse(http.Response response) {
     if (response.statusCode >= 400) {
+      try {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        if (json.containsKey('error') && json['error'] is Map) {
+          final err = json['error'] as Map<String, dynamic>;
+          throw ApiError(
+            status: response.statusCode,
+            code: err['code'] as String? ?? 'UNKNOWN',
+            message: err['message'] as String? ?? response.body,
+          );
+        }
+        if (json.containsKey('message')) {
+          throw ApiException(
+            response.statusCode,
+            json['message'] as String? ?? response.body,
+          );
+        }
+      } on ApiError {
+        rethrow;
+      } on ApiException {
+        rethrow;
+      } on Object {
+        // fall through to raw body handling
+      }
       final message = response.body.length > 200
           ? response.body.substring(0, 200)
           : response.body;

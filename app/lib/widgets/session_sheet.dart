@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/session_grouper.dart';
 import 'package:openflow/widgets/session_tile.dart';
@@ -39,13 +42,15 @@ class SessionSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (_) => SessionSheet(
-        sessions: sessions,
-        activeSessionId: activeSessionId,
-        onSessionTap: onSessionTap,
-        onNewChat: onNewChat,
-        onSessionDelete: onSessionDelete,
-        onSettings: onSettings,
+      builder: (_) => BlocBuilder<SessionsCubit, SessionsState>(
+        builder: (context, sessionsState) => SessionSheet(
+          sessions: sessionsState.sessions,
+          activeSessionId: sessionsState.activeSessionId,
+          onSessionTap: onSessionTap,
+          onNewChat: onNewChat,
+          onSessionDelete: onSessionDelete,
+          onSettings: onSettings,
+        ),
       ),
     );
   }
@@ -69,7 +74,10 @@ class SessionSheet extends StatelessWidget {
             Navigator.of(context).pop();
             onNewChat();
           },
-          onSessionDelete: onSessionDelete,
+          onSessionDelete: (id) {
+            Navigator.of(context).pop();
+            onSessionDelete(id);
+          },
           onSettings: () {
             Navigator.of(context).pop();
             onSettings();

@@ -97,6 +97,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _submitPin() async {
+    if (_isVerifying || _loading) return;
     final pin = _pinController.text.trim();
     if (pin.length != 6) {
       setState(() => _error = '6자리 PIN을 입력해주세요');

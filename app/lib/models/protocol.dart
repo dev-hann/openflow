@@ -115,6 +115,7 @@ sealed class WsServerMessage extends Equatable {
           sessionId: json['sessionId'] as String? ?? '',
         ),
       'pong' => const WsPong(),
+      'notification' => WsNotification(message: json['message'] as String? ?? ''),
       _ => WsUnknown(rawType: type, data: json),
     };
   }
@@ -181,6 +182,14 @@ class WsPong extends WsServerMessage {
   List<Object?> get props => [];
 }
 
+class WsNotification extends WsServerMessage {
+  const WsNotification({required this.message});
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class WsUnknown extends WsServerMessage {
   const WsUnknown({required this.rawType, required this.data});
   final String rawType;
@@ -237,11 +246,11 @@ class StoredAuth extends Equatable {
   });
 
   factory StoredAuth.fromJson(Map<String, dynamic> json) => StoredAuth(
-        serverUrl: json['serverUrl'] as String,
-        accessToken: json['accessToken'] as String,
-        refreshToken: json['refreshToken'] as String,
+        serverUrl: json['serverUrl'] as String? ?? '',
+        accessToken: json['accessToken'] as String? ?? '',
+        refreshToken: json['refreshToken'] as String? ?? '',
         pairedAt: DateTime.fromMillisecondsSinceEpoch(
-          (json['pairedAt'] as num).toInt(),
+          (json['pairedAt'] as num?)?.toInt() ?? 0,
         ),
       );
   final String serverUrl;
