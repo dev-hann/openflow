@@ -96,7 +96,8 @@ class WebSocketService {
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl!));
-      _channel!.sink.add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
+      _channel!.sink
+          .add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
       _subscription = _channel!.stream.listen(
         _handleData,
         onError: _handleError,
@@ -114,7 +115,8 @@ class WebSocketService {
 
       switch (message) {
         case WsAuthRequired():
-          _channel?.sink.add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
+          _channel?.sink
+              .add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
         case WsAuthOk():
           _reconnectAttempts = 0;
           _connectionState = WsConnectionState.connected;

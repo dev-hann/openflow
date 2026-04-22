@@ -1,5 +1,12 @@
 import type { InternalTool } from "./types.js";
-import { truncate, fetchWithRedirects, parseHeadersJson, requireString, optionalString, optionalNumber } from "./utils.js";
+import {
+  truncate,
+  fetchWithRedirects,
+  parseHeadersJson,
+  requireString,
+  optionalString,
+  optionalNumber,
+} from "./utils.js";
 import { OpenFlowError } from "../utils/errors.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 

@@ -151,7 +151,11 @@ async function handleProviderUpdate(
   }
   deps.providerPool.syncFromStore();
   log.info({ providerId }, "provider updated via API");
-  sendJson(res, 200, providerToJson(updated, updated.id === deps.providerPool.getActiveProviderId()));
+  sendJson(
+    res,
+    200,
+    providerToJson(updated, updated.id === deps.providerPool.getActiveProviderId()),
+  );
 }
 
 async function handleProviderDelete(

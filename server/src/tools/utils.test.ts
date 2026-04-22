@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { truncate, fetchWithRedirects, parseHeadersJson, requireString, requireNumber, optionalString, optionalNumber } from "./utils.js";
+import {
+  truncate,
+  fetchWithRedirects,
+  parseHeadersJson,
+  requireString,
+  requireNumber,
+  optionalString,
+  optionalNumber,
+} from "./utils.js";
 import { OpenFlowError } from "../utils/errors.js";
 
 describe("truncate", () => {
