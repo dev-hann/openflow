@@ -80,23 +80,31 @@ class UpdateSection extends StatelessWidget {
         return _buildInstallButton(context, theme, updateState, updateCubit);
 
       case UpdateStatus.error:
-        return Column(
-          children: [
-            Text(
-              updateState.errorMessage ?? '오류가 발생했습니다',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: Spacing.xs),
-            TextButton(
-              onPressed: updateCubit.checkForUpdate,
-              child: const Text('다시 시도'),
-            ),
-          ],
-        );
+        return _buildErrorAction(theme, updateState, updateCubit);
     }
+  }
+
+  Widget _buildErrorAction(
+    ThemeData theme,
+    UpdateState updateState,
+    UpdateCubit updateCubit,
+  ) {
+    return Column(
+      children: [
+        Text(
+          updateState.errorMessage ?? '오류가 발생했습니다',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: Spacing.xs),
+        TextButton(
+          onPressed: updateCubit.checkForUpdate,
+          child: const Text('다시 시도'),
+        ),
+      ],
+    );
   }
 
   Widget _buildUpdateAvailable(

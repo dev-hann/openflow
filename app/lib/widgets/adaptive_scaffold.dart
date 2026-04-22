@@ -66,25 +66,7 @@ class AdaptiveScaffold extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.only(
-              top: Spacing.md + MediaQuery.of(context).padding.top,
-              left: Spacing.md,
-              right: Spacing.sm,
-              bottom: Spacing.sm,
-            ),
-            child: Row(
-              children: [
-                Text('OpenFlow', style: theme.textTheme.titleLarge),
-                const Spacer(),
-                IconButton(
-                  onPressed: onNewChat,
-                  icon: const Icon(Icons.add),
-                  tooltip: '새 대화',
-                ),
-              ],
-            ),
-          ),
+          _buildSidebarHeader(context, theme),
           const Divider(height: 1),
           Expanded(
             child: _TabletSessionList(
@@ -99,6 +81,28 @@ class AdaptiveScaffold extends StatelessWidget {
             leading: const Icon(Icons.settings_outlined),
             title: const Text('설정'),
             onTap: onSettings,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarHeader(BuildContext context, ThemeData theme) {
+    return Padding(
+      padding: EdgeInsets.only(
+        top: Spacing.md + MediaQuery.of(context).padding.top,
+        left: Spacing.md,
+        right: Spacing.sm,
+        bottom: Spacing.sm,
+      ),
+      child: Row(
+        children: [
+          Text('OpenFlow', style: theme.textTheme.titleLarge),
+          const Spacer(),
+          IconButton(
+            onPressed: onNewChat,
+            icon: const Icon(Icons.add),
+            tooltip: '새 대화',
           ),
         ],
       ),
