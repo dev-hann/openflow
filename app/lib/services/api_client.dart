@@ -1,34 +1,45 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/normalize_url.dart';
 
-class ApiException implements Exception {
-  ApiException(this.statusCode, this.message);
+class ApiException extends Equatable implements Exception {
+  const ApiException(this.statusCode, this.message);
   final int statusCode;
   final String message;
 
   @override
   String toString() => 'ApiException($statusCode): $message';
+
+  @override
+  List<Object?> get props => [statusCode, message];
 }
 
-class ApiError implements Exception {
-  ApiError({required this.status, required this.code, required this.message});
+class ApiError extends Equatable implements Exception {
+  const ApiError(
+      {required this.status, required this.code, required this.message});
   final int status;
   final String code;
   final String message;
 
   @override
   String toString() => 'ApiError($status $code): $message';
+
+  @override
+  List<Object?> get props => [status, code, message];
 }
 
-class MessageListResult {
-  MessageListResult({required this.messages, required this.total});
+class MessageListResult extends Equatable {
+  const MessageListResult({required this.messages, required this.total});
   final List<ChatMessage> messages;
   final int total;
+
+  @override
+  List<Object?> get props => [messages, total];
 }
 
 class ApiClient {
