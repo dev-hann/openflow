@@ -44,7 +44,7 @@ class ChatMessage extends Equatable {
       [id, role, content, sessionId, isStreaming, isFailed, timestamp];
 }
 
-sealed class WsClientMessage {
+sealed class WsClientMessage extends Equatable {
   const WsClientMessage();
   Map<String, dynamic> toJson();
 }
@@ -60,6 +60,9 @@ class WsChatMsg extends WsClientMessage {
         'sessionId': sessionId,
         'content': content,
       };
+
+  @override
+  List<Object?> get props => [sessionId, content];
 }
 
 class WsSwitchSession extends WsClientMessage {
@@ -71,12 +74,18 @@ class WsSwitchSession extends WsClientMessage {
         'type': 'switch_session',
         'sessionId': sessionId,
       };
+
+  @override
+  List<Object?> get props => [sessionId];
 }
 
 class WsPing extends WsClientMessage {
   const WsPing();
   @override
   Map<String, dynamic> toJson() => {'type': 'ping'};
+
+  @override
+  List<Object?> get props => [];
 }
 
 class WsAuth extends WsClientMessage {
@@ -88,6 +97,9 @@ class WsAuth extends WsClientMessage {
         'type': 'auth',
         'accessToken': accessToken,
       };
+
+  @override
+  List<Object?> get props => [accessToken];
 }
 
 sealed class WsServerMessage extends Equatable {
@@ -115,7 +127,8 @@ sealed class WsServerMessage extends Equatable {
           sessionId: json['sessionId'] as String? ?? '',
         ),
       'pong' => const WsPong(),
-      'notification' => WsNotification(message: json['message'] as String? ?? ''),
+      'notification' =>
+        WsNotification(message: json['message'] as String? ?? ''),
       _ => WsUnknown(rawType: type, data: json),
     };
   }
