@@ -162,14 +162,25 @@ describe("createRoutes", () => {
   });
 
   it("should return 413 for request body too large error", async () => {
-    const throwingDeps = createMockDeps();
-    const handleThrowing = createRoutes(throwingDeps);
+    const bodyDeps = createMockDeps();
+    const handleBody = createRoutes(bodyDeps);
 
-    const { res, getStatusCode } = createMockResponse();
-    const req = createMockRequest({ url: "/api/throw-body", method: "POST" });
+    const { res, getStatusCode, getBody } = createMockResponse();
+    const bigBody = "a".repeat(1024 * 1024 + 100);
+    const req = {
+      headers: { authorization: "Bearer at_test-token" },
+      method: "POST",
+      url: "/api/sessions",
+      socket: { remoteAddress: "127.0.0.1" },
+      [Symbol.asyncIterator]: async function* () {
+        yield Buffer.from(bigBody);
+      },
+    } as unknown as IncomingMessage;
 
-    await handleThrowing(req, res);
-    expect([404, 413]).toContain(getStatusCode());
+    await handleBody(req, res);
+    expect(getStatusCode()).toBe(413);
+    const parsed = JSON.parse(getBody()) as { error: string };
+    expect(parsed.error).toBe("payload_too_large");
   });
 
   it("should return 500 when route handler throws unexpected error", async () => {
@@ -240,6 +251,19 @@ describe("createRoutes", () => {
       url: "/api/nonexistent",
       headers: {},
     });
+
+    await handleRequest(req, res);
+    expect(getStatusCode()).toBe(404);
+  });
+
+  it("should fall back to 'unknown' when no IP is available", async () => {
+    const { res, getStatusCode } = createMockResponse();
+    const req = {
+      headers: {},
+      method: "GET",
+      url: "/api/nonexistent",
+      socket: {},
+    } as unknown as IncomingMessage;
 
     await handleRequest(req, res);
     expect(getStatusCode()).toBe(404);

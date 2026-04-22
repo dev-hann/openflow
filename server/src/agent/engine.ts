@@ -202,8 +202,8 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     const { sessionId, userMessage, onToken, signal, systemPromptOverride, chatId } = params;
     log.info({ sessionId, messageLength: userMessage.length }, "handling message");
 
-    const saveErr = contextResolver.saveUserMessage(sessionId, userMessage);
-    if (saveErr) return { type: "error", error: saveErr };
+    const saveResult = contextResolver.saveUserMessage(sessionId, userMessage);
+    if (!saveResult.ok) return { type: "error", error: saveResult.error };
 
     let messages: ChatMessage[];
     try {

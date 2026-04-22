@@ -217,4 +217,20 @@ describe("createWorkspaceLoader", () => {
     expect(files.dailyMemory).not.toBeNull();
     expect(files.dailyMemory!.length).toBeLessThan(3000);
   });
+
+  it("should handle writePersona failure gracefully", () => {
+    mkdirSync(join(testDir, "PERSONA.md"));
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    loader.writePersona("test content");
+    const stat = existsSync(join(testDir, "PERSONA.md"));
+    expect(stat).toBe(true);
+  });
+
+  it("should handle writeUser failure gracefully", () => {
+    mkdirSync(join(testDir, "USER.md"));
+    const loader = createWorkspaceLoader({ workspaceDir: testDir });
+    loader.writeUser("test content");
+    const stat = existsSync(join(testDir, "USER.md"));
+    expect(stat).toBe(true);
+  });
 });

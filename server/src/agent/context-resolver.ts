@@ -1,5 +1,5 @@
 import { createLogger } from "../utils/logger.js";
-import { OpenFlowError } from "../utils/errors.js";
+import { OpenFlowError, type Result, ok, err } from "../utils/errors.js";
 import type { ChatMessage, ToolCall } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { CompactionService } from "./compaction.js";
@@ -46,17 +46,17 @@ export function createContextResolver(deps: ContextResolverDeps) {
     }
   }
 
-  function saveUserMessage(sessionId: string, content: string): OpenFlowError | null {
+  function saveUserMessage(sessionId: string, content: string): Result<void> {
     try {
       memory.addMessage({ sessionId, role: "user", content });
-      return null;
-    } catch (err: unknown) {
+      return ok(undefined);
+    } catch (cause: unknown) {
       const error =
-        err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("Failed to save user message", "DB_ERROR", err);
+        cause instanceof OpenFlowError
+          ? cause
+          : new OpenFlowError("Failed to save user message", "DB_ERROR", cause);
       log.error({ sessionId, err: error.message }, "failed to save user message");
-      return error;
+      return err(error);
     }
   }
 

@@ -89,13 +89,13 @@ describe("createContextResolver", () => {
   });
 
   describe("saveUserMessage", () => {
-    it("should save user message and return null", () => {
+    it("should save user message and return ok result", () => {
       const deps = createMockDeps();
       const resolver = createContextResolver(deps);
 
       const result = resolver.saveUserMessage("s1", "hello");
 
-      expect(result).toBeNull();
+      expect(result.ok).toBe(true);
       expect(deps.memory.addMessage).toHaveBeenCalledWith({
         sessionId: "s1",
         role: "user",
@@ -103,7 +103,7 @@ describe("createContextResolver", () => {
       });
     });
 
-    it("should return OpenFlowError when memory fails with generic error", () => {
+    it("should return err with OpenFlowError when memory fails with generic error", () => {
       const deps = createMockDeps({
         memory: {
           addMessage: vi.fn(() => {
@@ -117,8 +117,11 @@ describe("createContextResolver", () => {
 
       const result = resolver.saveUserMessage("s1", "hello");
 
-      expect(result).toBeInstanceOf(OpenFlowError);
-      expect(result!.code).toBe("DB_ERROR");
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBeInstanceOf(OpenFlowError);
+        expect(result.error.code).toBe("DB_ERROR");
+      }
     });
 
     it("should preserve existing OpenFlowError when memory fails", () => {
@@ -136,7 +139,10 @@ describe("createContextResolver", () => {
 
       const result = resolver.saveUserMessage("s1", "hello");
 
-      expect(result).toBe(originalError);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toBe(originalError);
+      }
     });
   });
 
