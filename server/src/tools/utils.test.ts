@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { truncate, fetchWithRedirects, parseHeadersJson } from "./utils.js";
+import { truncate, fetchWithRedirects, parseHeadersJson, requireString, requireNumber, optionalString, optionalNumber } from "./utils.js";
+import { OpenFlowError } from "../utils/errors.js";
 
 describe("truncate", () => {
   it("should return string as-is when within limit", () => {
@@ -154,5 +155,91 @@ describe("parseHeadersJson", () => {
       Accept: "*/*",
       Authorization: "Bearer test",
     });
+  });
+});
+
+describe("requireString", () => {
+  it("should return value for valid string", () => {
+    expect(requireString({ name: "hello" }, "name")).toBe("hello");
+  });
+
+  it("should throw for missing key", () => {
+    expect(() => requireString({}, "name")).toThrow(OpenFlowError);
+    expect(() => requireString({}, "name")).toThrow("Missing or invalid argument: name");
+  });
+
+  it("should throw for empty string", () => {
+    expect(() => requireString({ name: "" }, "name")).toThrow(OpenFlowError);
+  });
+
+  it("should throw for non-string value", () => {
+    expect(() => requireString({ name: 123 }, "name")).toThrow(OpenFlowError);
+  });
+
+  it("should throw for null value", () => {
+    expect(() => requireString({ name: null }, "name")).toThrow(OpenFlowError);
+  });
+});
+
+describe("requireNumber", () => {
+  it("should return value for valid number", () => {
+    expect(requireNumber({ count: 42 }, "count")).toBe(42);
+  });
+
+  it("should return value for zero", () => {
+    expect(requireNumber({ count: 0 }, "count")).toBe(0);
+  });
+
+  it("should throw for missing key", () => {
+    expect(() => requireNumber({}, "count")).toThrow(OpenFlowError);
+    expect(() => requireNumber({}, "count")).toThrow("Missing or invalid argument: count");
+  });
+
+  it("should throw for NaN", () => {
+    expect(() => requireNumber({ count: NaN }, "count")).toThrow(OpenFlowError);
+  });
+
+  it("should throw for non-number value", () => {
+    expect(() => requireNumber({ count: "42" }, "count")).toThrow(OpenFlowError);
+  });
+});
+
+describe("optionalString", () => {
+  it("should return value for valid string", () => {
+    expect(optionalString({ name: "hello" }, "name")).toBe("hello");
+  });
+
+  it("should return undefined for missing key", () => {
+    expect(optionalString({}, "name")).toBeUndefined();
+  });
+
+  it("should return undefined for empty string", () => {
+    expect(optionalString({ name: "" }, "name")).toBeUndefined();
+  });
+
+  it("should return undefined for non-string value", () => {
+    expect(optionalString({ name: 123 }, "name")).toBeUndefined();
+  });
+});
+
+describe("optionalNumber", () => {
+  it("should return value for valid number", () => {
+    expect(optionalNumber({ count: 42 }, "count")).toBe(42);
+  });
+
+  it("should return value for zero", () => {
+    expect(optionalNumber({ count: 0 }, "count")).toBe(0);
+  });
+
+  it("should return undefined for missing key", () => {
+    expect(optionalNumber({}, "count")).toBeUndefined();
+  });
+
+  it("should return undefined for NaN", () => {
+    expect(optionalNumber({ count: NaN }, "count")).toBeUndefined();
+  });
+
+  it("should return undefined for non-number value", () => {
+    expect(optionalNumber({ count: "42" }, "count")).toBeUndefined();
   });
 });
