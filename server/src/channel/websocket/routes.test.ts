@@ -268,4 +268,47 @@ describe("createRoutes", () => {
     await handleRequest(req, res);
     expect(getStatusCode()).toBe(404);
   });
+
+  it("should handle undefined req.url and req.method", async () => {
+    const { res, getStatusCode } = createMockResponse();
+    const req = {
+      headers: {},
+      socket: { remoteAddress: "127.0.0.1" },
+    } as unknown as IncomingMessage;
+
+    await handleRequest(req, res);
+    expect(getStatusCode()).toBe(404);
+  });
+
+  it("should handle undefined host header in dispatchRequest", async () => {
+    const { res, getStatusCode } = createMockResponse();
+    const req = {
+      headers: {} as Record<string, string>,
+      method: "GET",
+      url: "/api/nonexistent",
+      socket: { remoteAddress: "127.0.0.1" },
+    } as unknown as IncomingMessage;
+
+    await handleRequest(req, res);
+    expect(getStatusCode()).toBe(404);
+  });
+
+  it("should handle error with undefined url in catch block", async () => {
+    const throwingDeps = createMockDeps();
+    (throwingDeps.memoryStore.listSessions as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      throw new Error("unexpected crash");
+    });
+
+    const handleThrowing = createRoutes(throwingDeps);
+    const { res, getStatusCode } = createMockResponse();
+    const req = {
+      headers: { authorization: "Bearer at_test" } as Record<string, string>,
+      method: "GET",
+      url: "/api/sessions",
+      socket: { remoteAddress: "127.0.0.1" },
+    } as unknown as IncomingMessage;
+
+    await handleThrowing(req, res);
+    expect(getStatusCode()).toBe(500);
+  });
 });
