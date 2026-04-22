@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
+import 'package:openflow/utils/markdown_styles.dart';
 import 'package:openflow/widgets/message_actions.dart';
 import 'package:openflow/widgets/streaming_cursor.dart';
 import 'package:openflow/widgets/typing_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MessageBubble extends StatefulWidget {
   const MessageBubble({
@@ -41,71 +40,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (_cachedStyleSheet != null && identical(_cachedTheme, theme)) {
       return _cachedStyleSheet!;
     }
-    _cachedStyleSheet = MarkdownStyleSheet(
-      p: TextStyle(color: fgColor, fontSize: 15, height: 1.5),
-      h1: TextStyle(
-        color: fgColor,
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-        height: 1.4,
-      ),
-      h2: TextStyle(
-        color: fgColor,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        height: 1.4,
-      ),
-      h3: TextStyle(
-        color: fgColor,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        height: 1.4,
-      ),
-      code: TextStyle(
-        color: fgColor,
-        backgroundColor: theme.colorScheme.surfaceContainerHigh,
-        fontSize: 13,
-      ),
-      codeblockDecoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      blockquote: TextStyle(
-        color: fgColor.withValues(alpha: 0.85),
-        fontSize: 14,
-        height: 1.5,
-      ),
-      blockquoteDecoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(4),
-        border: Border(
-          left: BorderSide(
-            color: theme.colorScheme.primary,
-            width: 3,
-          ),
-        ),
-      ),
-      blockquotePadding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      listBullet: TextStyle(color: theme.colorScheme.primary),
-      tableHead: TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 13,
-        color: fgColor,
-      ),
-      tableBody: TextStyle(fontSize: 13, color: fgColor),
-      tableHeadAlign: TextAlign.center,
-      tableBorder: TableBorder.all(
-        color: theme.colorScheme.outlineVariant,
-        width: 0.5,
-      ),
-      tableCellsPadding: const EdgeInsets.all(6),
-      em: TextStyle(fontStyle: FontStyle.italic, color: fgColor),
-      strong: TextStyle(fontWeight: FontWeight.bold, color: fgColor),
-      del: TextStyle(
-        decoration: TextDecoration.lineThrough,
-        color: fgColor.withValues(alpha: 0.6),
-      ),
-    );
+    _cachedStyleSheet = buildMarkdownStyleSheet(theme, fgColor);
     _cachedTheme = theme;
     return _cachedStyleSheet!;
   }
@@ -187,7 +122,6 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   Widget _buildBubble(BuildContext context, ThemeData theme, bool isUser) {
-    final message = widget.message;
     final bgColor = isUser
         ? theme.colorScheme.primary
         : theme.colorScheme.surfaceContainerHighest;
