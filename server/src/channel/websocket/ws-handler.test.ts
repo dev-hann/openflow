@@ -151,6 +151,35 @@ describe("createWsHandler", () => {
       const responses = mock.sent.map((s) => JSON.parse(s) as Record<string, unknown>);
       expect(responses.some((r) => r.type === "auth_required")).toBe(true);
     });
+
+    it("should close connection on auth timeout", () => {
+      vi.useFakeTimers();
+      const handler = createWsHandler({ authService, agentEngine });
+      const mock = createMockWs();
+      handler.handleConnection(mock.ws);
+
+      vi.advanceTimersByTime(10_000);
+
+      expect(mock.ws.close).toHaveBeenCalledWith(4001, "authentication timeout");
+
+      vi.useRealTimers();
+    });
+
+    it("should not close connection after successful auth before timeout", () => {
+      vi.useFakeTimers();
+      const handler = createWsHandler({ authService, agentEngine });
+      const mock = createMockWs();
+      handler.handleConnection(mock.ws);
+
+      const authMsg = JSON.stringify({ type: "auth", accessToken: validToken });
+      mock.emit("message", Buffer.from(authMsg));
+
+      vi.advanceTimersByTime(10_000);
+
+      expect(mock.ws.close).not.toHaveBeenCalledWith(4001, "authentication timeout");
+
+      vi.useRealTimers();
+    });
   });
 
   describe("message handling", () => {
@@ -304,6 +333,23 @@ describe("createWsHandler", () => {
         });
         expect(hasNotification).toBe(true);
       }
+    });
+  });
+
+  describe("heartbeat", () => {
+    it("should send ping at heartbeat interval", () => {
+      vi.useFakeTimers();
+      const handler = createWsHandler({ authService, agentEngine });
+      const mock = createMockWs();
+      handler.handleConnection(mock.ws);
+
+      const authMsg = JSON.stringify({ type: "auth", accessToken: validToken });
+      mock.emit("message", Buffer.from(authMsg));
+
+      vi.advanceTimersByTime(30_000);
+      expect(mock.ws.ping).toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
   });
 
