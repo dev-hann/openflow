@@ -77,7 +77,7 @@ class ChatCubit extends Cubit<ChatState> {
   void removeFailedPair() {
     if (state.messages.isEmpty) return;
     final messages = List<ChatMessage>.of(state.messages);
-    int lastFailedIdx = -1;
+    var lastFailedIdx = -1;
     for (var i = messages.length - 1; i >= 0; i--) {
       if (messages[i].isFailed) {
         lastFailedIdx = i;
