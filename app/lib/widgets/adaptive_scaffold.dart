@@ -43,57 +43,65 @@ class AdaptiveScaffold extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          width: 280,
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(
-                color: theme.colorScheme.outlineVariant,
-                width: 0.5,
-              ),
-            ),
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.only(
-                  top: Spacing.md + MediaQuery.of(context).padding.top,
-                  left: Spacing.md,
-                  right: Spacing.sm,
-                  bottom: Spacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    Text('OpenFlow', style: theme.textTheme.titleLarge),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: onNewChat,
-                      icon: const Icon(Icons.add),
-                      tooltip: '새 대화',
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: _TabletSessionList(
-                  sessions: sortedSessions,
-                  activeSessionId: activeSessionId,
-                  onSessionTap: onSessionTap,
-                  onSessionDelete: onSessionDelete,
-                ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('설정'),
-                onTap: onSettings,
-              ),
-            ],
-          ),
-        ),
+        _buildSidebar(context, sortedSessions, theme),
         Expanded(child: child),
       ],
+    );
+  }
+
+  Widget _buildSidebar(
+    BuildContext context,
+    List<SessionInfo> sortedSessions,
+    ThemeData theme,
+  ) {
+    return Container(
+      width: 280,
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(
+              top: Spacing.md + MediaQuery.of(context).padding.top,
+              left: Spacing.md,
+              right: Spacing.sm,
+              bottom: Spacing.sm,
+            ),
+            child: Row(
+              children: [
+                Text('OpenFlow', style: theme.textTheme.titleLarge),
+                const Spacer(),
+                IconButton(
+                  onPressed: onNewChat,
+                  icon: const Icon(Icons.add),
+                  tooltip: '새 대화',
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _TabletSessionList(
+              sessions: sortedSessions,
+              activeSessionId: activeSessionId,
+              onSessionTap: onSessionTap,
+              onSessionDelete: onSessionDelete,
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('설정'),
+            onTap: onSettings,
+          ),
+        ],
+      ),
     );
   }
 }
