@@ -193,7 +193,7 @@ describe("setCorsHeaders", () => {
   it("should set CORS headers when enabled", () => {
     const { res, getHeaders } = createMockResponse();
     setCorsHeaders(res, true);
-    expect(getHeaders()["Access-Control-Allow-Origin"]).toBe("*");
+    expect(getHeaders()["Access-Control-Allow-Origin"]).toBe("http://localhost:*");
   });
 
   it("should not set CORS headers when disabled", () => {

@@ -51,8 +51,8 @@ class UpdateService {
     return info.version;
   }
 
-  Future<ReleaseInfo?> checkForUpdate() async {
-    final currentVersion = await getCurrentVersion();
+  Future<ReleaseInfo?> checkForUpdate({String? currentVersion}) async {
+    currentVersion ??= await getCurrentVersion();
     final latest = await _fetchLatestRelease();
     if (latest == null) return null;
 
@@ -67,11 +67,15 @@ class UpdateService {
       final response = await _dio.get<Map<String, dynamic>>(
         '$_githubApi/repos/$_owner/$_repo/releases/latest',
         options: Options(
-          headers: {'Accept': 'application/vnd.github+json'},
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'OpenFlow-App',
+          },
         ),
       );
 
-      final data = response.data!;
+      final data = response.data;
+      if (data == null) return null;
       final tagName = (data['tag_name'] as String?) ?? '';
       final version = tagName.replaceFirst(RegExp('^v'), '');
       final body = (data['body'] as String?) ?? '';
@@ -95,6 +99,7 @@ class UpdateService {
         assets: assets,
       );
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
       throw Exception('업데이트 확인 실패: ${e.message}');
     }
   }

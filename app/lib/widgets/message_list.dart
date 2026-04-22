@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:openflow/constants/dimensions.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/widgets/message_bubble.dart';
+import 'package:openflow/widgets/thinking_indicator.dart';
 
 class MessageList extends StatefulWidget {
   const MessageList({
@@ -15,6 +16,7 @@ class MessageList extends StatefulWidget {
     this.onEdit,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.isSending = false,
   });
 
   final List<ChatMessage> messages;
@@ -23,6 +25,7 @@ class MessageList extends StatefulWidget {
   final ValueChanged<String>? onEdit;
   final bool hasMore;
   final bool isLoadingMore;
+  final bool isSending;
 
   @override
   State<MessageList> createState() => MessageListState();
@@ -71,12 +74,14 @@ class MessageListState extends State<MessageList> {
     if (!_controller.hasClients) return;
     final maxScroll = _controller.position.maxScrollExtent;
     final currentScroll = _controller.position.pixels;
-    final nearBottom = maxScroll - currentScroll < 100;
+    final nearBottom = currentScroll < 100;
     if (nearBottom != _isNearBottom) {
       setState(() => _isNearBottom = nearBottom);
     }
 
-    if (currentScroll < 100 && widget.hasMore && !widget.isLoadingMore) {
+    if (maxScroll - currentScroll < 100 &&
+        widget.hasMore &&
+        !widget.isLoadingMore) {
       widget.onLoadMore?.call();
     }
   }
@@ -85,7 +90,7 @@ class MessageListState extends State<MessageList> {
     if (!_controller.hasClients) return;
     unawaited(
       _controller.animateTo(
-        _controller.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       ),
@@ -97,11 +102,18 @@ class MessageListState extends State<MessageList> {
     return Stack(
       children: [
         ListView.builder(
+          reverse: true,
           controller: _controller,
           padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-          itemCount: widget.messages.length + (widget.isLoadingMore ? 1 : 0),
+          itemCount: widget.messages.length +
+              (widget.isSending ? 1 : 0) +
+              (widget.isLoadingMore ? 1 : 0),
           itemBuilder: (context, index) {
-            if (index == 0 && widget.isLoadingMore) {
+            if (index == 0 && widget.isSending) {
+              return const ThinkingIndicator();
+            }
+            final adjustedIndex = widget.isSending ? index - 1 : index;
+            if (adjustedIndex >= widget.messages.length) {
               return const Padding(
                 padding: EdgeInsets.all(Spacing.md),
                 child: Center(
@@ -113,15 +125,15 @@ class MessageListState extends State<MessageList> {
                 ),
               );
             }
-            final adjustedIndex = widget.isLoadingMore ? index - 1 : index;
-            final message = widget.messages[adjustedIndex];
-            final prevSame = adjustedIndex > 0 &&
-                widget.messages[adjustedIndex - 1].role == message.role;
-            final nextSame = adjustedIndex < widget.messages.length - 1 &&
-                widget.messages[adjustedIndex + 1].role == message.role;
+            final messageIndex = widget.messages.length - 1 - adjustedIndex;
+            final message = widget.messages[messageIndex];
+            final prevSame = messageIndex > 0 &&
+                widget.messages[messageIndex - 1].role == message.role;
+            final nextSame = messageIndex < widget.messages.length - 1 &&
+                widget.messages[messageIndex + 1].role == message.role;
 
             final isLastAssistant =
-                adjustedIndex == widget.messages.length - 1 &&
+                messageIndex == widget.messages.length - 1 &&
                     message.role == MessageRole.assistant;
 
             return MessageBubble(

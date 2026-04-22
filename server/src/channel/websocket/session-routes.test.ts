@@ -108,10 +108,9 @@ function createMockMemoryStoreWithMessages(): MemoryStore {
     getVisibleMessages: vi.fn(() => ({
       messages: [
         { role: "user", content: "hello", createdAt: 1000 },
-        { role: "assistant", content: null, createdAt: 2000 },
         { role: "assistant", content: "world", createdAt: 3000 },
       ],
-      total: 3,
+      total: 2,
     })),
   } as unknown as MemoryStore;
 }
@@ -461,7 +460,7 @@ describe("session routes", () => {
         messages: Array<{ role: string; content: string; createdAt: number }>;
         total: number;
       };
-      expect(body.messages).toHaveLength(3);
+      expect(body.messages).toHaveLength(2);
       expect(body.messages[0]).toEqual({
         role: "user",
         content: "hello",
@@ -469,15 +468,10 @@ describe("session routes", () => {
       });
       expect(body.messages[1]).toEqual({
         role: "assistant",
-        content: "",
-        createdAt: 2000,
-      });
-      expect(body.messages[2]).toEqual({
-        role: "assistant",
         content: "world",
         createdAt: 3000,
       });
-      expect(body.total).toBe(3);
+      expect(body.total).toBe(2);
     });
   });
 

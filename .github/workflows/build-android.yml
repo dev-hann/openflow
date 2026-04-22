@@ -2,8 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -22,6 +21,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check version change
+        id: version
+        run: |
+          NEW=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d+ -f1)
+          OLD=$(git show HEAD~1:app/pubspec.yaml 2>/dev/null | grep 'version:' | head -1 | awk '{print $2}' | cut -d+ -f1 || echo "none")
+          echo "new=$NEW old=$OLD"
+          if [ "$NEW" != "$OLD" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=$NEW" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -58,11 +70,23 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create tag
+        if: steps.version.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
       - name: Decode keystore
+        if: steps.version.outputs.changed == 'true'
         run: |
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
 
       - name: Create key.properties
+        if: steps.version.outputs.changed == 'true'
         run: |
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
@@ -70,15 +94,19 @@ jobs:
           echo "storeFile=release.keystore" >> android/key.properties
 
       - name: Analyze
+        if: steps.version.outputs.changed == 'true'
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run tests
+        if: steps.version.outputs.changed == 'true'
         run: flutter test
 
       - name: Build APK
+        if: steps.version.outputs.changed == 'true'
         run: flutter build apk --release --target-platform android-arm64
 
       - name: Upload APK artifacts
+        if: steps.version.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
@@ -86,8 +114,9 @@ jobs:
           retention-days: 90
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.version.outputs.changed == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
           files: app/build/app/outputs/flutter-apk/*.apk
           generate_release_notes: true

@@ -59,6 +59,10 @@ class _MessageBubbleState extends State<MessageBubble> {
     final message = widget.message;
     final isUser = message.role == MessageRole.user;
 
+    if (!isUser && !message.isStreaming && message.content.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: EdgeInsets.only(
         left: isUser ? 48 : Spacing.md,

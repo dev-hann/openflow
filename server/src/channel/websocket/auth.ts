@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 import { createLogger } from "../../utils/logger.js";
 import type { components } from "../../generated/api.js";
@@ -64,7 +64,9 @@ function decodeAccessToken(token: string): AccessTokenPayload | null {
       .update(json)
       .digest("hex")
       .slice(0, 32);
-    if (sig !== expectedSig) return null;
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) return null;
     const payload = JSON.parse(json) as AccessTokenPayload;
     if (typeof payload.sessionKey !== "string" || typeof payload.expiresAt !== "number")
       return null;

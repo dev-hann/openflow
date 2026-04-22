@@ -140,7 +140,7 @@ describe("createRoutes", () => {
     const req = createMockRequest({ url: "/api/nonexistent" });
 
     await handleRequest(req, res);
-    expect(getHeaders()["Access-Control-Allow-Origin"]).toBe("*");
+    expect(getHeaders()["Access-Control-Allow-Origin"]).toBe("http://localhost:*");
   });
 
   it("should handle OPTIONS preflight request", async () => {

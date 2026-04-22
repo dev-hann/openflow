@@ -42,7 +42,7 @@ export const openFlowConfigSchema = z.object({
           headless: z.boolean().default(true),
         })
         .default({}),
-      requireConfirmation: z.array(z.string()).default([]),
+      requireConfirmation: z.array(z.string()).default(["shell", "browser_execute"]),
       confirmationTimeout: z.coerce.number().int().positive().default(60_000),
     })
     .default({}),
@@ -62,7 +62,7 @@ export const openFlowConfigSchema = z.object({
   websocket: z
     .object({
       enabled: z.boolean().default(true),
-      host: z.string().default("0.0.0.0"),
+      host: z.string().default("127.0.0.1"),
       port: z.coerce.number().int().default(9800),
       cors: z.boolean().default(true),
     })

@@ -15,7 +15,7 @@ describe("openFlowConfigSchema", () => {
     expect(result.tools.webFetch.enabled).toBe(true);
     expect(result.tools.webSearch.enabled).toBe(true);
     expect(result.tools.httpRequest.enabled).toBe(false);
-    expect(result.tools.requireConfirmation).toEqual([]);
+    expect(result.tools.requireConfirmation).toEqual(["shell", "browser_execute"]);
     expect(result.tools.confirmationTimeout).toBe(60_000);
     expect(result.notification.enabled).toBe(true);
     expect(result.logging.level).toBe("info");

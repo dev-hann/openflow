@@ -108,7 +108,7 @@ describe("createWebSocketChannel", () => {
     await channel.start();
 
     const resp = await fetch(`http://127.0.0.1:${TEST_PORT + 2}/api/sessions`);
-    expect(resp.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(resp.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:*");
 
     await channel.stop();
   });
@@ -133,7 +133,7 @@ describe("createWebSocketChannel", () => {
       method: "OPTIONS",
     });
     expect(resp.status).toBe(204);
-    expect(resp.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(resp.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:*");
 
     await channel.stop();
   });

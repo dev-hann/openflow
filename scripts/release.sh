@@ -25,13 +25,6 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
-TAG="v${VERSION}"
-
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo "Error: Tag $TAG already exists"
-  exit 1
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PUBSPEC="$PROJECT_ROOT/app/pubspec.yaml"
@@ -39,7 +32,7 @@ PUBSPEC="$PROJECT_ROOT/app/pubspec.yaml"
 BUILD_NUMBER=$(git rev-list --count HEAD)
 FULL_VERSION="${VERSION}+${BUILD_NUMBER}"
 
-echo "Releasing $TAG (build $BUILD_NUMBER)"
+echo "Releasing v$VERSION (build $BUILD_NUMBER)"
 
 sed -i -E "s/^version: .*/version: ${FULL_VERSION}/" "$PUBSPEC"
 
@@ -55,7 +48,6 @@ fi
 cd "$PROJECT_ROOT"
 git add "$PUBSPEC" app/pubspec.lock
 git commit -m "app: bump version to $VERSION"
-git tag "$TAG"
-git push && git push origin "$TAG"
+git push
 
-echo "Released $TAG successfully"
+echo "Version bumped to $VERSION. CI will auto-release."

@@ -16,7 +16,8 @@ void main() {
       mockService = MockUpdateService();
       when(() => mockService.getCurrentVersion())
           .thenAnswer((_) async => '1.0.0');
-      when(() => mockService.checkForUpdate()).thenAnswer((_) async => null);
+      when(() => mockService.checkForUpdate(currentVersion: any(named: 'currentVersion')))
+          .thenAnswer((_) async => null);
       cubit = UpdateCubit(mockService);
       addTearDown(cubit.close);
     });
@@ -61,7 +62,7 @@ void main() {
             ),
           ],
         );
-        when(() => mockService.checkForUpdate())
+        when(() => mockService.checkForUpdate(currentVersion: any(named: 'currentVersion')))
             .thenAnswer((_) async => release);
       },
       act: (c) => c.checkForUpdate(),
@@ -103,7 +104,7 @@ void main() {
       'checkForUpdate handles error',
       build: () => cubit,
       setUp: () {
-        when(() => mockService.checkForUpdate())
+        when(() => mockService.checkForUpdate(currentVersion: any(named: 'currentVersion')))
             .thenThrow(Exception('network error'));
       },
       act: (c) => c.checkForUpdate(),

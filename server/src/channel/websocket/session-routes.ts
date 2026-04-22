@@ -92,11 +92,13 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
       limit,
       offset,
     );
-    const messages = rawMessages.map((m) => ({
-      role: m.role,
-      content: m.content ?? "",
-      createdAt: m.createdAt,
-    }));
+    const messages = rawMessages
+      .filter((m) => !(m.role === "assistant" && (!m.content || m.content.trim() === "")))
+      .map((m) => ({
+        role: m.role,
+        content: m.content ?? "",
+        createdAt: m.createdAt,
+      }));
 
     sendJson(res, 200, { messages, total });
   }

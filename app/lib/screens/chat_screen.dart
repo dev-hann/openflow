@@ -14,7 +14,6 @@ import 'package:openflow/widgets/chat_empty_state.dart'
     show ChatEmptyState, EmptyStateVariant;
 import 'package:openflow/widgets/input_bar.dart';
 import 'package:openflow/widgets/message_list.dart';
-import 'package:openflow/widgets/thinking_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -104,10 +103,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       final chatCubit = context.read<ChatCubit>();
       if (offset == 0) {
         _serverLoadedCount = result.messages.length;
-        chatCubit.setMessages(result.messages.reversed.toList());
+        chatCubit.setMessages(result.messages);
       } else {
         _serverLoadedCount += result.messages.length;
-        chatCubit.prependMessages(result.messages.reversed.toList());
+        chatCubit.prependMessages(result.messages);
       }
       _loadedSessionId = sessionId;
       _totalMessages = result.total;
@@ -283,6 +282,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               : MessageList(
                   key: _listKey,
                   messages: chatState.messages,
+                  isSending: chatState.isSending,
                   onRetry: _retryLastMessage,
                   onEdit: _editMessage,
                   onLoadMore: _loadMoreMessages,
@@ -290,7 +290,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   isLoadingMore: _isLoadingHistory,
                 ),
         ),
-        if (chatState.isSending) const ThinkingIndicator(),
         InputBar(onSend: _sendMessage, disabled: chatState.isSending),
       ],
     );

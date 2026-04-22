@@ -88,7 +88,7 @@ export async function readJsonObject(
 
 export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
   if (!enabled) return;
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
