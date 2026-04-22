@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 
+import { OpenFlowError } from "../utils/errors.js";
 import type { InternalTool, ChannelSender } from "./types.js";
 import { validateWorkspacePath } from "./file-tools.js";
 
@@ -74,7 +75,8 @@ export function createSendImageTool(sender: ChannelSender, workspace: string): I
       }
 
       const path = validateWorkspacePath(source, workspace);
-      if (!existsSync(path)) throw new Error(`Image file not found: ${source}`);
+      if (!existsSync(path))
+        throw new OpenFlowError(`Image file not found: ${source}`, "TOOL_EXECUTION_FAILED");
       const buffer = readFileSync(path);
       await sender.sendPhoto(chatId, buffer, caption);
       return "OK";

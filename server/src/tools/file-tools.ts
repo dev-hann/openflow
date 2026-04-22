@@ -10,6 +10,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
+import { OpenFlowError } from "../utils/errors.js";
 import type { InternalTool } from "./types.js";
 import { truncate } from "./utils.js";
 
@@ -18,7 +19,7 @@ const log = createLogger("tools/file");
 function requireString(args: Record<string, unknown>, key: string): string {
   const value = args[key];
   if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`Missing or invalid argument: ${key}`);
+    throw new OpenFlowError(`Missing or invalid argument: ${key}`, "TOOL_EXECUTION_FAILED");
   }
   return value;
 }
@@ -28,13 +29,13 @@ export function validateWorkspacePath(p: string, workspace: string): string {
   const resolvedWorkspace = realpathSync(resolve(workspace));
   if (!existsSync(resolved)) {
     if (!resolved.startsWith(resolvedWorkspace)) {
-      throw new Error("Path is outside workspace");
+      throw new OpenFlowError("Path is outside workspace", "PERMISSION_DENIED");
     }
     return resolved;
   }
   const realResolved = realpathSync(resolved);
   if (!realResolved.startsWith(resolvedWorkspace)) {
-    throw new Error("Path is outside workspace");
+    throw new OpenFlowError("Path is outside workspace", "PERMISSION_DENIED");
   }
   return realResolved;
 }
@@ -61,7 +62,8 @@ export function createFileReadTool(workspace: string): InternalTool {
     },
     async execute(args: Record<string, unknown>): Promise<string> {
       const path = validateWorkspacePath(requireString(args, "path"), workspace);
-      if (!existsSync(path)) throw new Error(`File not found: ${path}`);
+      if (!existsSync(path))
+        throw new OpenFlowError(`File not found: ${path}`, "TOOL_EXECUTION_FAILED");
       const content = readFileSync(path, "utf-8");
       return truncate(content, 50_000);
     },
@@ -122,7 +124,8 @@ export function createListDirTool(workspace: string): InternalTool {
     },
     async execute(args: Record<string, unknown>): Promise<string> {
       const path = validateWorkspacePath(requireString(args, "path"), workspace);
-      if (!existsSync(path)) throw new Error(`Directory not found: ${path}`);
+      if (!existsSync(path))
+        throw new OpenFlowError(`Directory not found: ${path}`, "TOOL_EXECUTION_FAILED");
       const entries = readdirSync(path).map((name) => {
         const full = join(path, name);
         try {

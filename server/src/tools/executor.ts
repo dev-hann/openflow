@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
+import { OpenFlowError } from "../utils/errors.js";
 import { createBrowserTools } from "./browser.js";
 import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 import { isExecError } from "./types.js";
@@ -81,10 +82,10 @@ function createShellTool(workspace: string): InternalTool {
       } catch (err: unknown) {
         if (!isExecError(err)) throw err;
         if (err.killed || err.signal === "SIGTERM" || err.signal === "SIGKILL") {
-          throw new Error(`Command timed out after ${timeout}ms`);
+          throw new OpenFlowError(`Command timed out after ${timeout}ms`, "TOOL_EXECUTION_FAILED");
         }
         const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
-        throw new Error(output || "Command failed with no output");
+        throw new OpenFlowError(output || "Command failed with no output", "TOOL_EXECUTION_FAILED");
       }
     },
   };

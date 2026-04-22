@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createLogger } from "../utils/logger.js";
+import { OpenFlowError } from "../utils/errors.js";
 import { ensureDirSync } from "../utils/fs.js";
 import type { InternalTool } from "./types.js";
 import { isExecError } from "./types.js";
@@ -47,8 +48,9 @@ function installChromium(timeout: number): void {
     if (!isExecError(err)) throw err;
     const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
     log.error({ err: output }, "failed to install Playwright Chromium");
-    throw new Error(
+    throw new OpenFlowError(
       `Failed to auto-install Playwright Chromium. Run manually: npx playwright install chromium\n${output}`,
+      "TOOL_EXECUTION_FAILED",
     );
   }
 }
@@ -79,9 +81,13 @@ function runPlaywrightScript(script: string, timeout: number): string {
     return result || "(no output)";
   } catch (err: unknown) {
     if (!isExecError(err)) throw err;
-    if (err.killed) throw new Error(`Browser script timed out after ${timeout}ms`);
+    if (err.killed)
+      throw new OpenFlowError(
+        `Browser script timed out after ${timeout}ms`,
+        "TOOL_EXECUTION_FAILED",
+      );
     const output = [err.stdout, err.stderr].filter(Boolean).join("\n");
-    throw new Error(output || "Browser script failed");
+    throw new OpenFlowError(output || "Browser script failed", "TOOL_EXECUTION_FAILED");
   } finally {
     try {
       rmSync(tmpDir, { recursive: true, force: true });
