@@ -21,6 +21,18 @@ export interface LlmClient {
 
 const RETRY_DELAYS = [1000, 2000, 4000];
 
+interface RetrySignal {
+  __retry: true;
+  status?: number;
+  body?: string;
+  errorMessage?: string;
+  cause?: unknown;
+}
+
+function isRetrySignal(value: unknown): value is RetrySignal {
+  return typeof value === "object" && value !== null && "__retry" in value;
+}
+
 function buildUrl(baseUrl: string, path: string): string {
   const base = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
   return `${base}${path}`;
@@ -74,6 +86,23 @@ export function createLlmClient(config: LlmConfig): LlmClient {
   };
 }
 
+async function handleStreamResponse(
+  body: ReadableStream<Uint8Array>,
+  config: LlmConfig,
+  onToken: (token: string) => void,
+  startedAt: number,
+): Promise<unknown> {
+  try {
+    const result = await parseSseStream(body, onToken);
+    const duration = Date.now() - startedAt;
+    log.info({ model: config.model, duration, streamed: true }, "LLM request completed");
+    return result;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new OpenFlowError(`Stream error after partial delivery: ${msg}`, "LLM_STREAM_ERROR", err);
+  }
+}
+
 async function sendSingleAttempt(
   url: string,
   headers: Record<string, string>,
@@ -98,7 +127,8 @@ async function sendSingleAttempt(
 
     if (!response.ok) {
       const text = await response.text();
-      if (response.status >= 500) return { __retry: true, status: response.status, body: text };
+      if (response.status >= 500)
+        return { __retry: true, status: response.status, body: text } satisfies RetrySignal;
       const safeText = text.length > 200 ? text.slice(0, 200) + "..." : text;
       throw new OpenFlowError(
         `LLM API error ${response.status}: ${safeText}`,
@@ -107,19 +137,7 @@ async function sendSingleAttempt(
     }
 
     if (onToken && response.body) {
-      try {
-        const result = await parseSseStream(response.body, onToken);
-        const duration = Date.now() - startedAt;
-        log.info({ model: config.model, duration, streamed: true }, "LLM request completed");
-        return result;
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new OpenFlowError(
-          `Stream error after partial delivery: ${msg}`,
-          "LLM_STREAM_ERROR",
-          err,
-        );
-      }
+      return await handleStreamResponse(response.body, config, onToken, startedAt);
     }
 
     const json = (await response.json()) as unknown;
@@ -132,11 +150,26 @@ async function sendSingleAttempt(
       throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
     }
     const msg = err instanceof Error ? err.message : String(err);
-    return { __retry: true, errorMessage: msg, cause: err };
+    return { __retry: true, errorMessage: msg, cause: err } satisfies RetrySignal;
   } finally {
     clearTimeout(timeout);
     if (signal) signal.removeEventListener("abort", abortHandler);
   }
+}
+
+function throwRetryExhausted(signal: RetrySignal): never {
+  if (signal.status) {
+    const safeText =
+      (signal.body ?? "").length > 200
+        ? (signal.body ?? "").slice(0, 200) + "..."
+        : (signal.body ?? "");
+    throw new OpenFlowError(`LLM API error ${signal.status}: ${safeText}`, "LLM_REQUEST_FAILED");
+  }
+  throw new OpenFlowError(
+    `LLM request failed: ${signal.errorMessage}`,
+    "LLM_REQUEST_FAILED",
+    signal.cause,
+  );
 }
 
 async function sendRequest(
@@ -166,41 +199,20 @@ async function sendRequest(
 
     const result = await sendSingleAttempt(url, headers, payload, config, onToken, signal);
 
-    const retryMarker = result as {
-      __retry?: boolean;
-      status?: number;
-      body?: string;
-      errorMessage?: string;
-      cause?: unknown;
-    } | null;
-    if (!retryMarker?.__retry) return result;
+    if (!isRetrySignal(result)) return result;
 
     if (attempt < RETRY_DELAYS.length) {
-      if (retryMarker.status) {
-        log.warn({ status: retryMarker.status, attempt }, "server error, retrying");
+      if (result.status) {
+        log.warn({ status: result.status, attempt }, "server error, retrying");
       } else {
-        log.warn({ err: retryMarker.errorMessage, attempt }, "request failed, retrying");
+        log.warn({ err: result.errorMessage, attempt }, "request failed, retrying");
       }
       const jitter = Math.random() * 500;
       await sleep(RETRY_DELAYS[attempt]! + jitter);
       continue;
     }
 
-    if (retryMarker.status) {
-      const safeText =
-        (retryMarker.body ?? "").length > 200
-          ? (retryMarker.body ?? "").slice(0, 200) + "..."
-          : (retryMarker.body ?? "");
-      throw new OpenFlowError(
-        `LLM API error ${retryMarker.status}: ${safeText}`,
-        "LLM_REQUEST_FAILED",
-      );
-    }
-    throw new OpenFlowError(
-      `LLM request failed: ${retryMarker.errorMessage}`,
-      "LLM_REQUEST_FAILED",
-      retryMarker.cause,
-    );
+    throwRetryExhausted(result);
   }
 
   throw new OpenFlowError("Max retries exceeded", "LLM_REQUEST_FAILED");
