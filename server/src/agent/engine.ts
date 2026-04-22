@@ -115,6 +115,63 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     }
   }
 
+    async function handleToolCalls(
+      toolCalls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>,
+      sessionId: string,
+      chatId: number | string | undefined,
+      round: number,
+      messages: ChatMessage[],
+    ): Promise<void> {
+      messages.push({
+        role: "assistant",
+        content: null,
+        tool_calls: toolCalls,
+      });
+      contextResolver.persistMessage(sessionId, {
+        role: "assistant",
+        content: "",
+        toolCalls,
+      });
+      const toolResults = await Promise.all(
+        toolCalls.map((toolCall) =>
+          toolProcessor.processToolCall(toolCall, sessionId, chatId, round),
+        ),
+      );
+      for (const msg of toolResults) {
+        messages.push(msg);
+      }
+    }
+
+    function handleTextResponse(
+      content: string,
+      sessionId: string,
+      round: number,
+      startedAt: number,
+    ): AgentResponse {
+      contextResolver.persistMessage(sessionId, {
+        role: "assistant",
+        content,
+      });
+      log.info(
+        { sessionId, duration: Date.now() - startedAt, rounds: round, responseLength: content.length },
+        "message handled",
+      );
+      return { type: "text", content };
+    }
+
+    function buildOverflowResponse(
+      sessionId: string,
+      startedAt: number,
+    ): AgentResponse {
+      const content = "Maximum tool call rounds reached. Please continue the conversation.";
+      contextResolver.persistMessage(sessionId, { role: "assistant", content });
+      log.info(
+        { sessionId, duration: Date.now() - startedAt, rounds: config.maxToolRounds },
+        "message handled (max rounds reached)",
+      );
+      return { type: "text", content };
+    }
+
   async function runLlmLoop(
     sessionId: string,
     messages: ChatMessage[],
@@ -145,57 +202,13 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       }
 
       if (response.type === "text") {
-        contextResolver.persistMessage(sessionId, {
-          role: "assistant",
-          content: response.content,
-        });
-        const duration = Date.now() - startedAt;
-        log.info(
-          {
-            sessionId,
-            duration,
-            rounds: round,
-            responseLength: response.content.length,
-          },
-          "message handled",
-        );
-        return { type: "text", content: response.content };
+        return handleTextResponse(response.content, sessionId, round, startedAt);
       }
 
-      messages.push({
-        role: "assistant",
-        content: null,
-        tool_calls: response.toolCalls,
-      });
-      contextResolver.persistMessage(sessionId, {
-        role: "assistant",
-        content: "",
-        toolCalls: response.toolCalls,
-      });
-      const toolResults = await Promise.all(
-        response.toolCalls.map((toolCall) =>
-          toolProcessor.processToolCall(toolCall, sessionId, chatId, round),
-        ),
-      );
-      for (const msg of toolResults) {
-        messages.push(msg);
-      }
+      await handleToolCalls(response.toolCalls, sessionId, chatId, round, messages);
     }
 
-    const overflowMsg = "Maximum tool call rounds reached. Please continue the conversation.";
-    contextResolver.persistMessage(sessionId, {
-      role: "assistant",
-      content: overflowMsg,
-    });
-    log.info(
-      {
-        sessionId,
-        duration: Date.now() - startedAt,
-        rounds: config.maxToolRounds,
-      },
-      "message handled (max rounds reached)",
-    );
-    return { type: "text", content: overflowMsg };
+    return buildOverflowResponse(sessionId, startedAt);
   }
 
   async function handleMessage(params: HandleMessageParams): Promise<AgentResponse> {
