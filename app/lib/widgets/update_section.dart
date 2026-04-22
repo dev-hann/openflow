@@ -126,63 +126,79 @@ class UpdateSection extends StatelessWidget {
               color: theme.colorScheme.primary.withValues(alpha: 0.3),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.new_releases_outlined,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: Spacing.xs),
-                  Text(
-                    '${release.tagName} 사용 가능',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  if (sizeText.isNotEmpty) ...[
-                    const Spacer(),
-                    Text(
-                      sizeText,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (release.releaseNotes.isNotEmpty) ...[
-                const SizedBox(height: Spacing.sm),
-                Text(
-                  release.releaseNotes,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
+          child: _buildReleaseDetails(theme, release, sizeText),
         ),
         const SizedBox(height: Spacing.sm),
+        _buildUpdateActions(context, updateCubit, release),
+      ],
+    );
+  }
+
+  Widget _buildReleaseDetails(
+    ThemeData theme,
+    ReleaseInfo release,
+    String sizeText,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            FilledButton.icon(
-              onPressed: updateCubit.downloadUpdate,
-              icon: const Icon(Icons.download, size: 18),
-              label: const Text('업데이트'),
+            Icon(
+              Icons.new_releases_outlined,
+              size: 18,
+              color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: Spacing.sm),
-            TextButton(
-              onPressed: () => _openReleasePage(release.htmlUrl),
-              child: const Text('릴리즈 페이지'),
+            const SizedBox(width: Spacing.xs),
+            Text(
+              '${release.tagName} 사용 가능',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
             ),
+            if (sizeText.isNotEmpty) ...[
+              const Spacer(),
+              Text(
+                sizeText,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
+        ),
+        if (release.releaseNotes.isNotEmpty) ...[
+          const SizedBox(height: Spacing.sm),
+          Text(
+            release.releaseNotes,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildUpdateActions(
+    BuildContext context,
+    UpdateCubit updateCubit,
+    ReleaseInfo release,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        FilledButton.icon(
+          onPressed: updateCubit.downloadUpdate,
+          icon: const Icon(Icons.download, size: 18),
+          label: const Text('업데이트'),
+        ),
+        const SizedBox(width: Spacing.sm),
+        TextButton(
+          onPressed: () => _openReleasePage(release.htmlUrl),
+          child: const Text('릴리즈 페이지'),
         ),
       ],
     );
