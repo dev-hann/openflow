@@ -94,14 +94,12 @@ class _ProviderFormState extends State<ProviderForm> {
       _verifying = true;
       _verifyResult = null;
     });
-
     try {
       final api = await _getApi();
       if (api == null || !mounted) {
         if (mounted) setState(() => _verifying = false);
         return;
       }
-
       ProviderInfo provider;
       if (widget.editProvider != null) {
         final params = <String, dynamic>{'name': name, 'baseUrl': baseUrl};
@@ -120,7 +118,6 @@ class _ProviderFormState extends State<ProviderForm> {
           'isDefault': true,
         });
       }
-
       _savedProviderId = provider.id;
       if (widget.editProvider != null && mounted) {
         context.read<ProvidersCubit>().updateProvider(provider);
@@ -146,7 +143,6 @@ class _ProviderFormState extends State<ProviderForm> {
     final baseUrl = normalizeUrl(_urlController.text);
     final apiKey = _apiKeyController.text.trim();
     final model = _selectedModel ?? '';
-
     if (name.isEmpty || baseUrl.isEmpty || model.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('이름, URL, 모델은 필수입니다')),
@@ -159,7 +155,6 @@ class _ProviderFormState extends State<ProviderForm> {
       );
       return;
     }
-
     final api = await _getApi();
     if (api == null) return;
     setState(() => _submitting = true);
