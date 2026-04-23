@@ -134,7 +134,7 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
                 title: const Text('세션 삭제'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  widget.onSessionDelete(session.id);
+                  _confirmDelete(session);
                 },
               ),
             ],
@@ -142,6 +142,29 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(SessionInfo session) async {
+    final confirmed = await showShadDialog<bool>(
+      context: context,
+      builder: (ctx) => ShadDialog(
+        title: const Text('세션 삭제'),
+        description: Text("'${session.title}' 세션을 삭제하시겠습니까?"),
+        actions: [
+          ShadButton.outline(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          ShadButton.destructive(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) {
+      widget.onSessionDelete(session.id);
+    }
   }
 
   @override
