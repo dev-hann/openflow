@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, sendApiError, validateBody } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, type Route } from "./routes.js";
+import { PairVerifySchema, RefreshSchema } from "./auth-schemas.js";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
@@ -65,13 +66,9 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     }
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const pin = getBodyString(body, "pin");
-    const label = getBodyString(body, "label");
-    if (!pin) {
-      sendApiError(res, 400, "pin_required", "PIN code is required");
-      return;
-    }
-    const tokens = authService.verifyPinAndIssueTokens(pin, label ?? "Unknown device");
+    const parsed = validateBody(body, PairVerifySchema, res);
+    if (!parsed) return;
+    const tokens = authService.verifyPinAndIssueTokens(parsed.pin, parsed.label ?? "Unknown device");
     if (!tokens) {
       sendApiError(res, 401, "invalid_or_expired_pin", "PIN is invalid or has expired");
       return;
@@ -90,12 +87,9 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     }
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const refreshToken = getBodyString(body, "refreshToken");
-    if (!refreshToken) {
-      sendApiError(res, 400, "refresh_token_required", "Refresh token is required");
-      return;
-    }
-    const tokens = authService.refreshTokens(refreshToken);
+    const parsed = validateBody(body, RefreshSchema, res);
+    if (!parsed) return;
+    const tokens = authService.refreshTokens(parsed.refreshToken);
     if (!tokens) {
       sendApiError(res, 401, "invalid_refresh_token", "Refresh token is invalid or has been rotated");
       return;

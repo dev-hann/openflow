@@ -126,7 +126,7 @@ describe("auth routes", () => {
       });
       expect(getStatusCode()).toBe(400);
       const body = JSON.parse(getBody()) as { error: string };
-      expect(body.error).toBe("pin_required");
+      expect(body.error).toBe("validation_error");
     });
 
     it("should return tokens for valid pin", async () => {
@@ -229,7 +229,7 @@ describe("auth routes", () => {
       });
       expect(getStatusCode()).toBe(400);
       const body = JSON.parse(getBody()) as { error: string };
-      expect(body.error).toBe("refresh_token_required");
+      expect(body.error).toBe("validation_error");
     });
 
     it("should return 401 for invalid refresh token", async () => {
