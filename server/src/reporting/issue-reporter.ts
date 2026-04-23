@@ -155,7 +155,11 @@ async function createNewIssue(
 }
 
 export function createIssueReporter(config: IssueReporterConfig): IssueReporter {
-  const [owner, repo] = config.githubRepo.split("/") as [string, string];
+  const parts = config.githubRepo.split("/");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error(`Invalid githubRepo format: "${config.githubRepo}". Expected "owner/repo".`);
+  }
+  const [owner, repo] = parts as [string, string];
   const recentReports: RateLimitEntry[] = [];
 
   function checkRateLimit(): boolean {
