@@ -72,8 +72,13 @@ async function verifyProviderConnectivity(
 ): Promise<boolean> {
   try {
     const resp = await fetchProviderModels(baseUrl, apiKey);
-    return resp.ok;
-  } catch {
+    if (!resp.ok) {
+      log.debug({ baseUrl, status: resp.status }, "provider connectivity check returned non-OK status");
+      return false;
+    }
+    return true;
+  } catch (err: unknown) {
+    log.debug({ baseUrl, err }, "provider connectivity check failed");
     return false;
   }
 }
