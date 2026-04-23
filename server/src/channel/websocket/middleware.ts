@@ -25,19 +25,13 @@ export function requireAuth(
 ): AuthResult | null {
   const token = extractBearerToken(req);
   if (!token) {
-    sendJson(res, 401, {
-      error: "missing_authorization",
-      message: "Authorization header required",
-    });
+    sendApiError(res, 401, "missing_authorization", "Authorization header required");
     return null;
   }
 
   const payload = authService.validateAccessToken(token);
   if (!payload) {
-    sendJson(res, 401, {
-      error: "invalid_token",
-      message: "Access token expired or invalid",
-    });
+    sendApiError(res, 401, "invalid_token", "Access token expired or invalid");
     return null;
   }
 

@@ -49,6 +49,18 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
     });
   }
 
+  function persistToolMessage(
+    sessionId: string,
+    toolCallId: string,
+    content: string,
+  ): void {
+    try {
+      memory.addMessage({ sessionId, role: "tool", content, toolCallId });
+    } catch (err: unknown) {
+      log.error({ sessionId, toolCallId, err }, "failed to persist tool message");
+    }
+  }
+
   async function processToolCall(
     toolCall: RawToolCall,
     sessionId: string,
@@ -69,22 +81,8 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
         },
         "tool argument parse failed",
       );
-      const errorMsg: ChatMessage = {
-        role: "tool",
-        content: parseFailedMsg,
-        tool_call_id: toolCall.id,
-      };
-      try {
-        memory.addMessage({
-          sessionId,
-          role: "tool",
-          content: parseFailedMsg,
-          toolCallId: toolCall.id,
-        });
-      } catch (err: unknown) {
-        log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool error");
-      }
-      return errorMsg;
+      persistToolMessage(sessionId, toolCall.id, parseFailedMsg);
+      return { role: "tool", content: parseFailedMsg, tool_call_id: toolCall.id };
     }
     log.info({ sessionId, toolName, round }, "executing tool");
 
@@ -93,25 +91,9 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
       log.info({ sessionId, toolName, round }, "tool execution denied by user");
     }
 
-    const toolMessage: ChatMessage = {
-      role: "tool",
-      content: result.content,
-      tool_call_id: toolCall.id,
-    };
-
-    try {
-      memory.addMessage({
-        sessionId,
-        role: "tool",
-        content: result.content,
-        toolCallId: toolCall.id,
-      });
-    } catch (err: unknown) {
-      log.error({ sessionId, toolCallId: toolCall.id, err }, "failed to save tool result");
-    }
-
+    persistToolMessage(sessionId, toolCall.id, result.content);
     log.info({ sessionId, toolName, isError: result.isError, round }, "tool execution completed");
-    return toolMessage;
+    return { role: "tool", content: result.content, tool_call_id: toolCall.id };
   }
 
   return { processToolCall };
