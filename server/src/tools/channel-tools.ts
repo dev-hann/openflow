@@ -27,7 +27,10 @@ export function createSendMessageTool(sender: ChannelSender): InternalTool {
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const chatId = args.chatId as number;
+      const chatId = args.chatId;
+      if (typeof chatId !== "number" && typeof chatId !== "string") {
+        throw new OpenFlowError("Missing or invalid argument: chatId", "TOOL_EXECUTION_FAILED");
+      }
       const text = requireString(args, "text");
       await sender.sendMessage(chatId, text);
       return "OK";
@@ -66,7 +69,10 @@ export function createSendImageTool(sender: ChannelSender, workspace: string): I
       },
     },
     async execute(args: Record<string, unknown>): Promise<string> {
-      const chatId = args.chatId as number;
+      const chatId = args.chatId;
+      if (typeof chatId !== "number" && typeof chatId !== "string") {
+        throw new OpenFlowError("Missing or invalid argument: chatId", "TOOL_EXECUTION_FAILED");
+      }
       const source = requireString(args, "source");
       const caption = optionalString(args, "caption");
 
