@@ -10,6 +10,7 @@ import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/chat_empty_state.dart'
     show ChatEmptyState, EmptyStateVariant;
 import 'package:openflow/widgets/input_bar.dart';
@@ -94,6 +95,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final token = await authCubit.getValidToken();
     if (token == null || !mounted) return;
     setState(() => _isLoadingHistory = true);
+    if (offset == 0) {
+      context.read<ChatCubit>().setLoading(true);
+    }
     try {
       final api = createApiClient(
         authCubit.state.storedAuth!.serverUrl,
@@ -118,7 +122,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         ).show(const ShadToast(title: Text('메시지를 불러올 수 없습니다.')));
       }
     } finally {
-      if (mounted) setState(() => _isLoadingHistory = false);
+      if (mounted) {
+        setState(() => _isLoadingHistory = false);
+        context.read<ChatCubit>().setLoading(false);
+      }
     }
   }
 
@@ -273,7 +280,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return Column(
       children: [
         Expanded(
-          child: chatState.messages.isEmpty
+          child: chatState.isLoading
+              ? const Center(child: AppSpinner())
+              : chatState.messages.isEmpty
               ? ChatEmptyState(
                   variant: EmptyStateVariant.empty,
                   isSending: chatState.isSending,

@@ -7,27 +7,31 @@ class ChatState extends Equatable {
   const ChatState({
     this.messages = const [],
     this.isSending = false,
+    this.isLoading = false,
     this.errorMessage,
   });
   final List<ChatMessage> messages;
   final bool isSending;
+  final bool isLoading;
   final String? errorMessage;
 
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isSending,
+    bool? isLoading,
     String? errorMessage,
     bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isSending: isSending ?? this.isSending,
+      isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
   @override
-  List<Object?> get props => [messages, isSending, errorMessage];
+  List<Object?> get props => [messages, isSending, isLoading, errorMessage];
 }
 
 class ChatCubit extends Cubit<ChatState> {
@@ -98,7 +102,11 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   void clearMessages() {
-    emit(state.copyWith(messages: []));
+    emit(state.copyWith(messages: [], isLoading: false));
+  }
+
+  void setLoading(bool loading) {
+    emit(state.copyWith(isLoading: loading));
   }
 
   void setMessages(List<ChatMessage> messages) {

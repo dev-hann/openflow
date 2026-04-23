@@ -165,6 +165,7 @@ class _MainScreenState extends State<MainScreen> {
     final chatCubit = context.read<ChatCubit>();
     context.read<SessionsCubit>().setActiveSessionId(id);
     chatCubit.clearMessages();
+    chatCubit.setLoading(true);
     ws.send(WsSwitchSession(sessionId: id));
   }
 
