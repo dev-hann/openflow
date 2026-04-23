@@ -35,6 +35,24 @@ function extractSessionId(path: string, prefix: string): string | null {
   return rest && !rest.includes("/") ? rest : null;
 }
 
+function toDisplayMessages(
+  messages: Array<{ role: string; content: string | null; createdAt: number }>,
+) {
+  return messages
+    .filter((m) => !(m.role === "assistant" && (!m.content || m.content.trim() === "")))
+    .map((m) => ({
+      role: m.role,
+      content: m.content ?? "",
+      createdAt: m.createdAt,
+    }));
+}
+
+function parseQueryInt(value: string | null, fallback: number, max?: number): number {
+  const parsed = parseInt(value ?? String(fallback), 10);
+  const result = Number.isNaN(parsed) ? fallback : parsed;
+  return max !== undefined ? Math.min(result, max) : result;
+}
+
 export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   const { authService, memoryStore, pushTokenStore } = deps;
 
@@ -83,23 +101,15 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     }
     const sessionId = match[1]!;
     const parsedUrl = new URL(req.url ?? path, `http://${req.headers.host ?? "localhost"}`);
-    const rawLimit = parseInt(parsedUrl.searchParams.get("limit") ?? "50", 10);
-    const rawOffset = parseInt(parsedUrl.searchParams.get("offset") ?? "0", 10);
-    const limit = Math.min(Number.isNaN(rawLimit) ? 50 : rawLimit, 200);
-    const offset = Number.isNaN(rawOffset) ? 0 : rawOffset;
+    const limit = parseQueryInt(parsedUrl.searchParams.get("limit"), 50, 200);
+    const offset = parseQueryInt(parsedUrl.searchParams.get("offset"), 0);
 
     const { messages: rawMessages, total } = memoryStore.getVisibleMessages(
       sessionId,
       limit,
       offset,
     );
-    const messages = rawMessages
-      .filter((m) => !(m.role === "assistant" && (!m.content || m.content.trim() === "")))
-      .map((m) => ({
-        role: m.role,
-        content: m.content ?? "",
-        createdAt: m.createdAt,
-      }));
+    const messages = toDisplayMessages(rawMessages);
 
     sendJson(res, 200, { messages, total });
   }
