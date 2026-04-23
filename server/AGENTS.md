@@ -137,6 +137,7 @@ class OpenFlowError extends Error {
 
 type ErrorCode =
   | "CONFIG_INVALID"
+  | "CONFIG_NOT_FOUND"
   | "LLM_REQUEST_FAILED"
   | "LLM_TIMEOUT"
   | "LLM_STREAM_ERROR"
@@ -144,7 +145,9 @@ type ErrorCode =
   | "DB_ERROR"
   | "DB_MIGRATION_FAILED"
   | "NOTIFICATION_ERROR"
-  | "PERMISSION_DENIED";
+  | "PERMISSION_DENIED"
+  | "REQUEST_TOO_LARGE"
+  | "REPORT_ERROR";
 ```
 
 - 복구 불가능한 에러: `throw new OpenFlowError(...)`
