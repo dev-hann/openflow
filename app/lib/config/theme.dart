@@ -25,9 +25,9 @@ class AppTheme {
         backgroundColor: Color(0xFF7C3AED),
         hoverBackgroundColor: Color(0xFF6D28D9),
       ),
-      progressTheme: ShadProgressTheme(
-        color: const Color(0xFF7C3AED),
-        borderRadius: const BorderRadius.all(Radius.circular(999)),
+      progressTheme: const ShadProgressTheme(
+        color: Color(0xFF7C3AED),
+        borderRadius: BorderRadius.all(Radius.circular(999)),
       ),
       primaryBadgeTheme: const ShadBadgeTheme(
         backgroundColor: Color(0xFF7C3AED),
@@ -56,9 +56,9 @@ class AppTheme {
         backgroundColor: Color(0xFF6D28D9),
         hoverBackgroundColor: Color(0xFF5B21B6),
       ),
-      progressTheme: ShadProgressTheme(
-        color: const Color(0xFF6D28D9),
-        borderRadius: const BorderRadius.all(Radius.circular(999)),
+      progressTheme: const ShadProgressTheme(
+        color: Color(0xFF6D28D9),
+        borderRadius: BorderRadius.all(Radius.circular(999)),
       ),
       primaryBadgeTheme: const ShadBadgeTheme(
         backgroundColor: Color(0xFF6D28D9),

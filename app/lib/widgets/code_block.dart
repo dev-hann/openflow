@@ -5,11 +5,7 @@ import 'package:openflow/config/design_tokens.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 class CodeBlock extends StatelessWidget {
-  const CodeBlock({
-    required this.code,
-    super.key,
-    this.language,
-  });
+  const CodeBlock({required this.code, super.key, this.language});
 
   final String code;
   final String? language;
@@ -55,20 +51,16 @@ class CodeBlock extends StatelessWidget {
                 const Spacer(),
                 GestureDetector(
                   onTap: () => _handleCopy(context),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      LucideIcons.copy,
-                      size: 14,
-                      color: _labelColor,
-                    ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(LucideIcons.copy, size: 14, color: _labelColor),
                   ),
                 ),
               ],
             ),
           ),
           const Padding(
-            padding: EdgeInsets.only(top: 0, bottom: 0),
+            padding: EdgeInsets.zero,
             child: ShadSeparator.horizontal(margin: EdgeInsets.zero),
           ),
           SingleChildScrollView(

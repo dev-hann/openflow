@@ -1,14 +1,12 @@
 import 'package:flutter/widgets.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
-import 'package:openflow/config/design_tokens.dart';
-import 'package:openflow/widgets/app_spinner.dart';
-import 'package:openflow/services/update_service.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/update_cubit.dart';
+import 'package:openflow/services/update_service.dart';
+import 'package:openflow/widgets/app_spinner.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UpdateSection extends StatelessWidget {
   const UpdateSection({super.key});
@@ -53,12 +51,12 @@ class UpdateSection extends StatelessWidget {
       case UpdateStatus.idle:
         return ShadButton.ghost(
           onPressed: updateCubit.checkForUpdate,
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(LucideIcons.refreshCw, size: 18),
-              const SizedBox(width: 4),
-              const Text('업데이트 확인'),
+              SizedBox(width: 4),
+              Text('업데이트 확인'),
             ],
           ),
         );
@@ -67,7 +65,7 @@ class UpdateSection extends StatelessWidget {
         return const AppSpinner();
 
       case UpdateStatus.upToDate:
-        return Text(
+        return const Text(
           '최신 버전입니다',
           style: TextStyle(fontSize: 12, color: AppColors.success),
         );
@@ -200,12 +198,12 @@ class UpdateSection extends StatelessWidget {
       children: [
         ShadButton(
           onPressed: updateCubit.downloadUpdate,
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(LucideIcons.download, size: 18),
-              const SizedBox(width: 4),
-              const Text('업데이트'),
+              SizedBox(width: 4),
+              Text('업데이트'),
             ],
           ),
         ),
@@ -223,7 +221,7 @@ class UpdateSection extends StatelessWidget {
       children: [
         Text(
           '다운로드 중... ${updateState.downloadProgress}%',
-          style: TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 12),
         ),
         const SizedBox(height: AppSpacing.xs),
         Padding(
@@ -244,17 +242,17 @@ class UpdateSection extends StatelessWidget {
         ShadButton(
           onPressed: () =>
               _installApk(context, updateState.downloadedFilePath!),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(LucideIcons.packageCheck, size: 18),
-              const SizedBox(width: 4),
-              const Text('설치'),
+              SizedBox(width: 4),
+              Text('설치'),
             ],
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text(
+        const Text(
           '다운로드 완료',
           style: TextStyle(fontSize: 11, color: AppColors.success),
         ),
@@ -266,6 +264,7 @@ class UpdateSection extends StatelessWidget {
     try {
       await OpenFilex.open(filePath);
     } on Object {
+      if (!context.mounted) return;
       final release = context.read<UpdateCubit>().state.release;
       if (release != null) {
         await _openReleasePage(release.htmlUrl);

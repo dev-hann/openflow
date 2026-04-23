@@ -52,8 +52,9 @@ class MessageListState extends State<MessageList> {
       return;
     }
     if (_isNearBottom) {
-      final oldLast =
-          oldWidget.messages.isNotEmpty ? oldWidget.messages.last : null;
+      final oldLast = oldWidget.messages.isNotEmpty
+          ? oldWidget.messages.last
+          : null;
       final newLast = widget.messages.last;
       if (newLast.content != oldLast?.content ||
           widget.messages.length != oldWidget.messages.length) {
@@ -107,7 +108,8 @@ class MessageListState extends State<MessageList> {
           reverse: true,
           controller: _controller,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          itemCount: widget.messages.length +
+          itemCount:
+              widget.messages.length +
               (widget.isSending ? 1 : 0) +
               (widget.isLoadingMore ? 1 : 0),
           itemBuilder: (context, index) {
@@ -116,21 +118,23 @@ class MessageListState extends State<MessageList> {
             }
             final adjustedIndex = widget.isSending ? index - 1 : index;
             if (adjustedIndex >= widget.messages.length) {
-              return Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Center(child: AppSpinner(strokeWidth: 2)),
+              return const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Center(child: AppSpinner()),
               );
             }
             final messageIndex = widget.messages.length - 1 - adjustedIndex;
             final message = widget.messages[messageIndex];
-            final prevSame = messageIndex > 0 &&
+            final prevSame =
+                messageIndex > 0 &&
                 widget.messages[messageIndex - 1].role == message.role;
-            final nextSame = messageIndex < widget.messages.length - 1 &&
+            final nextSame =
+                messageIndex < widget.messages.length - 1 &&
                 widget.messages[messageIndex + 1].role == message.role;
 
             final isLastAssistant =
                 messageIndex == widget.messages.length - 1 &&
-                    message.role == MessageRole.assistant;
+                message.role == MessageRole.assistant;
 
             return MessageBubble(
               key: ValueKey(message.id),

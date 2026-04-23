@@ -26,11 +26,7 @@ MarkdownStyleSheet buildMarkdownStyleSheet(ShadThemeData theme, Color fgColor) {
       fontWeight: FontWeight.w600,
       height: 1.4,
     ),
-    code: TextStyle(
-      color: fgColor,
-      backgroundColor: cs.muted,
-      fontSize: 13,
-    ),
+    code: TextStyle(color: fgColor, backgroundColor: cs.muted, fontSize: 13),
     codeblockDecoration: BoxDecoration(
       color: cs.muted,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -43,12 +39,7 @@ MarkdownStyleSheet buildMarkdownStyleSheet(ShadThemeData theme, Color fgColor) {
     blockquoteDecoration: BoxDecoration(
       color: cs.muted,
       borderRadius: BorderRadius.circular(4),
-      border: Border(
-        left: BorderSide(
-          color: cs.primary,
-          width: 3,
-        ),
-      ),
+      border: Border(left: BorderSide(color: cs.primary, width: 3)),
     ),
     blockquotePadding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
     listBullet: TextStyle(color: cs.primary),
@@ -59,10 +50,7 @@ MarkdownStyleSheet buildMarkdownStyleSheet(ShadThemeData theme, Color fgColor) {
     ),
     tableBody: TextStyle(fontSize: 13, color: fgColor),
     tableHeadAlign: TextAlign.center,
-    tableBorder: TableBorder.all(
-      color: cs.border,
-      width: 0.5,
-    ),
+    tableBorder: TableBorder.all(color: cs.border, width: 0.5),
     tableCellsPadding: const EdgeInsets.all(6),
     em: TextStyle(fontStyle: FontStyle.italic, color: fgColor),
     strong: TextStyle(fontWeight: FontWeight.bold, color: fgColor),

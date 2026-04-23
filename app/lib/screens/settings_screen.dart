@@ -1,10 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
@@ -15,11 +12,12 @@ import 'package:openflow/screens/provider_edit_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
+import 'package:openflow/widgets/app_scaffold.dart';
 import 'package:openflow/widgets/connection_section.dart';
 import 'package:openflow/widgets/model_sheet.dart';
 import 'package:openflow/widgets/provider_list_section.dart';
 import 'package:openflow/widgets/update_section.dart';
-import 'package:openflow/widgets/app_scaffold.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -48,12 +46,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final providers = await api.listProviders();
       if (mounted) context.read<ProvidersCubit>().setProviders(providers);
-    } on Object {}
+    } on Object catch (e) {
+      debugPrint('Failed to load providers: $e');
+    }
 
     try {
       final sessions = await api.listSessions();
       if (mounted) context.read<SessionsCubit>().setSessions(sessions);
-    } on Object {}
+    } on Object catch (e) {
+      debugPrint('Failed to load sessions: $e');
+    }
 
     if (mounted) {
       unawaited(context.read<UpdateCubit>().loadCurrentVersion());
@@ -65,8 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => ShadDialog(
         title: const Text('서버 변경'),
-        description:
-            const Text('다른 서버로 변경하면 모든 데이터가 초기화됩니다. 계속하시겠습니까?'),
+        description: const Text('다른 서버로 변경하면 모든 데이터가 초기화됩니다. 계속하시겠습니까?'),
         actions: [
           ShadButton.outline(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -113,9 +114,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) providersCubit.setProviders(providers);
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(
-          ShadToast(title: Text('Provider 전환 실패: $e')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(title: Text('Provider 전환 실패: $e')));
       }
     } finally {
       if (context.mounted) {
@@ -135,6 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .firstOrNull;
     if (provider == null) return;
 
+    if (!mounted) return;
     final confirmed = await showShadDialog<bool>(
       context: context,
       builder: (ctx) => ShadDialog(
@@ -163,9 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       providersCubit.removeProvider(providerId);
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(
-          ShadToast(title: Text('삭제 실패: $e')),
-        );
+        ShadToaster.of(context).show(ShadToast(title: Text('삭제 실패: $e')));
       }
     }
   }
@@ -188,9 +188,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       models = await api.fetchProviderModels(provider.id);
     } on Object {
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(title: Text('모델 목록을 불러올 수 없습니다')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(title: Text('모델 목록을 불러올 수 없습니다')));
       }
     }
 
@@ -217,12 +217,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final updated = await api.updateProvider(provider.id, {
         'model': selected,
       });
-      context.read<ProvidersCubit>().updateProvider(updated);
+      if (mounted) {
+        context.read<ProvidersCubit>().updateProvider(updated);
+      }
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(
-          ShadToast(title: Text('모델 변경 실패: $e')),
-        );
+        ShadToaster.of(context).show(ShadToast(title: Text('모델 변경 실패: $e')));
       }
     }
   }
@@ -230,9 +230,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _navigateToProviderEdit([ProviderInfo? provider]) async {
     await Navigator.of(context).push<void>(
       PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => ProviderEditScreen(provider: provider),
-        transitionsBuilder: (_, animation, __, child) =>
-            SlideTransition(
+        pageBuilder: (_, _, _) => ProviderEditScreen(provider: provider),
+        transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(1, 0),
             end: Offset.zero,
@@ -276,8 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         if (providersState.activeProvider != null)
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ActiveProviderCard(
               provider: providersState.activeProvider!,
               onTap: () => _showModelSheet(providersState.activeProvider!),

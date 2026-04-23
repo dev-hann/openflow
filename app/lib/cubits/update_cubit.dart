@@ -44,13 +44,13 @@ class UpdateState extends Equatable {
 
   @override
   List<Object?> get props => [
-        currentVersion,
-        status,
-        release,
-        downloadProgress,
-        downloadedFilePath,
-        errorMessage,
-      ];
+    currentVersion,
+    status,
+    release,
+    downloadProgress,
+    downloadedFilePath,
+    errorMessage,
+  ];
 }
 
 enum UpdateStatus {
@@ -78,21 +78,19 @@ class UpdateCubit extends Cubit<UpdateState> {
     emit(state.copyWith(status: UpdateStatus.checking, clearError: true));
     try {
       final release = await _updateService.checkForUpdate(
-        currentVersion: state.currentVersion.isNotEmpty ? state.currentVersion : null,
+        currentVersion: state.currentVersion.isNotEmpty
+            ? state.currentVersion
+            : null,
       );
       if (release != null) {
-        emit(state.copyWith(
-          status: UpdateStatus.available,
-          release: release,
-        ));
+        emit(state.copyWith(status: UpdateStatus.available, release: release));
       } else {
         emit(state.copyWith(status: UpdateStatus.upToDate));
       }
     } on Object catch (e) {
-      emit(state.copyWith(
-        status: UpdateStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(status: UpdateStatus.error, errorMessage: e.toString()),
+      );
     }
   }
 
@@ -100,12 +98,14 @@ class UpdateCubit extends Cubit<UpdateState> {
     final release = state.release;
     if (release == null) return;
 
-    emit(state.copyWith(
-      status: UpdateStatus.downloading,
-      downloadProgress: 0,
-      clearError: true,
-      clearDownloadedFile: true,
-    ));
+    emit(
+      state.copyWith(
+        status: UpdateStatus.downloading,
+        downloadProgress: 0,
+        clearError: true,
+        clearDownloadedFile: true,
+      ),
+    );
 
     try {
       final filePath = await _updateService.downloadApk(
@@ -117,15 +117,16 @@ class UpdateCubit extends Cubit<UpdateState> {
           }
         },
       );
-      emit(state.copyWith(
-        status: UpdateStatus.readyToInstall,
-        downloadedFilePath: filePath,
-      ));
+      emit(
+        state.copyWith(
+          status: UpdateStatus.readyToInstall,
+          downloadedFilePath: filePath,
+        ),
+      );
     } on Object catch (e) {
-      emit(state.copyWith(
-        status: UpdateStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(status: UpdateStatus.error, errorMessage: e.toString()),
+      );
     }
   }
 

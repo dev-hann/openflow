@@ -1,11 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/widgets/app_list_tile.dart';
 import 'package:openflow/widgets/app_spinner.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ProviderListSection extends StatelessWidget {
   const ProviderListSection({
@@ -71,12 +70,12 @@ class ProviderListSection extends StatelessWidget {
           const Spacer(),
           ShadButton.ghost(
             onPressed: onAdd,
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(LucideIcons.plus, size: 18),
-                const SizedBox(width: 4),
-                const Text('추가'),
+                SizedBox(width: 4),
+                Text('추가'),
               ],
             ),
           ),
@@ -92,10 +91,7 @@ class ProviderListSection extends StatelessWidget {
       child: Center(
         child: Text(
           '등록된 Provider가 없습니다',
-          style: TextStyle(
-            fontSize: 14,
-            color: colorScheme.mutedForeground,
-          ),
+          style: TextStyle(fontSize: 14, color: colorScheme.mutedForeground),
         ),
       ),
     );
@@ -128,10 +124,7 @@ class _ProviderTile extends StatelessWidget {
       title: Row(
         children: [
           Expanded(child: Text(provider.name)),
-          if (isActive)
-            ShadBadge(
-              child: Text('활성'),
-            ),
+          if (isActive) const ShadBadge(child: Text('활성')),
         ],
       ),
       subtitle: Text(
@@ -139,9 +132,7 @@ class _ProviderTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: isSwitching
-          ? const AppSpinner()
-          : _buildActions(context),
+      trailing: isSwitching ? const AppSpinner() : _buildActions(context),
       onTap: onTap,
     );
   }
@@ -170,7 +161,11 @@ class _ProviderTile extends StatelessWidget {
         color: colorScheme.card,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
-      child: Icon(LucideIcons.server, size: 20, color: colorScheme.mutedForeground),
+      child: Icon(
+        LucideIcons.server,
+        size: 20,
+        color: colorScheme.mutedForeground,
+      ),
     );
   }
 
@@ -181,12 +176,12 @@ class _ProviderTile extends StatelessWidget {
       children: [
         if (onModels != null)
           ShadIconButton.ghost(
-            icon: Icon(LucideIcons.slidersHorizontal, size: 20),
+            icon: const Icon(LucideIcons.slidersHorizontal, size: 20),
             onPressed: onModels,
           ),
         if (onEdit != null)
           ShadIconButton.ghost(
-            icon: Icon(LucideIcons.pencil, size: 20),
+            icon: const Icon(LucideIcons.pencil, size: 20),
             onPressed: onEdit,
           ),
         if (onDelete != null)

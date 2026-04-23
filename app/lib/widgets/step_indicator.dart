@@ -24,9 +24,7 @@ class StepIndicator extends StatelessWidget {
           height: 8,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: i == currentIndex
-                ? colorScheme.primary
-                : colorScheme.muted,
+            color: i == currentIndex ? colorScheme.primary : colorScheme.muted,
             borderRadius: BorderRadius.circular(4),
           ),
         ),

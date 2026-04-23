@@ -59,10 +59,7 @@ class AdaptiveScaffold extends StatelessWidget {
       width: 280,
       decoration: BoxDecoration(
         border: Border(
-          right: BorderSide(
-            color: colorScheme.border,
-            width: 0.5,
-          ),
+          right: BorderSide(color: colorScheme.border, width: 0.5),
         ),
       ),
       child: Column(
@@ -79,7 +76,11 @@ class AdaptiveScaffold extends StatelessWidget {
           ),
           const ShadSeparator.horizontal(),
           AppListTile(
-            leading: Icon(LucideIcons.settings, size: 20, color: colorScheme.mutedForeground),
+            leading: Icon(
+              LucideIcons.settings,
+              size: 20,
+              color: colorScheme.mutedForeground,
+            ),
             title: const Text('설정'),
             onTap: onSettings,
           ),
@@ -103,7 +104,7 @@ class AdaptiveScaffold extends StatelessWidget {
           const Spacer(),
           ShadIconButton.ghost(
             onPressed: onNewChat,
-            icon: Icon(LucideIcons.plus),
+            icon: const Icon(LucideIcons.plus),
           ),
         ],
       ),
@@ -129,12 +130,7 @@ class _TabletSessionList extends StatelessWidget {
     final theme = ShadTheme.of(context);
 
     if (sessions.isEmpty) {
-      return Center(
-        child: Text(
-          '대화가 없습니다',
-          style: theme.textTheme.muted,
-        ),
-      );
+      return Center(child: Text('대화가 없습니다', style: theme.textTheme.muted));
     }
 
     return ListView.builder(
@@ -146,17 +142,19 @@ class _TabletSessionList extends StatelessWidget {
           backgroundColor: isActive
               ? theme.colorScheme.primary.withValues(alpha: 0.1)
               : null,
-          leading: Icon(LucideIcons.messageSquare, size: 20, color: theme.colorScheme.mutedForeground),
+          leading: Icon(
+            LucideIcons.messageSquare,
+            size: 20,
+            color: theme.colorScheme.mutedForeground,
+          ),
           title: Text(
             session.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(
-            formatRelativeTime(session.createdAt),
-          ),
+          subtitle: Text(formatRelativeTime(session.createdAt)),
           trailing: ShadIconButton.ghost(
-            icon: Icon(LucideIcons.trash2, size: 18),
+            icon: const Icon(LucideIcons.trash2, size: 18),
             onPressed: () => _confirmDelete(context, session),
           ),
           onTap: () => onSessionTap(session.id),
@@ -165,10 +163,7 @@ class _TabletSessionList extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
-    SessionInfo session,
-  ) async {
+  Future<void> _confirmDelete(BuildContext context, SessionInfo session) async {
     final confirmed = await showShadDialog<bool>(
       context: context,
       builder: (ctx) => ShadDialog(

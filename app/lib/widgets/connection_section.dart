@@ -1,9 +1,8 @@
 import 'package:flutter/widgets.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/widgets/app_list_tile.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ConnectionSection extends StatelessWidget {
   const ConnectionSection({

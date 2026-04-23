@@ -40,8 +40,15 @@ class ChatMessage extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, role, content, sessionId, isStreaming, isFailed, timestamp];
+  List<Object?> get props => [
+    id,
+    role,
+    content,
+    sessionId,
+    isStreaming,
+    isFailed,
+    timestamp,
+  ];
 }
 
 sealed class WsClientMessage extends Equatable {
@@ -56,10 +63,10 @@ class WsChatMsg extends WsClientMessage {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'message',
-        'sessionId': sessionId,
-        'content': content,
-      };
+    'type': 'message',
+    'sessionId': sessionId,
+    'content': content,
+  };
 
   @override
   List<Object?> get props => [sessionId, content];
@@ -71,9 +78,9 @@ class WsSwitchSession extends WsClientMessage {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'switch_session',
-        'sessionId': sessionId,
-      };
+    'type': 'switch_session',
+    'sessionId': sessionId,
+  };
 
   @override
   List<Object?> get props => [sessionId];
@@ -93,10 +100,7 @@ class WsAuth extends WsClientMessage {
   final String accessToken;
 
   @override
-  Map<String, dynamic> toJson() => {
-        'type': 'auth',
-        'accessToken': accessToken,
-      };
+  Map<String, dynamic> toJson() => {'type': 'auth', 'accessToken': accessToken};
 
   @override
   List<Object?> get props => [accessToken];
@@ -109,26 +113,27 @@ sealed class WsServerMessage extends Equatable {
     final type = json['type'] as String;
     return switch (type) {
       'token' => WsTokenChunk(
-          sessionId: json['sessionId'] as String? ?? '',
-          content: json['content'] as String? ?? '',
-        ),
+        sessionId: json['sessionId'] as String? ?? '',
+        content: json['content'] as String? ?? '',
+      ),
       'response' => WsResponse(
-          sessionId: json['sessionId'] as String? ?? '',
-          content: json['content'] as String? ?? '',
-        ),
+        sessionId: json['sessionId'] as String? ?? '',
+        content: json['content'] as String? ?? '',
+      ),
       'error' => WsError(
-          sessionId: json['sessionId'] as String? ?? '',
-          code: json['code'] as String? ?? 'UNKNOWN',
-          message: json['message'] as String? ?? '',
-        ),
+        sessionId: json['sessionId'] as String? ?? '',
+        code: json['code'] as String? ?? 'UNKNOWN',
+        message: json['message'] as String? ?? '',
+      ),
       'auth_required' => const WsAuthRequired(),
       'auth_ok' => const WsAuthOk(),
       'session_switched' => WsSessionSwitched(
-          sessionId: json['sessionId'] as String? ?? '',
-        ),
+        sessionId: json['sessionId'] as String? ?? '',
+      ),
       'pong' => const WsPong(),
-      'notification' =>
-        WsNotification(message: json['message'] as String? ?? ''),
+      'notification' => WsNotification(
+        message: json['message'] as String? ?? '',
+      ),
       _ => WsUnknown(rawType: type, data: json),
     };
   }
@@ -220,14 +225,14 @@ class SessionInfo extends Equatable {
   });
 
   factory SessionInfo.fromJson(Map<String, dynamic> json) => SessionInfo(
-        id: json['id'] as String? ?? '',
-        title: json['title'] as String? ?? '새 대화',
-        createdAt: json['createdAt'] != null
-            ? DateTime.fromMillisecondsSinceEpoch(
-                (json['createdAt'] as num).toInt(),
-              )
-            : DateTime.now(),
-      );
+    id: json['id'] as String? ?? '',
+    title: json['title'] as String? ?? '새 대화',
+    createdAt: json['createdAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(
+            (json['createdAt'] as num).toInt(),
+          )
+        : DateTime.now(),
+  );
   final String id;
   final String title;
   final DateTime createdAt;
@@ -240,9 +245,9 @@ class TokenPair extends Equatable {
   const TokenPair({required this.accessToken, required this.refreshToken});
 
   factory TokenPair.fromJson(Map<String, dynamic> json) => TokenPair(
-        accessToken: json['accessToken'] as String? ?? '',
-        refreshToken: json['refreshToken'] as String? ?? '',
-      );
+    accessToken: json['accessToken'] as String? ?? '',
+    refreshToken: json['refreshToken'] as String? ?? '',
+  );
   final String accessToken;
   final String refreshToken;
 
@@ -259,24 +264,24 @@ class StoredAuth extends Equatable {
   });
 
   factory StoredAuth.fromJson(Map<String, dynamic> json) => StoredAuth(
-        serverUrl: json['serverUrl'] as String? ?? '',
-        accessToken: json['accessToken'] as String? ?? '',
-        refreshToken: json['refreshToken'] as String? ?? '',
-        pairedAt: DateTime.fromMillisecondsSinceEpoch(
-          (json['pairedAt'] as num?)?.toInt() ?? 0,
-        ),
-      );
+    serverUrl: json['serverUrl'] as String? ?? '',
+    accessToken: json['accessToken'] as String? ?? '',
+    refreshToken: json['refreshToken'] as String? ?? '',
+    pairedAt: DateTime.fromMillisecondsSinceEpoch(
+      (json['pairedAt'] as num?)?.toInt() ?? 0,
+    ),
+  );
   final String serverUrl;
   final String accessToken;
   final String refreshToken;
   final DateTime pairedAt;
 
   Map<String, dynamic> toJson() => {
-        'serverUrl': serverUrl,
-        'accessToken': accessToken,
-        'refreshToken': refreshToken,
-        'pairedAt': pairedAt.millisecondsSinceEpoch,
-      };
+    'serverUrl': serverUrl,
+    'accessToken': accessToken,
+    'refreshToken': refreshToken,
+    'pairedAt': pairedAt.millisecondsSinceEpoch,
+  };
 
   @override
   List<Object?> get props => [serverUrl, accessToken, refreshToken, pairedAt];

@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
 import 'package:openflow/services/api_client.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class ErrorReporter {
   ErrorReporter._(this._apiClient, this._version);
@@ -47,12 +45,14 @@ class ErrorReporter {
     required String message,
     String? stackTrace,
   }) {
-    _apiClient.reportError(
-      platform: 'app',
-      version: _version,
-      errorCode: errorCode,
-      message: message,
-      stackTrace: stackTrace,
-    ).catchError((_) {});
+    _apiClient
+        .reportError(
+          platform: 'app',
+          version: _version,
+          errorCode: errorCode,
+          message: message,
+          stackTrace: stackTrace,
+        )
+        .catchError((_) {});
   }
 }

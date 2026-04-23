@@ -1,10 +1,8 @@
-import 'package:flutter/widgets.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:equatable/equatable.dart';
-
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/widgets/app_spinner.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class VerifySection extends StatefulWidget {
   const VerifySection({
@@ -33,10 +31,7 @@ class _VerifySectionState extends State<VerifySection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _VerifyButton(
-          verifying: widget.verifying,
-          onVerify: widget.onVerify,
-        ),
+        _VerifyButton(verifying: widget.verifying, onVerify: widget.onVerify),
         if (widget.result != null) ...[
           const SizedBox(height: AppSpacing.sm),
           _VerifyResultBanner(result: widget.result!),
@@ -59,11 +54,7 @@ class _VerifySectionState extends State<VerifySection> {
 }
 
 class VerifyResult extends Equatable {
-  const VerifyResult({
-    required this.ok,
-    this.models = const [],
-    this.error,
-  });
+  const VerifyResult({required this.ok, this.models = const [], this.error});
   final bool ok;
   final List<String> models;
   final String? error;
@@ -81,9 +72,7 @@ class _VerifyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShadButton.secondary(
       onPressed: verifying ? null : onVerify,
-      child: verifying
-          ? const AppSpinner()
-          : const Text('연결 확인'),
+      child: verifying ? const AppSpinner() : const Text('연결 확인'),
     );
   }
 }
@@ -148,7 +137,11 @@ class _ModelChipSelector extends StatelessWidget {
           placeholder: const Text('모델 검색...'),
           leading: Padding(
             padding: const EdgeInsets.only(left: AppSpacing.sm),
-            child: Icon(LucideIcons.search, size: 20, color: colorScheme.mutedForeground),
+            child: Icon(
+              LucideIcons.search,
+              size: 20,
+              color: colorScheme.mutedForeground,
+            ),
           ),
           onChanged: onSearchChanged,
         ),
@@ -162,32 +155,33 @@ class _ModelChipSelector extends StatelessWidget {
               children: models
                   .where((m) => m.toLowerCase().contains(searchQuery))
                   .map((model) {
-                final isSelected = model == selectedModel;
-                return GestureDetector(
-                  onTap: () => onSelectModel(model),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.secondary,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Text(
-                      model,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelected
-                            ? colorScheme.primaryForeground
-                            : colorScheme.foreground,
+                    final isSelected = model == selectedModel;
+                    return GestureDetector(
+                      onTap: () => onSelectModel(model),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.secondary,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Text(
+                          model,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isSelected
+                                ? colorScheme.primaryForeground
+                                : colorScheme.foreground,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  })
+                  .toList(),
             ),
           ),
         ),

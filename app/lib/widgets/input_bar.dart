@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show TextInputAction, Colors;
+import 'package:flutter/material.dart' show Colors, TextInputAction;
 import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/widgets/voice_input_button.dart';
@@ -51,12 +51,7 @@ class _InputBarState extends State<InputBar> {
       ),
       decoration: BoxDecoration(
         color: colorScheme.background,
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.border,
-            width: 0.5,
-          ),
-        ),
+        border: Border(top: BorderSide(color: colorScheme.border, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
@@ -76,10 +71,7 @@ class _InputBarState extends State<InputBar> {
               onResult: _handleVoiceResult,
               enabled: !widget.disabled,
             ),
-            _AnimatedSendButton(
-              canSend: canSend,
-              onPressed: _handleSend,
-            ),
+            _AnimatedSendButton(canSend: canSend, onPressed: _handleSend),
           ],
         ),
       ),
@@ -123,19 +115,14 @@ class _TextFieldContainer extends StatelessWidget {
           horizontal: AppSpacing.md,
           vertical: 12,
         ),
-        decoration: const ShadDecoration(
-          border: ShadBorder.none,
-        ),
+        decoration: const ShadDecoration(border: ShadBorder.none),
       ),
     );
   }
 }
 
 class _AnimatedSendButton extends StatelessWidget {
-  const _AnimatedSendButton({
-    required this.canSend,
-    required this.onPressed,
-  });
+  const _AnimatedSendButton({required this.canSend, required this.onPressed});
   final bool canSend;
   final VoidCallback onPressed;
 

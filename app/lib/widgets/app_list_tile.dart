@@ -26,7 +26,8 @@ class AppListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectivePadding = padding ??
+    final effectivePadding =
+        padding ??
         const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm + 2,
@@ -52,9 +53,9 @@ class AppListTile extends StatelessWidget {
                 children: [
                   DefaultTextStyle(
                     style: ShadTheme.of(context).textTheme.muted.copyWith(
-                          color: ShadTheme.of(context).colorScheme.foreground,
-                          fontSize: 14,
-                        ),
+                      color: ShadTheme.of(context).colorScheme.foreground,
+                      fontSize: 14,
+                    ),
                     child: title,
                   ),
                   if (subtitle != null) ...[

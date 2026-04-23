@@ -73,13 +73,17 @@ class _SheetHeader extends StatelessWidget {
     final theme = ShadTheme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Row(
         children: [
           Text(title, style: theme.textTheme.large),
           const Spacer(),
           ShadIconButton.ghost(
-            icon: Icon(LucideIcons.x),
+            icon: const Icon(LucideIcons.x),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -89,10 +93,7 @@ class _SheetHeader extends StatelessWidget {
 }
 
 class _ModelListTile extends StatelessWidget {
-  const _ModelListTile({
-    required this.model,
-    required this.isActive,
-  });
+  const _ModelListTile({required this.model, required this.isActive});
   final String model;
   final bool isActive;
 
@@ -103,7 +104,9 @@ class _ModelListTile extends StatelessWidget {
       leading: Icon(
         isActive ? LucideIcons.circleDot : LucideIcons.circle,
         size: 20,
-        color: isActive ? theme.colorScheme.primary : theme.colorScheme.mutedForeground,
+        color: isActive
+            ? theme.colorScheme.primary
+            : theme.colorScheme.mutedForeground,
       ),
       title: Text(
         model,

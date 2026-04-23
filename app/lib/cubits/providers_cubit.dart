@@ -30,8 +30,9 @@ class ProvidersState extends Equatable {
   }) {
     return ProvidersState(
       providers: providers ?? this.providers,
-      activeProviderId:
-          clearActive ? null : (activeProviderId ?? this.activeProviderId),
+      activeProviderId: clearActive
+          ? null
+          : (activeProviderId ?? this.activeProviderId),
       isSwitching: isSwitching ?? this.isSwitching,
       availableModels: availableModels ?? this.availableModels,
       isLoadingModels: isLoadingModels ?? this.isLoadingModels,
@@ -40,12 +41,12 @@ class ProvidersState extends Equatable {
 
   @override
   List<Object?> get props => [
-        providers,
-        activeProviderId,
-        isSwitching,
-        availableModels,
-        isLoadingModels,
-      ];
+    providers,
+    activeProviderId,
+    isSwitching,
+    availableModels,
+    isLoadingModels,
+  ];
 }
 
 class ProvidersCubit extends Cubit<ProvidersState> {
@@ -70,17 +71,20 @@ class ProvidersCubit extends Cubit<ProvidersState> {
   }
 
   void updateProvider(ProviderInfo updated) {
-    final providers =
-        state.providers.map((p) => p.id == updated.id ? updated : p).toList();
+    final providers = state.providers
+        .map((p) => p.id == updated.id ? updated : p)
+        .toList();
     emit(state.copyWith(providers: providers));
   }
 
   void removeProvider(String id) {
     final providers = state.providers.where((p) => p.id != id).toList();
-    emit(state.copyWith(
-      providers: providers,
-      clearActive: state.activeProviderId == id,
-    ));
+    emit(
+      state.copyWith(
+        providers: providers,
+        clearActive: state.activeProviderId == id,
+      ),
+    );
   }
 
   void setAvailableModels(List<String> models) {

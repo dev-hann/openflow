@@ -22,7 +22,7 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = ShadTheme.of(context).colorScheme;
 
-    Widget current = body;
+    var current = body;
 
     if (resizeToAvoidBottomInset) {
       current = MediaQuery.removePadding(
@@ -38,11 +38,7 @@ class AppScaffold extends StatelessWidget {
         child: Column(
           children: [
             if (title != null || leading != null || actions != null)
-              _AppBar(
-                title: title,
-                leading: leading,
-                actions: actions,
-              ),
+              _AppBar(title: title, leading: leading, actions: actions),
             Expanded(child: current),
           ],
         ),
@@ -52,11 +48,7 @@ class AppScaffold extends StatelessWidget {
 }
 
 class _AppBar extends StatelessWidget {
-  const _AppBar({
-    this.title,
-    this.leading,
-    this.actions,
-  });
+  const _AppBar({this.title, this.leading, this.actions});
 
   final String? title;
   final Widget? leading;
@@ -72,10 +64,7 @@ class _AppBar extends StatelessWidget {
       padding: EdgeInsets.only(top: padding.top),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: colorScheme.border,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: colorScheme.border, width: 0.5),
         ),
       ),
       child: Padding(

@@ -1,6 +1,5 @@
-import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:flutter/widgets.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/constants/presets.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
@@ -11,8 +10,7 @@ import 'package:openflow/utils/normalize_url.dart';
 import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/preset_selector.dart';
 import 'package:openflow/widgets/verify_section.dart';
-
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ProviderForm extends StatefulWidget {
   const ProviderForm({
@@ -146,15 +144,15 @@ class _ProviderFormState extends State<ProviderForm> {
     final apiKey = _apiKeyController.text.trim();
     final model = _selectedModel ?? '';
     if (name.isEmpty || baseUrl.isEmpty || model.isEmpty) {
-      ShadToaster.of(context).show(
-        const ShadToast(title: Text('이름, URL, 모델은 필수입니다')),
-      );
+      ShadToaster.of(
+        context,
+      ).show(const ShadToast(title: Text('이름, URL, 모델은 필수입니다')));
       return;
     }
     if (widget.editProvider == null && apiKey.isEmpty) {
-      ShadToaster.of(context).show(
-        const ShadToast(title: Text('API Key를 입력해주세요')),
-      );
+      ShadToaster.of(
+        context,
+      ).show(const ShadToast(title: Text('API Key를 입력해주세요')));
       return;
     }
     final api = await _getApi();
@@ -162,14 +160,19 @@ class _ProviderFormState extends State<ProviderForm> {
     setState(() => _submitting = true);
 
     try {
-      await _persistProvider(api,
-          name: name, baseUrl: baseUrl, apiKey: apiKey, model: model);
+      await _persistProvider(
+        api,
+        name: name,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        model: model,
+      );
       if (mounted) widget.onComplete();
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(
-          ShadToast(title: Text('Provider 저장 실패: $e')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(title: Text('Provider 저장 실패: $e')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -185,8 +188,9 @@ class _ProviderFormState extends State<ProviderForm> {
   }) async {
     final cubit = context.read<ProvidersCubit>();
     if (_savedProviderId != null) {
-      final updated =
-          await api.updateProvider(_savedProviderId!, {'model': model});
+      final updated = await api.updateProvider(_savedProviderId!, {
+        'model': model,
+      });
       if (!mounted) return;
       if (widget.editProvider != null) {
         cubit.updateProvider(updated);
@@ -197,11 +201,10 @@ class _ProviderFormState extends State<ProviderForm> {
       final params = <String, dynamic>{
         'name': name,
         'baseUrl': baseUrl,
-        'model': model
+        'model': model,
       };
       if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
-      final updated =
-          await api.updateProvider(widget.editProvider!.id, params);
+      final updated = await api.updateProvider(widget.editProvider!.id, params);
       if (!mounted) return;
       cubit.updateProvider(updated);
     } else {
@@ -230,10 +233,7 @@ class _ProviderFormState extends State<ProviderForm> {
               selectedPreset: _selectedPreset,
               onSelected: _selectPreset,
             ),
-          ShadInput(
-            controller: _nameController,
-            placeholder: const Text('이름'),
-          ),
+          ShadInput(controller: _nameController, placeholder: const Text('이름')),
           const SizedBox(height: AppSpacing.md),
           ShadInput(
             controller: _urlController,
@@ -249,12 +249,9 @@ class _ProviderFormState extends State<ProviderForm> {
               ),
               obscureText: _obscureApiKey,
               trailing: GestureDetector(
-                onTap: () =>
-                    setState(() => _obscureApiKey = !_obscureApiKey),
+                onTap: () => setState(() => _obscureApiKey = !_obscureApiKey),
                 child: Icon(
-                  _obscureApiKey
-                      ? LucideIcons.eyeOff
-                      : LucideIcons.eye,
+                  _obscureApiKey ? LucideIcons.eyeOff : LucideIcons.eye,
                   size: 18,
                   color: colorScheme.mutedForeground,
                 ),

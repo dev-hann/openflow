@@ -1,9 +1,8 @@
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/constants/presets.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class PresetSelector extends StatelessWidget {
   const PresetSelector({

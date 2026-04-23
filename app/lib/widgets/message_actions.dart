@@ -37,9 +37,9 @@ class _MessageActionsState extends State<MessageActions> {
   void _handleCopy() {
     Clipboard.setData(ClipboardData(text: widget.message.content));
     setState(() => _copied = true);
-    ShadToaster.of(context).show(
-      const ShadToast(title: Text('복사됨'), duration: Duration(seconds: 1)),
-    );
+    ShadToaster.of(
+      context,
+    ).show(const ShadToast(title: Text('복사됨'), duration: Duration(seconds: 1)));
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) setState(() => _copied = false);
     });
@@ -100,18 +100,18 @@ class _MessageActionsState extends State<MessageActions> {
             widget.isLastAssistant &&
             widget.onRegenerate != null)
           _ActionButton(
-            icon: LucideIcons.refreshCw,
-            color: iconColor,
-            onPressed: _handleRegenerate,
-          )
+                icon: LucideIcons.refreshCw,
+                color: iconColor,
+                onPressed: _handleRegenerate,
+              )
               .animate(target: _isRegenerating ? 1.0 : 0.0)
               .rotate(duration: 300.ms),
         if (_isAssistant)
           _ActionButton(
-            icon: _liked ? LucideIcons.thumbsUp : LucideIcons.thumbsUp,
-            color: _liked ? colorScheme.primary : iconColor,
-            onPressed: _handleLike,
-          )
+                icon: _liked ? LucideIcons.thumbsUp : LucideIcons.thumbsUp,
+                color: _liked ? colorScheme.primary : iconColor,
+                onPressed: _handleLike,
+              )
               .animate(target: _likeAnimating ? 1.0 : 0.0)
               .scale(
                 begin: const Offset(1, 1),
@@ -120,12 +120,12 @@ class _MessageActionsState extends State<MessageActions> {
               ),
         if (_isAssistant)
           _ActionButton(
-            icon: _disliked
-                ? LucideIcons.thumbsDown
-                : LucideIcons.thumbsDown,
-            color: _disliked ? colorScheme.destructive : iconColor,
-            onPressed: _handleDislike,
-          )
+                icon: _disliked
+                    ? LucideIcons.thumbsDown
+                    : LucideIcons.thumbsDown,
+                color: _disliked ? colorScheme.destructive : iconColor,
+                onPressed: _handleDislike,
+              )
               .animate(target: _dislikeAnimating ? 1.0 : 0.0)
               .scale(
                 begin: const Offset(1, 1),

@@ -22,14 +22,9 @@ void main() {
   final wsService = WebSocketService();
 
   final apiClient = createApiClient('http://localhost:9800');
-  ErrorReporter.init(apiClient).catchError((_) {});
+  ErrorReporter.init(apiClient).then((_) {}).catchError((_) {});
 
-  runApp(
-    OpenFlowApp(
-      authStorage: authStorage,
-      wsService: wsService,
-    ),
-  );
+  runApp(OpenFlowApp(authStorage: authStorage, wsService: wsService));
 }
 
 class OpenFlowApp extends StatelessWidget {

@@ -25,16 +25,21 @@ class SessionsState extends Equatable {
   }) {
     return SessionsState(
       sessions: sessions ?? this.sessions,
-      activeSessionId:
-          clearActive ? null : (activeSessionId ?? this.activeSessionId),
+      activeSessionId: clearActive
+          ? null
+          : (activeSessionId ?? this.activeSessionId),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
   @override
-  List<Object?> get props =>
-      [sessions, activeSessionId, isLoading, errorMessage];
+  List<Object?> get props => [
+    sessions,
+    activeSessionId,
+    isLoading,
+    errorMessage,
+  ];
 }
 
 class SessionsCubit extends Cubit<SessionsState> {
@@ -54,7 +59,8 @@ class SessionsCubit extends Cubit<SessionsState> {
 
   void setSessions(List<SessionInfo> sessions) {
     emit(
-        state.copyWith(sessions: sessions, isLoading: false, clearError: true));
+      state.copyWith(sessions: sessions, isLoading: false, clearError: true),
+    );
   }
 
   void setActiveSessionId(String? id) {
@@ -79,11 +85,13 @@ class SessionsCubit extends Cubit<SessionsState> {
     final sessions = List<SessionInfo>.from(state.sessions)
       ..removeWhere((s) => s.id == sessionId);
     if (state.activeSessionId == sessionId) {
-      emit(state.copyWith(
-        sessions: sessions,
-        activeSessionId: sessions.isNotEmpty ? sessions.first.id : null,
-        clearActive: sessions.isEmpty,
-      ));
+      emit(
+        state.copyWith(
+          sessions: sessions,
+          activeSessionId: sessions.isNotEmpty ? sessions.first.id : null,
+          clearActive: sessions.isEmpty,
+        ),
+      );
     } else {
       emit(state.copyWith(sessions: sessions));
     }

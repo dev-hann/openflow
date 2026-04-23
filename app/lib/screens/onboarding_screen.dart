@@ -150,8 +150,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             if (_step.index > 0)
               Container(
                 height: 56,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                 child: Row(
                   children: [
                     ShadIconButton.ghost(
@@ -179,25 +178,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         children: [
           const SizedBox(height: AppSpacing.xxl),
-          Icon(
-            LucideIcons.sparkles,
-            size: 64,
-            color: colorScheme.primary,
-          ),
+          Icon(LucideIcons.sparkles, size: 64, color: colorScheme.primary),
           const SizedBox(height: AppSpacing.lg),
           Text(
             'OpenFlow',
-            style: ShadTheme.of(context).textTheme.h4.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: ShadTheme.of(
+              context,
+            ).textTheme.h4.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             '개인 AI 비서',
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.mutedForeground,
-            ),
+            style: TextStyle(fontSize: 16, color: colorScheme.mutedForeground),
           ),
           const SizedBox(height: AppSpacing.xxl),
           StepIndicator(currentIndex: _step.index),
@@ -252,9 +244,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: double.infinity,
           child: ShadButton(
             onPressed: _loading ? null : _submitServer,
-            child: _loading
-                ? const AppSpinner()
-                : const Text('연결'),
+            child: _loading ? const AppSpinner() : const Text('연결'),
           ),
         ),
       ],
@@ -276,10 +266,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: AppSpacing.sm),
         Text(
           '서버 화면에 표시된 6자리 PIN을 입력하세요',
-          style: TextStyle(
-            fontSize: 14,
-            color: colorScheme.mutedForeground,
-          ),
+          style: TextStyle(fontSize: 14, color: colorScheme.mutedForeground),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -293,9 +280,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: double.infinity,
           child: ShadButton(
             onPressed: _loading ? null : _submitPin,
-            child: _loading
-                ? const AppSpinner()
-                : const Text('인증'),
+            child: _loading ? const AppSpinner() : const Text('인증'),
           ),
         ),
       ],
@@ -303,10 +288,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildProviderStep() {
-    return ProviderForm(
-      showSkip: true,
-      onComplete: widget.onComplete,
-    );
+    return ProviderForm(showSkip: true, onComplete: widget.onComplete);
   }
 }
 

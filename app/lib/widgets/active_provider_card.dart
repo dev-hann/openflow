@@ -1,8 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ActiveProviderCard extends StatelessWidget {
   const ActiveProviderCard({
@@ -57,9 +56,7 @@ class ActiveProviderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      provider.model.isNotEmpty
-                          ? provider.model
-                          : '모델 미선택',
+                      provider.model.isNotEmpty ? provider.model : '모델 미선택',
                       style: TextStyle(
                         fontSize: 12,
                         color: provider.model.isNotEmpty

@@ -75,7 +75,7 @@ class _ThinkingSpinnerPainter extends CustomPainter {
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -1.5708,
-      4.0,
+      4,
       false,
       paint,
     );

@@ -63,11 +63,7 @@ class ChatEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _icon,
-              size: 64,
-              color: colorScheme.mutedForeground,
-            ),
+            Icon(_icon, size: 64, color: colorScheme.mutedForeground),
             const SizedBox(height: AppSpacing.lg),
             Text(
               _title,
@@ -111,22 +107,22 @@ class ChatEmptyState extends StatelessWidget {
   }
 
   IconData get _icon => switch (variant) {
-        EmptyStateVariant.disconnected => LucideIcons.cloudOff,
-        EmptyStateVariant.connecting => LucideIcons.cloudCog,
-        EmptyStateVariant.empty => LucideIcons.sparkles,
-      };
+    EmptyStateVariant.disconnected => LucideIcons.cloudOff,
+    EmptyStateVariant.connecting => LucideIcons.cloudCog,
+    EmptyStateVariant.empty => LucideIcons.sparkles,
+  };
 
   String get _title => switch (variant) {
-        EmptyStateVariant.disconnected => '서버에 연결되지 않았습니다',
-        EmptyStateVariant.connecting => '연결 중...',
-        EmptyStateVariant.empty => '무엇이든 물어보세요',
-      };
+    EmptyStateVariant.disconnected => '서버에 연결되지 않았습니다',
+    EmptyStateVariant.connecting => '연결 중...',
+    EmptyStateVariant.empty => '무엇이든 물어보세요',
+  };
 
   String get _subtitle => switch (variant) {
-        EmptyStateVariant.disconnected => '서버 주소를 설정하고 페어링을 진행해주세요',
-        EmptyStateVariant.connecting => '잠시만 기다려주세요',
-        EmptyStateVariant.empty => 'AI 비서와 대화를 시작해보세요',
-      };
+    EmptyStateVariant.disconnected => '서버 주소를 설정하고 페어링을 진행해주세요',
+    EmptyStateVariant.connecting => '잠시만 기다려주세요',
+    EmptyStateVariant.empty => 'AI 비서와 대화를 시작해보세요',
+  };
 }
 
 class _SuggestionGrid extends StatelessWidget {
@@ -163,11 +159,7 @@ class _SuggestionGrid extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  card.icon,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
+                Icon(card.icon, size: 20, color: colorScheme.primary),
                 const SizedBox(height: 4),
                 Text(
                   card.title,

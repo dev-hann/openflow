@@ -73,12 +73,14 @@ class _MessageBubbleState extends State<MessageBubble> {
         bottom: widget.isLastInGroup ? AppSpacing.sm : 2,
       ),
       child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment:
-                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isUser
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!isUser) _buildAvatar(theme),
@@ -118,10 +120,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
   Widget _buildActions(bool isUser) {
     return Padding(
-      padding: EdgeInsets.only(
-        left: isUser ? 0 : 48,
-        top: 2,
-      ),
+      padding: EdgeInsets.only(left: isUser ? 0 : 48, top: 2),
       child: MessageActions(
         message: widget.message,
         isLastAssistant: widget.isLastAssistant,
@@ -132,11 +131,10 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   Widget _buildBubble(BuildContext context, ShadThemeData theme, bool isUser) {
-    final bgColor = isUser
-        ? theme.colorScheme.primary
-        : theme.colorScheme.card;
-    final fgColor =
-        isUser ? theme.colorScheme.primaryForeground : theme.colorScheme.foreground;
+    final bgColor = isUser ? theme.colorScheme.primary : theme.colorScheme.card;
+    final fgColor = isUser
+        ? theme.colorScheme.primaryForeground
+        : theme.colorScheme.foreground;
 
     return Container(
       padding: const EdgeInsets.symmetric(

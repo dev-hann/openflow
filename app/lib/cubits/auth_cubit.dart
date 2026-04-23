@@ -70,7 +70,8 @@ class AuthCubit extends Cubit<AuthState> {
   Future<String?> getValidToken() async {
     final auth = state.storedAuth;
     if (auth == null) return null;
-    final age = DateTime.now().millisecondsSinceEpoch -
+    final age =
+        DateTime.now().millisecondsSinceEpoch -
         auth.pairedAt.millisecondsSinceEpoch;
     if (age > 50 * 60 * 1000) {
       return refreshIfNeeded();

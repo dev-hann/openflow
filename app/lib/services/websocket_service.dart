@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef WsMessageCallback = void Function(WsServerMessage);
 typedef NoArgsCallback = void Function();
@@ -96,8 +95,9 @@ class WebSocketService {
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl!));
-      _channel!.sink
-          .add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
+      _channel!.sink.add(
+        jsonEncode(WsAuth(accessToken: _accessToken!).toJson()),
+      );
       _subscription = _channel!.stream.listen(
         _handleData,
         onError: _handleError,
@@ -115,8 +115,9 @@ class WebSocketService {
 
       switch (message) {
         case WsAuthRequired():
-          _channel?.sink
-              .add(jsonEncode(WsAuth(accessToken: _accessToken!).toJson()));
+          _channel?.sink.add(
+            jsonEncode(WsAuth(accessToken: _accessToken!).toJson()),
+          );
         case WsAuthOk():
           _reconnectAttempts = 0;
           _connectionState = WsConnectionState.connected;

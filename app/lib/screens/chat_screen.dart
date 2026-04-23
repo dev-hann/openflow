@@ -113,9 +113,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _totalMessages = result.total;
     } on Object {
       if (mounted) {
-        ShadToaster.of(context).show(
-          const ShadToast(title: Text('메시지를 불러올 수 없습니다.')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(const ShadToast(title: Text('메시지를 불러올 수 없습니다.')));
       }
     } finally {
       if (mounted) setState(() => _isLoadingHistory = false);
@@ -148,9 +148,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       case WsError(:final message):
         chatCubit.markLastMessageFailed();
         _sendTimeout?.cancel();
-        ShadToaster.of(context).show(
-          ShadToast.destructive(title: Text('오류: $message')),
-        );
+        ShadToaster.of(
+          context,
+        ).show(ShadToast.destructive(title: Text('오류: $message')));
       case WsSessionSwitched(:final sessionId):
         _sendTimeout?.cancel();
         context.read<SessionsCubit>().setActiveSessionId(sessionId);

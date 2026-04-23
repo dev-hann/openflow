@@ -127,7 +127,10 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppListTile(
-                leading: Icon(LucideIcons.trash2, color: ShadTheme.of(context).colorScheme.destructive),
+                leading: Icon(
+                  LucideIcons.trash2,
+                  color: ShadTheme.of(context).colorScheme.destructive,
+                ),
                 title: const Text('세션 삭제'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -155,12 +158,14 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
         _buildHeader(context),
         _buildSearchField(context),
         const SizedBox(height: AppSpacing.xs),
-        Flexible(
-          child: _buildSessionList(context, sorted, grouped),
-        ),
+        Flexible(child: _buildSessionList(context, sorted, grouped)),
         const ShadSeparator.horizontal(),
         AppListTile(
-          leading: Icon(LucideIcons.settings, size: 20, color: ShadTheme.of(context).colorScheme.mutedForeground),
+          leading: Icon(
+            LucideIcons.settings,
+            size: 20,
+            color: ShadTheme.of(context).colorScheme.mutedForeground,
+          ),
           title: const Text('설정'),
           onTap: widget.onSettings,
         ),
@@ -199,7 +204,7 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
           const Spacer(),
           ShadIconButton.ghost(
             onPressed: widget.onNewChat,
-            icon: Icon(LucideIcons.plus),
+            icon: const Icon(LucideIcons.plus),
           ),
         ],
       ),
@@ -217,7 +222,11 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
         placeholder: const Text('검색...'),
         leading: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.sm),
-          child: Icon(LucideIcons.search, size: 20, color: ShadTheme.of(context).colorScheme.mutedForeground),
+          child: Icon(
+            LucideIcons.search,
+            size: 20,
+            color: ShadTheme.of(context).colorScheme.mutedForeground,
+          ),
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,

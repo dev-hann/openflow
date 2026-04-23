@@ -20,8 +20,11 @@ class ApiException extends Equatable implements Exception {
 }
 
 class ApiError extends Equatable implements Exception {
-  const ApiError(
-      {required this.status, required this.code, required this.message});
+  const ApiError({
+    required this.status,
+    required this.code,
+    required this.message,
+  });
   final int status;
   final String code;
   final String message;
@@ -56,13 +59,14 @@ class ApiClient {
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
   Map<String, String> _headers() => {
-        'Content-Type': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
-      };
+    'Content-Type': 'application/json',
+    if (_token != null) 'Authorization': 'Bearer $_token',
+  };
 
   Future<Map<String, dynamic>> _get(String path) async {
-    final response =
-        await _client.get(_uri(path), headers: _headers()).timeout(_timeout);
+    final response = await _client
+        .get(_uri(path), headers: _headers())
+        .timeout(_timeout);
     return _parse(response);
   }
 
@@ -87,8 +91,9 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> _delete(String path) async {
-    final response =
-        await _client.delete(_uri(path), headers: _headers()).timeout(_timeout);
+    final response = await _client
+        .delete(_uri(path), headers: _headers())
+        .timeout(_timeout);
     return _parse(response);
   }
 
@@ -159,12 +164,9 @@ class ApiClient {
   }
 
   Future<SessionInfo> createSession([String? title]) async {
-    final json = await _post(
-      '/api/sessions',
-      {
-        if (title != null) 'title': title,
-      },
-    );
+    final json = await _post('/api/sessions', {
+      if (title != null) 'title': title,
+    });
     return SessionInfo.fromJson(json);
   }
 
@@ -177,24 +179,27 @@ class ApiClient {
     int limit = 50,
     int offset = 0,
   }) async {
-    final uri = _uri('/api/sessions/$sessionId/messages').replace(
-      queryParameters: {'limit': '$limit', 'offset': '$offset'},
-    );
-    final response =
-        await _client.get(uri, headers: _headers()).timeout(_timeout);
+    final uri = _uri(
+      '/api/sessions/$sessionId/messages',
+    ).replace(queryParameters: {'limit': '$limit', 'offset': '$offset'});
+    final response = await _client
+        .get(uri, headers: _headers())
+        .timeout(_timeout);
     final json = _parse(response);
     final list = json['messages'] as List<dynamic>;
     final messages = <ChatMessage>[];
     for (var i = 0; i < list.length; i++) {
       final e = list[i] as Map<String, dynamic>;
-      messages.add(ChatMessage(
-        id: e['id']?.toString() ?? '${sessionId}_${e['createdAt']}_$i',
-        role: e['role'] == 'user' ? MessageRole.user : MessageRole.assistant,
-        content: e['content'] as String? ?? '',
-        timestamp: DateTime.fromMillisecondsSinceEpoch(
-          (e['createdAt'] as num?)?.toInt() ?? 0,
+      messages.add(
+        ChatMessage(
+          id: e['id']?.toString() ?? '${sessionId}_${e['createdAt']}_$i',
+          role: e['role'] == 'user' ? MessageRole.user : MessageRole.assistant,
+          content: e['content'] as String? ?? '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(
+            (e['createdAt'] as num?)?.toInt() ?? 0,
+          ),
         ),
-      ));
+      );
     }
     return MessageListResult(
       messages: messages,
@@ -240,10 +245,7 @@ class ApiClient {
   }
 
   Future<void> switchProvider(String providerId) async {
-    await _put(
-      '/api/providers/current',
-      {'providerId': providerId},
-    );
+    await _put('/api/providers/current', {'providerId': providerId});
   }
 
   Future<void> reportError({
@@ -263,7 +265,7 @@ class ApiClient {
         if (stackTrace != null) 'stackTrace': stackTrace,
         if (metadata != null) 'metadata': metadata,
       });
-    } catch (_) {
+    } on Object {
       // silently ignore - error reporting should not cause more errors
     }
   }

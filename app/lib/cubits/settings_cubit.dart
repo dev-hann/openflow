@@ -2,15 +2,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SettingsState extends Equatable {
-  const SettingsState({
-    this.serverUrl,
-  });
+  const SettingsState({this.serverUrl});
   final String? serverUrl;
 
-  SettingsState copyWith({
-    String? serverUrl,
-    bool clearServerUrl = false,
-  }) {
+  SettingsState copyWith({String? serverUrl, bool clearServerUrl = false}) {
     return SettingsState(
       serverUrl: clearServerUrl ? null : (serverUrl ?? this.serverUrl),
     );

@@ -11,17 +11,17 @@ class ProviderInfo extends Equatable {
   });
 
   factory ProviderInfo.fromJson(Map<String, dynamic> json) => ProviderInfo(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        baseUrl: json['baseUrl'] as String? ?? '',
-        model: json['model'] as String? ?? '',
-        isActive: json['isActive'] as bool? ?? false,
-        createdAt: json['createdAt'] != null
-            ? DateTime.fromMillisecondsSinceEpoch(
-                (json['createdAt'] as num).toInt(),
-              )
-            : DateTime.now(),
-      );
+    id: json['id'] as String? ?? '',
+    name: json['name'] as String? ?? '',
+    baseUrl: json['baseUrl'] as String? ?? '',
+    model: json['model'] as String? ?? '',
+    isActive: json['isActive'] as bool? ?? false,
+    createdAt: json['createdAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(
+            (json['createdAt'] as num).toInt(),
+          )
+        : DateTime.now(),
+  );
   final String id;
   final String name;
   final String baseUrl;

@@ -1,10 +1,9 @@
 import 'package:flutter/widgets.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ActiveProviderSection extends StatelessWidget {
   const ActiveProviderSection({
@@ -36,17 +35,17 @@ class ActiveProviderSection extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           if (active != null)
-            ActiveProviderCard(
-              provider: active,
-              onTap: () => onTap(active),
-            )
+            ActiveProviderCard(provider: active, onTap: () => onTap(active))
           else
             ShadCard(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                  Icon(LucideIcons.info,
-                      size: 20, color: colorScheme.mutedForeground),
+                  Icon(
+                    LucideIcons.info,
+                    size: 20,
+                    color: colorScheme.mutedForeground,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(

@@ -33,8 +33,8 @@ class _SpinnerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
-    final sweepAngle = 4.0;
-    final startAngle = -1.5708;
+    const sweepAngle = 4.0;
+    const startAngle = -1.5708;
 
     final paint = Paint()
       ..color = color

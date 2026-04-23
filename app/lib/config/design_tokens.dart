@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:mix/mix.dart';
 
-final $brandPrimary = ColorToken('brandPrimary');
-final $brandPrimaryHover = ColorToken('brandPrimaryHover');
-final $brandPrimaryLight = ColorToken('brandPrimaryLight');
-final $statusSuccess = ColorToken('statusSuccess');
-final $statusError = ColorToken('statusError');
+const $brandPrimary = ColorToken('brandPrimary');
+const $brandPrimaryHover = ColorToken('brandPrimaryHover');
+const $brandPrimaryLight = ColorToken('brandPrimaryLight');
+const $statusSuccess = ColorToken('statusSuccess');
+const $statusError = ColorToken('statusError');
 
-final $spaceXs = SpaceToken('space.xs');
-final $spaceSm = SpaceToken('space.sm');
-final $spaceMd = SpaceToken('space.md');
-final $spaceLg = SpaceToken('space.lg');
-final $spaceXl = SpaceToken('space.xl');
-final $spaceXxl = SpaceToken('space.xxl');
+const $spaceXs = SpaceToken('space.xs');
+const $spaceSm = SpaceToken('space.sm');
+const $spaceMd = SpaceToken('space.md');
+const $spaceLg = SpaceToken('space.lg');
+const $spaceXl = SpaceToken('space.xl');
+const $spaceXxl = SpaceToken('space.xxl');
 
 class AppSpacing {
   AppSpacing._();

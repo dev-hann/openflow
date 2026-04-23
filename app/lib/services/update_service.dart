@@ -115,7 +115,8 @@ class UpdateService {
     ReleaseInfo release, {
     void Function(int received, int total)? onProgress,
   }) async {
-    final asset = _findArm64Apk(release) ??
+    final asset =
+        _findArm64Apk(release) ??
         release.assets.where((a) => a.name.endsWith('.apk')).firstOrNull;
 
     if (asset == null) {
@@ -146,8 +147,8 @@ class UpdateService {
   }
 
   int _compareVersions(String a, String b) {
-    final cleanA = a.split(RegExp(r'[-+]')).first;
-    final cleanB = b.split(RegExp(r'[-+]')).first;
+    final cleanA = a.split(RegExp('[-+]')).first;
+    final cleanB = b.split(RegExp('[-+]')).first;
     final partsA = cleanA.split('.').map((s) => int.tryParse(s) ?? 0).toList();
     final partsB = cleanB.split('.').map((s) => int.tryParse(s) ?? 0).toList();
 

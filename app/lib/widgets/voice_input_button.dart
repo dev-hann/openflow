@@ -92,11 +92,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
     }
 
     return ShadIconButton.ghost(
-      icon: Icon(
-        LucideIcons.mic,
-        size: 22,
-        color: colorScheme.mutedForeground,
-      ),
+      icon: Icon(LucideIcons.mic, size: 22, color: colorScheme.mutedForeground),
       onPressed: widget.enabled ? _toggleListening : null,
     );
   }
@@ -116,29 +112,30 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(3, (i) {
             return Container(
-              width: 3,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 1),
-              decoration: BoxDecoration(
-                color: destructive,
-                borderRadius: BorderRadius.circular(1.5),
-              ),
-            ).animate(onPlay: (c) => c.repeat(reverse: true))
-              .custom(
-                duration: 600.ms,
-                delay: (i * 120).ms,
-                builder: (context, value, child) {
-                  return Container(
-                    width: 3,
-                    height: 8.0 + 16.0 * value,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: BoxDecoration(
-                      color: destructive,
-                      borderRadius: BorderRadius.circular(1.5),
-                    ),
-                  );
-                },
-              );
+                  width: 3,
+                  height: 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  decoration: BoxDecoration(
+                    color: destructive,
+                    borderRadius: BorderRadius.circular(1.5),
+                  ),
+                )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .custom(
+                  duration: 600.ms,
+                  delay: (i * 120).ms,
+                  builder: (context, value, child) {
+                    return Container(
+                      width: 3,
+                      height: 8.0 + 16.0 * value,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: BoxDecoration(
+                        color: destructive,
+                        borderRadius: BorderRadius.circular(1.5),
+                      ),
+                    );
+                  },
+                );
           }),
         ),
       ),

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
-
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/config/theme.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
@@ -19,6 +17,7 @@ import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
 import 'package:openflow/widgets/adaptive_scaffold.dart';
 import 'package:openflow/widgets/session_sheet.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class OpenFlowMaterialApp extends StatelessWidget {
   const OpenFlowMaterialApp({super.key});
@@ -30,7 +29,6 @@ class OpenFlowMaterialApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
-      debugShowCheckedModeBanner: false,
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState.storedAuth == null) {
@@ -74,7 +72,9 @@ class _MainScreenState extends State<MainScreen> {
           context.read<SessionsCubit>().setActiveSessionId(sessions.first.id);
         }
       }
-    } on Object {}
+    } on Object catch (e) {
+      debugPrint('Failed to load sessions: $e');
+    }
   }
 
   @override
@@ -94,7 +94,7 @@ class _MainScreenState extends State<MainScreen> {
             child: Column(
               children: [
                 _buildAppBar(context, title, shadTheme),
-                Expanded(child: const ChatScreen()),
+                const Expanded(child: ChatScreen()),
               ],
             ),
           ),
@@ -204,15 +204,17 @@ class _MainScreenState extends State<MainScreen> {
           }
         }
       }
-    } on Object {}
+    } on Object catch (e) {
+      debugPrint('Failed to delete session: $e');
+    }
   }
 
   void _handleSettings() {
     unawaited(
       Navigator.of(context).push<void>(
         PageRouteBuilder<void>(
-          pageBuilder: (_, __, ___) => const SettingsScreen(),
-          transitionsBuilder: (_, animation, __, child) => SlideTransition(
+          pageBuilder: (_, _, _) => const SettingsScreen(),
+          transitionsBuilder: (_, animation, _, child) => SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(1, 0),
               end: Offset.zero,
@@ -235,7 +237,6 @@ class _AppBarTitle extends StatelessWidget {
     final shadTheme = ShadTheme.of(context);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           title,

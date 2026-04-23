@@ -13,14 +13,12 @@ class TypingIndicator extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: List.generate(3, (i) {
         return Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ).animate(onPlay: (c) => c.repeat())
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            )
+            .animate(onPlay: (c) => c.repeat())
             .custom(
               duration: 400.ms,
               delay: (i * 133).ms,

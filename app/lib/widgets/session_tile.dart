@@ -21,9 +21,7 @@ class SessionGroupHeader extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: theme.textTheme.muted.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        style: theme.textTheme.muted.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -49,15 +47,13 @@ class SessionTile extends StatelessWidget {
       backgroundColor: isActive
           ? theme.colorScheme.primary.withValues(alpha: 0.1)
           : null,
-      leading: Icon(LucideIcons.messageSquare, size: 20, color: theme.colorScheme.mutedForeground),
-      title: Text(
-        session.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      leading: Icon(
+        LucideIcons.messageSquare,
+        size: 20,
+        color: theme.colorScheme.mutedForeground,
       ),
-      subtitle: Text(
-        formatRelativeTime(session.createdAt),
-      ),
+      title: Text(session.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(formatRelativeTime(session.createdAt)),
       trailing: isActive
           ? Container(
               width: 6,
