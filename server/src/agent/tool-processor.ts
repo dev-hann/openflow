@@ -60,6 +60,7 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
     try {
       parsedArgs = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
     } catch {
+      const parseFailedMsg = `Failed to parse tool arguments for "${toolName}"`;
       log.warn(
         {
           sessionId,
@@ -70,14 +71,14 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
       );
       const errorMsg: ChatMessage = {
         role: "tool",
-        content: `Failed to parse tool arguments for "${toolName}"`,
+        content: parseFailedMsg,
         tool_call_id: toolCall.id,
       };
       try {
         memory.addMessage({
           sessionId,
           role: "tool",
-          content: `Failed to parse tool arguments for "${toolName}"`,
+          content: parseFailedMsg,
           toolCallId: toolCall.id,
         });
       } catch (err: unknown) {
