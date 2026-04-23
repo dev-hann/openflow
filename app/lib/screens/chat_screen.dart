@@ -163,10 +163,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         context.read<SessionsCubit>().setActiveSessionId(sessionId);
         chatCubit.clearMessages();
         unawaited(_loadMessages(sessionId));
+      case WsNotification(:final message):
+        ShadToaster.of(context).show(ShadToast(title: Text(message)));
       case WsAuthRequired():
       case WsAuthOk():
       case WsPong():
-      case WsNotification():
       case WsUnknown():
         break;
     }
@@ -242,8 +243,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     unawaited(_sendMessage(text));
   }
 
-  void _reconnect() => _connectWebSocket();
-
   String _generateId() =>
       '_msg_${DateTime.now().millisecondsSinceEpoch}_${++_msgCounter}';
 
@@ -253,20 +252,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       builder: (context, authState) {
         return BlocBuilder<ChatCubit, ChatState>(
           builder: (context, chatState) {
-            if (authState.storedAuth == null) {
+            if (authState.storedAuth == null || !authState.isConnected) {
               return ChatEmptyState(
-                variant: EmptyStateVariant.disconnected,
+                variant: authState.storedAuth == null
+                    ? EmptyStateVariant.disconnected
+                    : EmptyStateVariant.connecting,
                 isSending: false,
                 onSuggestion: _sendMessage,
-                onReconnect: _reconnect,
-              );
-            }
-            if (!authState.isConnected) {
-              return ChatEmptyState(
-                variant: EmptyStateVariant.connecting,
-                isSending: false,
-                onSuggestion: _sendMessage,
-                onReconnect: _reconnect,
+                onReconnect: _connectWebSocket,
               );
             }
             return _buildChatContent(chatState);
@@ -287,7 +280,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                   variant: EmptyStateVariant.empty,
                   isSending: chatState.isSending,
                   onSuggestion: _sendMessage,
-                  onReconnect: _reconnect,
+                  onReconnect: _connectWebSocket,
                 )
               : MessageList(
                   key: _listKey,

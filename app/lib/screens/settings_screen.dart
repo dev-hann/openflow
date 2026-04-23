@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart' show MaterialPageRoute;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/config/design_tokens.dart';
@@ -71,6 +72,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<ApiClient?> _createApi() async {
+    final token = await context.read<AuthCubit>().getValidToken();
+    if (token == null) return null;
+    return createApiClient(
+      context.read<AuthCubit>().state.storedAuth!.serverUrl,
+      token: token,
+    );
+  }
+
   Future<void> _handleServerChanged() async {
     final confirmed = await showShadDialog<bool>(
       context: context,
@@ -91,33 +101,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    final authCubit = context.read<AuthCubit>();
-    final ws = context.read<WebSocketService>();
-    final sessionsCubit = context.read<SessionsCubit>();
-    final providersCubit = context.read<ProvidersCubit>();
-    final settingsCubit = context.read<SettingsCubit>();
-    ws.disconnect();
-    sessionsCubit.setSessions([]);
-    providersCubit.setProviders([]);
-    settingsCubit.clearServerUrl();
-    await authCubit.clearAll();
+    context.read<WebSocketService>().disconnect();
+    context.read<SessionsCubit>().setSessions([]);
+    context.read<ProvidersCubit>().setProviders([]);
+    context.read<SettingsCubit>().clearServerUrl();
+    await context.read<AuthCubit>().clearAll();
     if (mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 
   Future<void> _switchProvider(String providerId) async {
-    final authCubit = context.read<AuthCubit>();
     final providersCubit = context.read<ProvidersCubit>();
-    final token = await authCubit.getValidToken();
-    if (token == null) return;
+    final api = await _createApi();
+    if (api == null) return;
 
     providersCubit.setSwitching(true);
     try {
-      final api = createApiClient(
-        authCubit.state.storedAuth!.serverUrl,
-        token: token,
-      );
       await api.switchProvider(providerId);
       final providers = await api.listProviders();
       if (mounted) providersCubit.setProviders(providers);
@@ -128,17 +128,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ).show(ShadToast(title: Text('Provider 전환 실패: ${toUserMessage(e)}')));
       }
     } finally {
-      if (context.mounted) {
-        providersCubit.setSwitching(false);
-      }
+      if (context.mounted) providersCubit.setSwitching(false);
     }
   }
 
   Future<void> _deleteProvider(String providerId) async {
-    final authCubit = context.read<AuthCubit>();
     final providersCubit = context.read<ProvidersCubit>();
-    final token = await authCubit.getValidToken();
-    if (token == null) return;
+    final api = await _createApi();
+    if (api == null) return;
 
     final provider = providersCubit.state.providers
         .where((p) => p.id == providerId)
@@ -166,10 +163,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final api = createApiClient(
-        authCubit.state.storedAuth!.serverUrl,
-        token: token,
-      );
       await api.deleteProvider(providerId);
       providersCubit.removeProvider(providerId);
     } on Object catch (e) {
@@ -182,20 +175,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showModelSheet(ProviderInfo provider) async {
-    final authCubit = context.read<AuthCubit>();
     final providersCubit = context.read<ProvidersCubit>();
-    final token = await authCubit.getValidToken();
-    if (token == null || !mounted) return;
+    final api = await _createApi();
+    if (api == null || !mounted) return;
 
     providersCubit.setLoadingModels(true);
     providersCubit.setAvailableModels([]);
 
     var models = <String>[];
     try {
-      final api = createApiClient(
-        authCubit.state.storedAuth!.serverUrl,
-        token: token,
-      );
       models = await api.fetchProviderModels(provider.id);
     } on Object {
       if (mounted) {
@@ -217,15 +205,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (selected == null || selected == provider.model || !mounted) return;
 
-    final freshToken = await authCubit.getValidToken();
-    if (freshToken == null) return;
+    final updateApi = await _createApi();
+    if (updateApi == null) return;
 
     try {
-      final api = createApiClient(
-        authCubit.state.storedAuth!.serverUrl,
-        token: freshToken,
-      );
-      final updated = await api.updateProvider(provider.id, {
+      final updated = await updateApi.updateProvider(provider.id, {
         'model': selected,
       });
       if (mounted) {
@@ -242,15 +226,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _navigateToProviderEdit([ProviderInfo? provider]) async {
     await Navigator.of(context).push<void>(
-      PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => ProviderEditScreen(provider: provider),
-        transitionsBuilder: (_, animation, _, child) => SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1, 0),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        ),
+      MaterialPageRoute<void>(
+        builder: (_) => ProviderEditScreen(provider: provider),
       ),
     );
     if (mounted) unawaited(_loadData());

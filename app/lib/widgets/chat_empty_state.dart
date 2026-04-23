@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Colors, InkWell, Material;
 import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -148,30 +149,38 @@ class _SuggestionGrid extends StatelessWidget {
       crossAxisSpacing: AppSpacing.sm,
       childAspectRatio: 2.2,
       children: suggestions.map((card) {
-        return GestureDetector(
-          onTap: isSending ? null : () => onSuggestion(card.prompt),
-          child: ShadCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: 6,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(card.icon, size: 20, color: colorScheme.primary),
-                const SizedBox(height: 4),
-                Text(
-                  card.title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.foreground,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        return Semantics(
+          button: true,
+          label: card.title,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isSending ? null : () => onSuggestion(card.prompt),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: ShadCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 6,
                 ),
-              ],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(card.icon, size: 20, color: colorScheme.primary),
+                    const SizedBox(height: 4),
+                    Text(
+                      card.title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.foreground,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         );

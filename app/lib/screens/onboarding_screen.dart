@@ -6,6 +6,7 @@ import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/utils/user_friendly_error.dart';
 import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/pin_input.dart';
 import 'package:openflow/widgets/provider_form.dart';
@@ -88,9 +89,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _step = _Step.pin;
         _loading = false;
       });
-    } on Object {
+    } on Object catch (e) {
       setState(() {
-        _error = '서버에 연결할 수 없습니다.';
+        _error = toUserMessage(e);
         _loading = false;
       });
     }
@@ -129,9 +130,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _loading = false;
         _isVerifying = false;
       });
-    } on Object {
+    } on Object catch (e) {
       setState(() {
-        _error = 'PIN 인증에 실패했습니다.';
+        _error = toUserMessage(e);
         _loading = false;
         _isVerifying = false;
       });
