@@ -156,7 +156,8 @@ describe("readJsonBody", () => {
     };
 
     const result = await readJsonBody(req);
-    expect(result).toEqual({ name: "test" });
+    expect(result.value).toEqual({ name: "test" });
+    expect(result.parseError).toBeUndefined();
   });
 
   it("should return empty object for empty body", async () => {
@@ -166,17 +167,18 @@ describe("readJsonBody", () => {
     };
 
     const result = await readJsonBody(req);
-    expect(result).toEqual({});
+    expect(result.value).toEqual({});
   });
 
-  it("should return null for invalid JSON", async () => {
+  it("should return null value and parseError for invalid JSON", async () => {
     const req = createMockRequest();
     req[Symbol.asyncIterator] = async function* () {
       yield Buffer.from("not json");
     };
 
     const result = await readJsonBody(req);
-    expect(result).toBeNull();
+    expect(result.value).toBeNull();
+    expect(result.parseError).toBeDefined();
   });
 
   it("should reject body exceeding max size", async () => {

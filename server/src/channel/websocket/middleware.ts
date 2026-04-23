@@ -66,7 +66,12 @@ export function sendApiError(
 
 const MAX_BODY_SIZE = 1024 * 1024;
 
-export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+export interface JsonBodyResult {
+  value: unknown;
+  parseError?: string;
+}
+
+export async function readJsonBody(req: IncomingMessage): Promise<JsonBodyResult> {
   const chunks: Buffer[] = [];
   let totalSize = 0;
   for await (const chunk of req) {
@@ -78,12 +83,13 @@ export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
     chunks.push(buf);
   }
   const body = Buffer.concat(chunks).toString("utf-8");
-  if (!body.trim()) return {};
+  if (!body.trim()) return { value: {} };
   try {
-    return JSON.parse(body);
-  } catch {
-    log.warn("invalid JSON body");
-    return null;
+    return { value: JSON.parse(body) };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.warn({ parseError: msg }, "invalid JSON body");
+    return { value: null, parseError: msg };
   }
 }
 
@@ -91,16 +97,17 @@ export async function readJsonObject(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<Record<string, unknown> | null> {
-  const body = await readJsonBody(req);
-  if (body === null) {
-    sendApiError(res, 400, "invalid_json", "Invalid JSON in request body");
+  const result = await readJsonBody(req);
+  if (result.value === null) {
+    const detail = result.parseError ? `: ${result.parseError}` : "";
+    sendApiError(res, 400, "invalid_json", `Invalid JSON in request body${detail}`);
     return null;
   }
-  if (typeof body !== "object") {
+  if (typeof result.value !== "object") {
     sendApiError(res, 400, "invalid_body", "Request body must be a JSON object");
     return null;
   }
-  return body as Record<string, unknown>;
+  return result.value as Record<string, unknown>;
 }
 
 export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
