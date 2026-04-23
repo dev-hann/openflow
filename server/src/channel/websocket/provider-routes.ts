@@ -252,6 +252,12 @@ async function handleProviderModels(
     }
     const raw = await resp.json();
     const parsed = ProviderModelsResponseSchema.safeParse(raw);
+    if (!parsed.success) {
+      log.warn(
+        { providerId: provider.id, issues: parsed.error.issues.map((i) => i.message) },
+        "upstream models response did not match expected schema",
+      );
+    }
     const models = parsed.success
       ? parsed.data.data.map((m) => m.id).sort()
       : [];
