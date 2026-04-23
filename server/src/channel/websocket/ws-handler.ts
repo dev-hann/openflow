@@ -39,8 +39,12 @@ export function createWsHandler(deps: WsHandlerDeps) {
           return { sessionKey: payload.sessionKey, activeSessionId: null };
         }
       }
-    } catch {
-      log.debug({ text: text.slice(0, 100) }, "non-JSON message during auth");
+    } catch (err: unknown) {
+      if (err instanceof SyntaxError) {
+        log.debug({ text: text.slice(0, 100) }, "non-JSON message during auth");
+      } else {
+        log.warn({ err }, "unexpected error during WS auth");
+      }
     }
     return null;
   }
