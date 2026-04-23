@@ -28,8 +28,8 @@ export function isPrivateHostname(hostname: string): boolean {
   if (
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0" ||
     hostname === "::1" ||
+    hostname === "::" ||
     hostname.endsWith(".local") ||
     hostname.endsWith(".internal")
   ) {
@@ -40,17 +40,25 @@ export function isPrivateHostname(hostname: string): boolean {
   if (isIPv4) {
     const octets = hostname.split(".").map(Number);
     if (
+      octets[0]! === 0 ||
       octets[0]! === 10 ||
+      (octets[0]! === 100 && octets[1]! >= 64 && octets[1]! <= 127) ||
+      (octets[0]! === 127) ||
+      (octets[0]! === 169 && octets[1]! === 254) ||
       (octets[0]! === 172 && octets[1]! >= 16 && octets[1]! <= 31) ||
       (octets[0]! === 192 && octets[1]! === 168) ||
-      (octets[0]! === 169 && octets[1]! === 254)
+      octets[0]! >= 240
     ) {
       return true;
     }
   }
 
   if (hostname.includes(":")) {
-    if (hostname.startsWith("fc") || hostname.startsWith("fe80")) {
+    if (
+      hostname.startsWith("fc") ||
+      hostname.startsWith("fd") ||
+      /^fe[89ab]/.test(hostname)
+    ) {
       return true;
     }
   }

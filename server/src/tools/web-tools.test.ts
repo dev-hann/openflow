@@ -42,8 +42,45 @@ describe("isPrivateHostname", () => {
     expect(isPrivateHostname("fc00::1")).toBe(true);
   });
 
+  it("should detect IPv6 unique local fd prefix", () => {
+    expect(isPrivateHostname("fd00::1")).toBe(true);
+  });
+
   it("should detect IPv6 link-local fe80 prefix", () => {
     expect(isPrivateHostname("fe80::1")).toBe(true);
+  });
+
+  it("should detect IPv6 link-local fe90-febf range", () => {
+    expect(isPrivateHostname("fe90::1")).toBe(true);
+    expect(isPrivateHostname("feaa::1")).toBe(true);
+    expect(isPrivateHostname("febf::1")).toBe(true);
+  });
+
+  it("should detect 0.0.0.0/8 current network", () => {
+    expect(isPrivateHostname("0.0.0.0")).toBe(true);
+    expect(isPrivateHostname("0.1.2.3")).toBe(true);
+  });
+
+  it("should detect 100.64.0.0/10 CGNAT range", () => {
+    expect(isPrivateHostname("100.64.0.1")).toBe(true);
+    expect(isPrivateHostname("100.127.255.1")).toBe(true);
+  });
+
+  it("should not flag 100.63.x as CGNAT", () => {
+    expect(isPrivateHostname("100.63.0.1")).toBe(false);
+  });
+
+  it("should not flag 100.128.x as CGNAT", () => {
+    expect(isPrivateHostname("100.128.0.1")).toBe(false);
+  });
+
+  it("should detect unspecified IPv6 address", () => {
+    expect(isPrivateHostname("::")).toBe(true);
+  });
+
+  it("should detect 240+ reserved range", () => {
+    expect(isPrivateHostname("240.0.0.1")).toBe(true);
+    expect(isPrivateHostname("255.255.255.255")).toBe(true);
   });
 
   it("should detect .local domains", () => {
@@ -137,8 +174,24 @@ describe("validateUrl", () => {
     expect(() => validateUrl("http://[fc00::1]/")).toThrow("private/internal networks");
   });
 
+  it("should block fd-prefix (IPv6 unique local)", () => {
+    expect(() => validateUrl("http://[fd00::1]/")).toThrow("private/internal networks");
+  });
+
   it("should block fe80-prefix (IPv6 link-local)", () => {
     expect(() => validateUrl("http://[fe80::1]/")).toThrow("private/internal networks");
+  });
+
+  it("should block fe90-prefix (IPv6 link-local)", () => {
+    expect(() => validateUrl("http://[fe90::1]/")).toThrow("private/internal networks");
+  });
+
+  it("should block unspecified IPv6 address", () => {
+    expect(() => validateUrl("http://[::]/")).toThrow("private/internal networks");
+  });
+
+  it("should block 100.64.x CGNAT range", () => {
+    expect(() => validateUrl("http://100.64.0.1/")).toThrow("private/internal networks");
   });
 
   it("should allow fc-domain.com hostname", () => {
