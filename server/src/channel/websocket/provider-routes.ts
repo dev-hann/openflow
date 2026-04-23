@@ -134,8 +134,13 @@ async function handleProviderCreate(
     model,
     isDefault,
   });
-  deps.providerPool.syncFromStore();
-  if (isDefault) deps.providerPool.switchProvider(provider.id);
+  if (isDefault) {
+    deps.providerStore.setDefault(provider.id);
+    deps.providerPool.syncFromStore();
+    deps.providerPool.switchProvider(provider.id);
+  } else {
+    deps.providerPool.syncFromStore();
+  }
   log.info({ providerId: provider.id, name }, "provider created via API");
 
   verifyProviderConnectivity(baseUrl, apiKey)
