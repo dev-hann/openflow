@@ -90,6 +90,9 @@ export function createWebSocketChannel(
           })
           .catch((err) => {
             log.error({ err }, "unhandled request error");
+            if (!res.headersSent) {
+              sendApiError(res, 500, "internal_error", "An unexpected error occurred");
+            }
           });
       });
 
