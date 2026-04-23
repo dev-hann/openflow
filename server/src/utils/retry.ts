@@ -51,7 +51,7 @@ export function isRetryableNetworkError(err: unknown): boolean {
 export function isRetryableHttpError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   const msg = err.message.toLowerCase();
-  return msg.includes("http 5") || isRetryableNetworkError(err);
+  return msg.includes("http 5") || msg.includes("http 429") || isRetryableNetworkError(err);
 }
 
 export function isSqliteBusy(err: unknown): boolean {
