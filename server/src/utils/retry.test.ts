@@ -157,7 +157,7 @@ describe("withSyncRetry", () => {
         () => true,
       ),
     ).toThrow("busy");
-    expect(attempt).toBe(4);
+    expect(attempt).toBe(3);
   });
 });
 
