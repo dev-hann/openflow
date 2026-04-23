@@ -64,7 +64,9 @@ describe("createWebSocketChannel", () => {
   afterEach(async () => {
     try {
       await channel?.stop();
-    } catch {}
+    } catch (_) {
+      // teardown — ignore errors from stopping a possibly-unstarted channel
+    }
   });
 
   it("should start and stop the HTTP+WS server", async () => {
