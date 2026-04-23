@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -32,22 +32,22 @@ class ChatEmptyState extends StatelessWidget {
 
   static const _suggestions = [
     _SuggestionCard(
-      icon: Icons.edit_note,
+      icon: LucideIcons.penLine,
       title: '글쓰기 도움',
       prompt: '다음 주제로 글을 작성해줘: ',
     ),
     _SuggestionCard(
-      icon: Icons.search,
+      icon: LucideIcons.search,
       title: '검색 도움',
       prompt: '다음에 대해 검색해줘: ',
     ),
     _SuggestionCard(
-      icon: Icons.lightbulb_outline,
+      icon: LucideIcons.lightbulb,
       title: '아이디어 브레인스토밍',
       prompt: '아이디어를 브레인스토밍해줘: ',
     ),
     _SuggestionCard(
-      icon: Icons.code,
+      icon: LucideIcons.code,
       title: '코딩 도움',
       prompt: '다음 코드를 작성해줘: ',
     ),
@@ -56,7 +56,6 @@ class ChatEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ShadTheme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Center(
       child: SingleChildScrollView(
@@ -72,13 +71,18 @@ class ChatEmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               _title,
-              style: textTheme.titleMedium,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.foreground,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               _subtitle,
-              style: textTheme.bodyMedium?.copyWith(
+              style: TextStyle(
+                fontSize: 14,
                 color: colorScheme.mutedForeground,
               ),
               textAlign: TextAlign.center,
@@ -107,9 +111,9 @@ class ChatEmptyState extends StatelessWidget {
   }
 
   IconData get _icon => switch (variant) {
-        EmptyStateVariant.disconnected => Icons.cloud_off,
-        EmptyStateVariant.connecting => Icons.cloud_sync,
-        EmptyStateVariant.empty => Icons.auto_awesome,
+        EmptyStateVariant.disconnected => LucideIcons.cloudOff,
+        EmptyStateVariant.connecting => LucideIcons.cloudCog,
+        EmptyStateVariant.empty => LucideIcons.sparkles,
       };
 
   String get _title => switch (variant) {
@@ -139,7 +143,6 @@ class _SuggestionGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ShadTheme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -168,8 +171,10 @@ class _SuggestionGrid extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   card.title,
-                  style: textTheme.bodySmall?.copyWith(
+                  style: TextStyle(
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
+                    color: colorScheme.foreground,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

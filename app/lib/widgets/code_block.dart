@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:openflow/config/design_tokens.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class CodeBlock extends StatelessWidget {
   const CodeBlock({
@@ -19,12 +20,8 @@ class CodeBlock extends StatelessWidget {
 
   void _handleCopy(BuildContext context) {
     Clipboard.setData(ClipboardData(text: code));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('코드가 복사됨'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
+    ShadToaster.of(context).show(
+      const ShadToast(title: Text('코드가 복사됨'), duration: Duration(seconds: 1)),
     );
   }
 
@@ -56,21 +53,24 @@ class CodeBlock extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.copy_outlined, size: 14),
-                  color: _labelColor,
-                  tooltip: '복사',
-                  onPressed: () => _handleCopy(context),
-                  visualDensity: VisualDensity.compact,
-                  constraints:
-                      const BoxConstraints(minWidth: 28, minHeight: 28),
-                  padding: EdgeInsets.zero,
-                  splashRadius: 14,
+                GestureDetector(
+                  onTap: () => _handleCopy(context),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      LucideIcons.copy,
+                      size: 14,
+                      color: _labelColor,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFF313244)),
+          const Padding(
+            padding: EdgeInsets.only(top: 0, bottom: 0),
+            child: ShadSeparator.horizontal(margin: EdgeInsets.zero),
+          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(12),

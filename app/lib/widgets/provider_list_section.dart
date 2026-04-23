@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
+import 'package:openflow/widgets/app_list_tile.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 
 class ProviderListSection extends StatelessWidget {
   const ProviderListSection({
@@ -60,19 +62,21 @@ class ProviderListSection extends StatelessWidget {
         children: [
           Text(
             'Provider',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.mutedForeground,
-                ),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.mutedForeground,
+            ),
           ),
           const Spacer(),
           ShadButton.ghost(
             onPressed: onAdd,
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add, size: 18),
-                SizedBox(width: 4),
-                Text('추가'),
+                Icon(LucideIcons.plus, size: 18),
+                const SizedBox(width: 4),
+                const Text('추가'),
               ],
             ),
           ),
@@ -88,9 +92,10 @@ class ProviderListSection extends StatelessWidget {
       child: Center(
         child: Text(
           '등록된 Provider가 없습니다',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.mutedForeground,
-              ),
+          style: TextStyle(
+            fontSize: 14,
+            color: colorScheme.mutedForeground,
+          ),
         ),
       ),
     );
@@ -118,7 +123,7 @@ class _ProviderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return AppListTile(
       leading: _buildStatusIndicator(context),
       title: Row(
         children: [
@@ -135,11 +140,7 @@ class _ProviderTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: isSwitching
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+          ? const AppSpinner()
           : _buildActions(context),
       onTap: onTap,
     );
@@ -156,7 +157,7 @@ class _ProviderTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(
-          Icons.check_circle,
+          LucideIcons.circleCheckBig,
           color: colorScheme.primary,
           size: 20,
         ),
@@ -169,7 +170,7 @@ class _ProviderTile extends StatelessWidget {
         color: colorScheme.card,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
-      child: const Icon(Icons.dns_outlined, size: 20),
+      child: Icon(LucideIcons.server, size: 20, color: colorScheme.mutedForeground),
     );
   }
 
@@ -180,18 +181,18 @@ class _ProviderTile extends StatelessWidget {
       children: [
         if (onModels != null)
           ShadIconButton.ghost(
-            icon: const Icon(Icons.tune, size: 20),
+            icon: Icon(LucideIcons.slidersHorizontal, size: 20),
             onPressed: onModels,
           ),
         if (onEdit != null)
           ShadIconButton.ghost(
-            icon: const Icon(Icons.edit_outlined, size: 20),
+            icon: Icon(LucideIcons.pencil, size: 20),
             onPressed: onEdit,
           ),
         if (onDelete != null)
           ShadIconButton.ghost(
             icon: Icon(
-              Icons.delete_outline,
+              LucideIcons.trash2,
               size: 20,
               color: colorScheme.destructive,
             ),

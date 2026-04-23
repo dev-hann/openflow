@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openflow/config/design_tokens.dart';
+import 'package:openflow/widgets/app_spinner.dart';
+import 'package:openflow/services/update_service.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:openflow/config/design_tokens.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/cubits/update_cubit.dart';
-import 'package:openflow/services/update_service.dart';
 
 class UpdateSection extends StatelessWidget {
   const UpdateSection({super.key});
@@ -39,9 +40,7 @@ class UpdateSection extends StatelessWidget {
     final colorScheme = ShadTheme.of(context).colorScheme;
     return Text(
       'OpenFlow v${updateState.currentVersion}',
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: colorScheme.border,
-          ),
+      style: TextStyle(fontSize: 12, color: colorScheme.border),
     );
   }
 
@@ -54,29 +53,23 @@ class UpdateSection extends StatelessWidget {
       case UpdateStatus.idle:
         return ShadButton.ghost(
           onPressed: updateCubit.checkForUpdate,
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.system_update_outlined, size: 18),
-              SizedBox(width: 4),
-              Text('업데이트 확인'),
+              Icon(LucideIcons.refreshCw, size: 18),
+              const SizedBox(width: 4),
+              const Text('업데이트 확인'),
             ],
           ),
         );
 
       case UpdateStatus.checking:
-        return const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        );
+        return const AppSpinner();
 
       case UpdateStatus.upToDate:
         return Text(
           '최신 버전입니다',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF22C55E),
-              ),
+          style: TextStyle(fontSize: 12, color: const Color(0xFF22C55E)),
         );
 
       case UpdateStatus.available:
@@ -103,9 +96,7 @@ class UpdateSection extends StatelessWidget {
       children: [
         Text(
           updateState.errorMessage ?? '오류가 발생했습니다',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.destructive,
-              ),
+          style: TextStyle(fontSize: 12, color: colorScheme.destructive),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -129,8 +120,9 @@ class UpdateSection extends StatelessWidget {
         .where((a) => a.name.endsWith('.apk'))
         .where((a) => a.name.contains('arm64'))
         .firstOrNull;
-    final sizeText =
-        asset != null ? updateService.formatFileSize(asset.size) : '';
+    final sizeText = asset != null
+        ? updateService.formatFileSize(asset.size)
+        : '';
 
     return Column(
       children: [
@@ -163,25 +155,24 @@ class UpdateSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
-              Icons.new_releases_outlined,
-              size: 18,
-              color: colorScheme.primary,
-            ),
+            Icon(LucideIcons.tag, size: 18, color: colorScheme.primary),
             const SizedBox(width: AppSpacing.xs),
             Text(
               '${release.tagName} 사용 가능',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.primary,
-                  ),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
+              ),
             ),
             if (sizeText.isNotEmpty) ...[
               const Spacer(),
               Text(
                 sizeText,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colorScheme.mutedForeground,
-                    ),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colorScheme.mutedForeground,
+                ),
               ),
             ],
           ],
@@ -190,9 +181,7 @@ class UpdateSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             release.releaseNotes,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.mutedForeground,
-                ),
+            style: TextStyle(fontSize: 12, color: colorScheme.mutedForeground),
             maxLines: 5,
             overflow: TextOverflow.ellipsis,
           ),
@@ -211,12 +200,12 @@ class UpdateSection extends StatelessWidget {
       children: [
         ShadButton(
           onPressed: updateCubit.downloadUpdate,
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.download, size: 18),
-              SizedBox(width: 4),
-              Text('업데이트'),
+              Icon(LucideIcons.download, size: 18),
+              const SizedBox(width: 4),
+              const Text('업데이트'),
             ],
           ),
         ),
@@ -234,14 +223,12 @@ class UpdateSection extends StatelessWidget {
       children: [
         Text(
           '다운로드 중... ${updateState.downloadProgress}%',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: TextStyle(fontSize: 12),
         ),
         const SizedBox(height: AppSpacing.xs),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: ShadProgress(
-            value: updateState.downloadProgress / 100,
-          ),
+          child: ShadProgress(value: updateState.downloadProgress / 100),
         ),
       ],
     );
@@ -257,21 +244,19 @@ class UpdateSection extends StatelessWidget {
         ShadButton(
           onPressed: () =>
               _installApk(context, updateState.downloadedFilePath!),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.install_mobile, size: 18),
-              SizedBox(width: 4),
-              Text('설치'),
+              Icon(LucideIcons.packageCheck, size: 18),
+              const SizedBox(width: 4),
+              const Text('설치'),
             ],
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           '다운로드 완료',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: const Color(0xFF22C55E),
-              ),
+          style: TextStyle(fontSize: 11, color: const Color(0xFF22C55E)),
         ),
       ],
     );

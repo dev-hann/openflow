@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/session_grouper.dart';
+import 'package:openflow/widgets/app_list_tile.dart';
 import 'package:openflow/widgets/session_tile.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -125,8 +126,8 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.delete_outline),
+              AppListTile(
+                leading: Icon(LucideIcons.trash2, color: ShadTheme.of(context).colorScheme.destructive),
                 title: const Text('세션 삭제'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -158,8 +159,8 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
           child: _buildSessionList(context, sorted, grouped),
         ),
         const ShadSeparator.horizontal(),
-        ListTile(
-          leading: const Icon(Icons.settings_outlined),
+        AppListTile(
+          leading: Icon(LucideIcons.settings, size: 20, color: ShadTheme.of(context).colorScheme.mutedForeground),
           title: const Text('설정'),
           onTap: widget.onSettings,
         ),
@@ -198,7 +199,7 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
           const Spacer(),
           ShadIconButton.ghost(
             onPressed: widget.onNewChat,
-            icon: const Icon(Icons.add),
+            icon: Icon(LucideIcons.plus),
           ),
         ],
       ),
@@ -214,9 +215,9 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
       child: ShadInput(
         onChanged: (v) => setState(() => _searchQuery = v),
         placeholder: const Text('검색...'),
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.sm),
-          child: Icon(Icons.search, size: 20),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.sm),
+          child: Icon(LucideIcons.search, size: 20, color: ShadTheme.of(context).colorScheme.mutedForeground),
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,

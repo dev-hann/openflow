@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:equatable/equatable.dart';
 
 import 'package:openflow/config/design_tokens.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 
 class VerifySection extends StatefulWidget {
   const VerifySection({
@@ -81,11 +82,7 @@ class _VerifyButton extends StatelessWidget {
     return ShadButton.secondary(
       onPressed: verifying ? null : onVerify,
       child: verifying
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+          ? const AppSpinner()
           : const Text('연결 확인'),
     );
   }
@@ -149,9 +146,9 @@ class _ModelChipSelector extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         ShadInput(
           placeholder: const Text('모델 검색...'),
-          leading: const Padding(
-            padding: EdgeInsets.only(left: AppSpacing.sm),
-            child: Icon(Icons.search, size: 20),
+          leading: Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
+            child: Icon(LucideIcons.search, size: 20, color: colorScheme.mutedForeground),
           ),
           onChanged: onSearchChanged,
         ),
@@ -165,10 +162,30 @@ class _ModelChipSelector extends StatelessWidget {
               children: models
                   .where((m) => m.toLowerCase().contains(searchQuery))
                   .map((model) {
-                return ChoiceChip(
-                  label: Text(model),
-                  selected: model == selectedModel,
-                  onSelected: (_) => onSelectModel(model),
+                final isSelected = model == selectedModel;
+                return GestureDetector(
+                  onTap: () => onSelectModel(model),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.secondary,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Text(
+                      model,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected
+                            ? colorScheme.primaryForeground
+                            : colorScheme.foreground,
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),

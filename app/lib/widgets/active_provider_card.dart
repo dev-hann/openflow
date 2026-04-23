@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:openflow/config/design_tokens.dart';
@@ -24,9 +24,8 @@ class ActiveProviderCard extends StatelessWidget {
         radius: BorderRadius.circular(AppRadius.md),
         color: colorScheme.primary.withValues(alpha: 0.3),
       ),
-      child: InkWell(
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
@@ -38,7 +37,7 @@ class ActiveProviderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(
-                  Icons.smart_toy_outlined,
+                  LucideIcons.bot,
                   size: 24,
                   color: colorScheme.primary,
                 ),
@@ -50,24 +49,29 @@ class ActiveProviderCard extends StatelessWidget {
                   children: [
                     Text(
                       provider.name,
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.foreground,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       provider.model.isNotEmpty
                           ? provider.model
                           : '모델 미선택',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: provider.model.isNotEmpty
-                                ? colorScheme.mutedForeground
-                                : colorScheme.destructive,
-                          ),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: provider.model.isNotEmpty
+                            ? colorScheme.mutedForeground
+                            : colorScheme.destructive,
+                      ),
                     ),
                   ],
                 ),
               ),
               Icon(
-                Icons.chevron_right,
+                LucideIcons.chevronRight,
                 color: colorScheme.mutedForeground,
               ),
             ],

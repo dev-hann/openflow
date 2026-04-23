@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
+import 'package:openflow/widgets/app_list_tile.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ModelSheet extends StatelessWidget {
@@ -78,7 +79,7 @@ class _SheetHeader extends StatelessWidget {
           Text(title, style: theme.textTheme.large),
           const Spacer(),
           ShadIconButton.ghost(
-            icon: const Icon(Icons.close),
+            icon: Icon(LucideIcons.x),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -98,10 +99,11 @@ class _ModelListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
-    return ListTile(
+    return AppListTile(
       leading: Icon(
-        isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-        color: isActive ? theme.colorScheme.primary : null,
+        isActive ? LucideIcons.circleDot : LucideIcons.circle,
+        size: 20,
+        color: isActive ? theme.colorScheme.primary : theme.colorScheme.mutedForeground,
       ),
       title: Text(
         model,

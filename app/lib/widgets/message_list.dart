@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/message_bubble.dart';
 import 'package:openflow/widgets/thinking_indicator.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -99,6 +100,7 @@ class MessageListState extends State<MessageList> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Stack(
       children: [
         ListView.builder(
@@ -116,16 +118,7 @@ class MessageListState extends State<MessageList> {
             if (adjustedIndex >= widget.messages.length) {
               return Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: ShadTheme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
+                child: Center(child: AppSpinner(strokeWidth: 2)),
               );
             }
             final messageIndex = widget.messages.length - 1 - adjustedIndex;
@@ -147,7 +140,7 @@ class MessageListState extends State<MessageList> {
               isLastAssistant: isLastAssistant,
               onRetry: message.isFailed ? widget.onRetry : null,
               onEdit: message.role == MessageRole.user && widget.onEdit != null
-                  ? () => widget.onEdit!(message.content)
+                  ? (_) => widget.onEdit!(message.content)
                   : null,
             );
           },
@@ -159,9 +152,13 @@ class MessageListState extends State<MessageList> {
             child: Semantics(
               label: '맨 아래로 스크롤',
               button: true,
-              child: FloatingActionButton.small(
+              child: ShadIconButton.outline(
                 onPressed: scrollToBottom,
-                child: const Icon(Icons.keyboard_double_arrow_down),
+                icon: Icon(
+                  LucideIcons.chevronsDown,
+                  size: 16,
+                  color: colorScheme.foreground,
+                ),
               ),
             ),
           ),

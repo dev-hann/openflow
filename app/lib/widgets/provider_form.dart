@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
-
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/constants/presets.dart';
@@ -10,8 +8,11 @@ import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/preset_selector.dart';
 import 'package:openflow/widgets/verify_section.dart';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProviderForm extends StatefulWidget {
   const ProviderForm({
@@ -145,14 +146,14 @@ class _ProviderFormState extends State<ProviderForm> {
     final apiKey = _apiKeyController.text.trim();
     final model = _selectedModel ?? '';
     if (name.isEmpty || baseUrl.isEmpty || model.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이름, URL, 모델은 필수입니다')),
+      ShadToaster.of(context).show(
+        const ShadToast(title: Text('이름, URL, 모델은 필수입니다')),
       );
       return;
     }
     if (widget.editProvider == null && apiKey.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('API Key를 입력해주세요')),
+      ShadToaster.of(context).show(
+        const ShadToast(title: Text('API Key를 입력해주세요')),
       );
       return;
     }
@@ -166,8 +167,8 @@ class _ProviderFormState extends State<ProviderForm> {
       if (mounted) widget.onComplete();
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Provider 저장 실패: $e')),
+        ShadToaster.of(context).show(
+          ShadToast(title: Text('Provider 저장 실패: $e')),
         );
       }
     } finally {
@@ -218,6 +219,7 @@ class _ProviderFormState extends State<ProviderForm> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -251,9 +253,10 @@ class _ProviderFormState extends State<ProviderForm> {
                     setState(() => _obscureApiKey = !_obscureApiKey),
                 child: Icon(
                   _obscureApiKey
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                      ? LucideIcons.eyeOff
+                      : LucideIcons.eye,
                   size: 18,
+                  color: colorScheme.mutedForeground,
                 ),
               ),
             ),
@@ -278,12 +281,7 @@ class _ProviderFormState extends State<ProviderForm> {
               ShadButton(
                 onPressed: _submitting ? null : _handleSubmit,
                 child: _submitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const AppSpinner()
                     : Text(widget.editProvider != null ? '저장' : '완료'),
               ),
             ],

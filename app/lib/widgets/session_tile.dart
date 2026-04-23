@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
+import 'package:openflow/widgets/app_list_tile.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 class SessionGroupHeader extends StatelessWidget {
@@ -44,34 +45,31 @@ class SessionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
-    return Container(
-      color: isActive
+    return AppListTile(
+      backgroundColor: isActive
           ? theme.colorScheme.primary.withValues(alpha: 0.1)
           : null,
-      child: ListTile(
-        leading: const Icon(Icons.chat_bubble_outline, size: 20),
-        title: Text(
-          session.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          formatRelativeTime(session.createdAt),
-          style: theme.textTheme.muted,
-        ),
-        trailing: isActive
-            ? Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-              )
-            : null,
-        onTap: onTap,
-        onLongPress: onLongPress,
+      leading: Icon(LucideIcons.messageSquare, size: 20, color: theme.colorScheme.mutedForeground),
+      title: Text(
+        session.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
+      subtitle: Text(
+        formatRelativeTime(session.createdAt),
+      ),
+      trailing: isActive
+          ? Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+            )
+          : null,
+      onTap: onTap,
+      onLongPress: onLongPress,
     );
   }
 }

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:openflow/cubits/auth_cubit.dart';
+import 'package:openflow/widgets/app_list_tile.dart';
 
 class ConnectionSection extends StatelessWidget {
   const ConnectionSection({
@@ -19,21 +20,24 @@ class ConnectionSection extends StatelessWidget {
     final connected = authState.isConnected;
     final url = authState.storedAuth?.serverUrl;
 
-    return ListTile(
+    return AppListTile(
       leading: Icon(
-        connected ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+        connected ? LucideIcons.cloud : LucideIcons.cloudOff,
         color: connected ? const Color(0xFF22C55E) : colorScheme.destructive,
       ),
       title: Text(connected ? '연결됨' : '연결 안됨'),
       subtitle: url != null
-          ? Text(url, style: Theme.of(context).textTheme.bodySmall)
+          ? Text(
+              url,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.mutedForeground,
+              ),
+            )
           : null,
       trailing: ShadButton.outline(
         onPressed: onServerChanged,
-        child: Text(
-          '서버 변경',
-          style: TextStyle(color: colorScheme.destructive),
-        ),
+        child: Text('서버 변경', style: TextStyle(color: colorScheme.destructive)),
       ),
     );
   }

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
+import 'package:openflow/widgets/app_list_tile.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 class AdaptiveScaffold extends StatelessWidget {
@@ -77,8 +78,8 @@ class AdaptiveScaffold extends StatelessWidget {
             ),
           ),
           const ShadSeparator.horizontal(),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
+          AppListTile(
+            leading: Icon(LucideIcons.settings, size: 20, color: colorScheme.mutedForeground),
             title: const Text('설정'),
             onTap: onSettings,
           ),
@@ -102,7 +103,7 @@ class AdaptiveScaffold extends StatelessWidget {
           const Spacer(),
           ShadIconButton.ghost(
             onPressed: onNewChat,
-            icon: const Icon(Icons.add),
+            icon: Icon(LucideIcons.plus),
           ),
         ],
       ),
@@ -141,27 +142,24 @@ class _TabletSessionList extends StatelessWidget {
       itemBuilder: (context, index) {
         final session = sessions[index];
         final isActive = session.id == activeSessionId;
-        return Container(
-          color: isActive
+        return AppListTile(
+          backgroundColor: isActive
               ? theme.colorScheme.primary.withValues(alpha: 0.1)
               : null,
-          child: ListTile(
-            leading: const Icon(Icons.chat_bubble_outline, size: 20),
-            title: Text(
-              session.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              formatRelativeTime(session.createdAt),
-              style: theme.textTheme.muted,
-            ),
-            trailing: ShadIconButton.ghost(
-              icon: const Icon(Icons.delete_outline, size: 18),
-              onPressed: () => _confirmDelete(context, session),
-            ),
-            onTap: () => onSessionTap(session.id),
+          leading: Icon(LucideIcons.messageSquare, size: 20, color: theme.colorScheme.mutedForeground),
+          title: Text(
+            session.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          subtitle: Text(
+            formatRelativeTime(session.createdAt),
+          ),
+          trailing: ShadIconButton.ghost(
+            icon: Icon(LucideIcons.trash2, size: 18),
+            onPressed: () => _confirmDelete(context, session),
+          ),
+          onTap: () => onSessionTap(session.id),
         );
       },
     );

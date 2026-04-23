@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -17,7 +17,7 @@ class MessageActions extends StatefulWidget {
   final ChatMessage message;
   final bool isLastAssistant;
   final VoidCallback? onRegenerate;
-  final VoidCallback? onEdit;
+  final ValueChanged<String>? onEdit;
 
   @override
   State<MessageActions> createState() => _MessageActionsState();
@@ -37,12 +37,8 @@ class _MessageActionsState extends State<MessageActions> {
   void _handleCopy() {
     Clipboard.setData(ClipboardData(text: widget.message.content));
     setState(() => _copied = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('복사됨'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
+    ShadToaster.of(context).show(
+      const ShadToast(title: Text('복사됨'), duration: Duration(seconds: 1)),
     );
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) setState(() => _copied = false);
@@ -90,24 +86,21 @@ class _MessageActionsState extends State<MessageActions> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _ActionButton(
-          icon: _copied ? Icons.check : Icons.copy_outlined,
-          tooltip: _copied ? '복사됨' : '복사',
+          icon: _copied ? LucideIcons.check : LucideIcons.copy,
           color: _copied ? colorScheme.primary : iconColor,
           onPressed: _handleCopy,
         ),
         if (_isUser && widget.onEdit != null)
           _ActionButton(
-            icon: Icons.edit_outlined,
-            tooltip: '편집',
+            icon: LucideIcons.pencil,
             color: iconColor,
-            onPressed: widget.onEdit!,
+            onPressed: () => widget.onEdit!(widget.message.content),
           ),
         if (_isAssistant &&
             widget.isLastAssistant &&
             widget.onRegenerate != null)
           _ActionButton(
-            icon: Icons.refresh,
-            tooltip: '재생성',
+            icon: LucideIcons.refreshCw,
             color: iconColor,
             onPressed: _handleRegenerate,
           )
@@ -115,8 +108,7 @@ class _MessageActionsState extends State<MessageActions> {
               .rotate(duration: 300.ms),
         if (_isAssistant)
           _ActionButton(
-            icon: _liked ? Icons.thumb_up : Icons.thumb_up_outlined,
-            tooltip: '좋아요',
+            icon: _liked ? LucideIcons.thumbsUp : LucideIcons.thumbsUp,
             color: _liked ? colorScheme.primary : iconColor,
             onPressed: _handleLike,
           )
@@ -128,8 +120,9 @@ class _MessageActionsState extends State<MessageActions> {
               ),
         if (_isAssistant)
           _ActionButton(
-            icon: _disliked ? Icons.thumb_down : Icons.thumb_down_outlined,
-            tooltip: '싫어요',
+            icon: _disliked
+                ? LucideIcons.thumbsDown
+                : LucideIcons.thumbsDown,
             color: _disliked ? colorScheme.destructive : iconColor,
             onPressed: _handleDislike,
           )
@@ -147,27 +140,22 @@ class _MessageActionsState extends State<MessageActions> {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon,
-    required this.tooltip,
     required this.color,
     required this.onPressed,
   });
 
   final IconData icon;
-  final String tooltip;
   final Color color;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, size: 16),
-      tooltip: tooltip,
-      color: color,
-      onPressed: onPressed,
-      visualDensity: VisualDensity.compact,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      padding: EdgeInsets.zero,
-      splashRadius: 16,
+    return GestureDetector(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(icon, size: 16, color: color),
+      ),
     );
   }
 }

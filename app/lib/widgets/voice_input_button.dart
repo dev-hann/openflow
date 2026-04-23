@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -88,19 +88,21 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
     }
 
     if (_isListening) {
-      return _buildListeningIndicator();
+      return _buildListeningIndicator(colorScheme);
     }
 
-    return IconButton(
-      icon: const Icon(Icons.mic_outlined, size: 22),
-      tooltip: '음성 입력',
-      color: colorScheme.mutedForeground,
+    return ShadIconButton.ghost(
+      icon: Icon(
+        LucideIcons.mic,
+        size: 22,
+        color: colorScheme.mutedForeground,
+      ),
       onPressed: widget.enabled ? _toggleListening : null,
     );
   }
 
-  Widget _buildListeningIndicator() {
-    final destructive = ShadTheme.of(context).colorScheme.destructive;
+  Widget _buildListeningIndicator(ShadColorScheme colorScheme) {
+    final destructive = colorScheme.destructive;
     return GestureDetector(
       onTap: _toggleListening,
       child: Container(

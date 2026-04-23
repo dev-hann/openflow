@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show TextInputAction, Colors;
+import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/widgets/voice_input_button.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -109,7 +110,7 @@ class _TextFieldContainer extends StatelessWidget {
         color: colorScheme.muted,
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
-      child: TextField(
+      child: ShadInput(
         controller: controller,
         focusNode: focusNode,
         onChanged: onChanged,
@@ -117,13 +118,13 @@ class _TextFieldContainer extends StatelessWidget {
         textInputAction: TextInputAction.send,
         onSubmitted: onSubmitted,
         enabled: enabled,
-        decoration: const InputDecoration(
-          hintText: '무엇이든 물어보세요...',
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: 12,
-          ),
+        placeholder: const Text('무엇이든 물어보세요...'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 12,
+        ),
+        decoration: const ShadDecoration(
+          border: ShadBorder.none,
         ),
       ),
     );
@@ -143,16 +144,16 @@ class _AnimatedSendButton extends StatelessWidget {
     final colorScheme = ShadTheme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      child: IconButton.filled(
+      child: ShadIconButton(
         onPressed: canSend ? onPressed : null,
-        icon: const Icon(Icons.send, size: 20),
-        style: IconButton.styleFrom(
-          backgroundColor:
-              canSend ? colorScheme.primary : Colors.transparent,
-          foregroundColor: canSend
+        icon: Icon(
+          LucideIcons.send,
+          size: 18,
+          color: canSend
               ? colorScheme.primaryForeground
               : colorScheme.mutedForeground,
         ),
+        backgroundColor: canSend ? colorScheme.primary : Colors.transparent,
       ),
     );
   }

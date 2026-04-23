@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:openflow/config/design_tokens.dart';
@@ -27,7 +28,7 @@ class MessageBubble extends StatefulWidget {
   final bool isLastInGroup;
   final bool isLastAssistant;
   final VoidCallback? onRetry;
-  final VoidCallback? onEdit;
+  final ValueChanged<String>? onEdit;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -99,11 +100,15 @@ class _MessageBubbleState extends State<MessageBubble> {
   Widget _buildAvatar(ShadThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: CircleAvatar(
-        radius: 14,
-        backgroundColor: theme.colorScheme.secondary,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondary,
+          shape: BoxShape.circle,
+        ),
         child: Icon(
-          Icons.smart_toy_outlined,
+          LucideIcons.bot,
           size: 16,
           color: theme.colorScheme.secondaryForeground,
         ),

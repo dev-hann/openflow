@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -30,9 +31,6 @@ class OpenFlowMaterialApp extends StatelessWidget {
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
-      materialThemeBuilder: (context, theme) => theme.copyWith(
-        appBarTheme: const AppBarTheme(elevation: 0),
-      ),
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState.storedAuth == null) {
@@ -90,9 +88,16 @@ class _MainScreenState extends State<MainScreen> {
             .firstOrNull;
         final title = activeSession?.title ?? '새 대화';
 
-        final scaffold = Scaffold(
-          appBar: _buildAppBar(context, title, shadTheme),
-          body: const ChatScreen(),
+        final scaffold = ColoredBox(
+          color: shadTheme.colorScheme.background,
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(context, title, shadTheme),
+                Expanded(child: const ChatScreen()),
+              ],
+            ),
+          ),
         );
 
         return AdaptiveScaffold(
@@ -108,29 +113,40 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
+  Widget _buildAppBar(
     BuildContext context,
     String title,
     ShadThemeData shadTheme,
   ) {
-    return AppBar(
-      leading: IconButton(
-        icon: Icon(
-          Icons.menu,
-          color: shadTheme.colorScheme.foreground,
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: shadTheme.colorScheme.border, width: 0.5),
         ),
-        onPressed: _showSessionSheet,
       ),
-      title: GestureDetector(
-        onTap: _showSessionSheet,
-        child: _AppBarTitle(title: title),
+      child: Row(
+        children: [
+          ShadIconButton.ghost(
+            icon: Icon(
+              LucideIcons.panelLeft,
+              color: shadTheme.colorScheme.foreground,
+            ),
+            onPressed: _showSessionSheet,
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: _showSessionSheet,
+              child: _AppBarTitle(title: title),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: _ConnectionIndicator(shadTheme: shadTheme),
+          ),
+        ],
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: AppSpacing.md),
-          child: _ConnectionIndicator(shadTheme: shadTheme),
-        ),
-      ],
     );
   }
 
@@ -178,8 +194,10 @@ class _MainScreenState extends State<MainScreen> {
         if (wasActive) {
           final chatCubit = context.read<ChatCubit>();
           final ws = context.read<WebSocketService>();
-          final newActiveId =
-              context.read<SessionsCubit>().state.activeSessionId;
+          final newActiveId = context
+              .read<SessionsCubit>()
+              .state
+              .activeSessionId;
           chatCubit.clearMessages();
           if (newActiveId != null) {
             ws.send(WsSwitchSession(sessionId: newActiveId));
@@ -192,8 +210,15 @@ class _MainScreenState extends State<MainScreen> {
   void _handleSettings() {
     unawaited(
       Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => const SettingsScreen(),
+        PageRouteBuilder<void>(
+          pageBuilder: (_, __, ___) => const SettingsScreen(),
+          transitionsBuilder: (_, animation, __, child) => SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
         ),
       ),
     );
@@ -210,6 +235,7 @@ class _AppBarTitle extends StatelessWidget {
     final shadTheme = ShadTheme.of(context);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           title,

@@ -24,6 +24,9 @@ app/build/
 # OpenAPI
 openapi-generator/
 
+# Web
+web/
+
 # IDE
 .idea/
 node_modules/

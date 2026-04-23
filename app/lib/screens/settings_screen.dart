@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -19,6 +19,7 @@ import 'package:openflow/widgets/connection_section.dart';
 import 'package:openflow/widgets/model_sheet.dart';
 import 'package:openflow/widgets/provider_list_section.dart';
 import 'package:openflow/widgets/update_section.dart';
+import 'package:openflow/widgets/app_scaffold.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -112,8 +113,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) providersCubit.setProviders(providers);
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Provider 전환 실패: $e')),
+        ShadToaster.of(context).show(
+          ShadToast(title: Text('Provider 전환 실패: $e')),
         );
       }
     } finally {
@@ -162,8 +163,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       providersCubit.removeProvider(providerId);
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 실패: $e')),
+        ShadToaster.of(context).show(
+          ShadToast(title: Text('삭제 실패: $e')),
         );
       }
     }
@@ -187,8 +188,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       models = await api.fetchProviderModels(provider.id);
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('모델 목록을 불러올 수 없습니다')),
+        ShadToaster.of(context).show(
+          const ShadToast(title: Text('모델 목록을 불러올 수 없습니다')),
         );
       }
     }
@@ -219,8 +220,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context.read<ProvidersCubit>().updateProvider(updated);
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('모델 변경 실패: $e')),
+        ShadToaster.of(context).show(
+          ShadToast(title: Text('모델 변경 실패: $e')),
         );
       }
     }
@@ -228,8 +229,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _navigateToProviderEdit([ProviderInfo? provider]) async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => ProviderEditScreen(provider: provider),
+      PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) => ProviderEditScreen(provider: provider),
+        transitionsBuilder: (_, animation, __, child) =>
+            SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
       ),
     );
     if (mounted) unawaited(_loadData());
@@ -237,8 +246,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('설정')),
+    return AppScaffold(
+      title: '설정',
+      leading: ShadIconButton.ghost(
+        icon: Icon(
+          LucideIcons.arrowLeft,
+          color: ShadTheme.of(context).colorScheme.foreground,
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           return BlocBuilder<ProvidersCubit, ProvidersState>(
@@ -252,36 +268,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildContent(AuthState authState, ProvidersState providersState) {
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView(
-        children: [
-          ConnectionSection(
-            authState: authState,
-            onServerChanged: _handleServerChanged,
-          ),
-          if (providersState.activeProvider != null)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ActiveProviderCard(
-                provider: providersState.activeProvider!,
-                onTap: () => _showModelSheet(providersState.activeProvider!),
-              ),
+    return ListView(
+      children: [
+        ConnectionSection(
+          authState: authState,
+          onServerChanged: _handleServerChanged,
+        ),
+        if (providersState.activeProvider != null)
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ActiveProviderCard(
+              provider: providersState.activeProvider!,
+              onTap: () => _showModelSheet(providersState.activeProvider!),
             ),
-          const ShadSeparator.horizontal(),
-          ProviderListSection(
-            providersState: providersState,
-            onAdd: _navigateToProviderEdit,
-            onSwitchProvider: _switchProvider,
-            onShowModels: _showModelSheet,
-            onEdit: _navigateToProviderEdit,
-            onDelete: _deleteProvider,
           ),
-          const ShadSeparator.horizontal(),
-          const UpdateSection(),
-        ],
-      ),
+        const ShadSeparator.horizontal(),
+        ProviderListSection(
+          providersState: providersState,
+          onAdd: _navigateToProviderEdit,
+          onSwitchProvider: _switchProvider,
+          onShowModels: _showModelSheet,
+          onEdit: _navigateToProviderEdit,
+          onDelete: _deleteProvider,
+        ),
+        const ShadSeparator.horizontal(),
+        const UpdateSection(),
+      ],
     );
   }
 }

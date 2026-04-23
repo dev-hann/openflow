@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,6 +14,7 @@ import 'package:openflow/widgets/chat_empty_state.dart'
     show ChatEmptyState, EmptyStateVariant;
 import 'package:openflow/widgets/input_bar.dart';
 import 'package:openflow/widgets/message_list.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -112,8 +113,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _totalMessages = result.total;
     } on Object {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('메시지를 불러올 수 없습니다.')),
+        ShadToaster.of(context).show(
+          const ShadToast(title: Text('메시지를 불러올 수 없습니다.')),
         );
       }
     } finally {
@@ -147,8 +148,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       case WsError(:final message):
         chatCubit.markLastMessageFailed();
         _sendTimeout?.cancel();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류: $message')),
+        ShadToaster.of(context).show(
+          ShadToast.destructive(title: Text('오류: $message')),
         );
       case WsSessionSwitched(:final sessionId):
         _sendTimeout?.cancel();

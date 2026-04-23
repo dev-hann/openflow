@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
@@ -6,6 +6,7 @@ import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/pin_input.dart';
 import 'package:openflow/widgets/provider_form.dart';
 import 'package:openflow/widgets/step_indicator.dart';
@@ -139,63 +140,79 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _step.index > 0
-          ? AppBar(
-              leading: IconButton(
-                icon: const Icon(LucideIcons.arrowLeft),
-                onPressed: _previousStep,
+    final colorScheme = ShadTheme.of(context).colorScheme;
+
+    return ColoredBox(
+      color: colorScheme.background,
+      child: SafeArea(
+        child: Column(
+          children: [
+            if (_step.index > 0)
+              Container(
+                height: 56,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    ShadIconButton.ghost(
+                      icon: Icon(
+                        LucideIcons.arrowLeft,
+                        color: colorScheme.foreground,
+                      ),
+                      onPressed: _previousStep,
+                    ),
+                  ],
+                ),
               ),
-            )
-          : null,
-      body: _buildBody(context),
+            Expanded(child: _buildBody(context)),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildBody(BuildContext context) {
-    final theme = Theme.of(context);
     final colorScheme = ShadTheme.of(context).colorScheme;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          children: [
-            const SizedBox(height: AppSpacing.xxl),
-            Icon(
-              LucideIcons.sparkles,
-              size: 64,
-              color: colorScheme.primary,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'OpenFlow',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '개인 AI 비서',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: colorScheme.mutedForeground,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            StepIndicator(currentIndex: _step.index),
-            const SizedBox(height: AppSpacing.lg),
-            Expanded(child: _buildStep()),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: colorScheme.destructive),
-                  textAlign: TextAlign.center,
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.xxl),
+          Icon(
+            LucideIcons.sparkles,
+            size: 64,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'OpenFlow',
+            style: ShadTheme.of(context).textTheme.h4.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '개인 AI 비서',
+            style: TextStyle(
+              fontSize: 16,
+              color: colorScheme.mutedForeground,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          StepIndicator(currentIndex: _step.index),
+          const SizedBox(height: AppSpacing.lg),
+          Expanded(child: _buildStep()),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: Text(
+                _error!,
+                style: TextStyle(color: colorScheme.destructive),
+                textAlign: TextAlign.center,
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -216,7 +233,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         Text(
           '서버 주소 입력',
-          style: Theme.of(context).textTheme.titleMedium,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: ShadTheme.of(context).colorScheme.foreground,
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         ShadInput(
@@ -232,11 +253,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: ShadButton(
             onPressed: _loading ? null : _submitServer,
             child: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const AppSpinner()
                 : const Text('연결'),
           ),
         ),
@@ -250,14 +267,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         Text(
           'PIN 입력',
-          style: Theme.of(context).textTheme.titleMedium,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.foreground,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
           '서버 화면에 표시된 6자리 PIN을 입력하세요',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.mutedForeground,
-              ),
+          style: TextStyle(
+            fontSize: 14,
+            color: colorScheme.mutedForeground,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -272,11 +294,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: ShadButton(
             onPressed: _loading ? null : _submitPin,
             child: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const AppSpinner()
                 : const Text('인증'),
           ),
         ),

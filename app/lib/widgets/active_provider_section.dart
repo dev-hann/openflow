@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:openflow/config/design_tokens.dart';
@@ -28,9 +28,11 @@ class ActiveProviderSection extends StatelessWidget {
         children: [
           Text(
             '활성 Provider',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.mutedForeground,
-                ),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.mutedForeground,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           if (active != null)
@@ -43,16 +45,16 @@ class ActiveProviderSection extends StatelessWidget {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline,
+                  Icon(LucideIcons.info,
                       size: 20, color: colorScheme.mutedForeground),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       'Provider를 추가하고 활성화하세요',
-                      style:
-                          Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.mutedForeground,
-                              ),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.mutedForeground,
+                      ),
                     ),
                   ),
                 ],
