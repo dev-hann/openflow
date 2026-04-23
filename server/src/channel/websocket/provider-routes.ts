@@ -15,6 +15,10 @@ import {
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, routePattern, type Route } from "./routes.js";
+import {
+  fetchProviderModels,
+  verifyProviderConnectivity,
+} from "./provider-connectivity.js";
 
 const log = createLogger("ws/provider-routes");
 
@@ -57,7 +61,12 @@ function requireProviderId(
   if (!auth) return null;
   const id = extractProviderId(path);
   if (!id) {
-    sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
+    sendApiError(
+      res,
+      400,
+      "provider_id_required",
+      "Provider ID is required in the URL path",
+    );
     return null;
   }
   return id;
@@ -77,34 +86,6 @@ function requireProvider(
     return null;
   }
   return provider;
-}
-
-async function fetchProviderModels(
-  baseUrl: string,
-  apiKey: string,
-): Promise<Response> {
-  const base = baseUrl.replace(/\/$/, "");
-  return fetch(`${base}/models`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-}
-
-async function verifyProviderConnectivity(
-  baseUrl: string,
-  apiKey: string,
-): Promise<boolean> {
-  try {
-    const resp = await fetchProviderModels(baseUrl, apiKey);
-    if (!resp.ok) {
-      log.debug({ baseUrl, status: resp.status }, "provider connectivity check returned non-OK status");
-      return false;
-    }
-    return true;
-  } catch (err: unknown) {
-    log.debug({ baseUrl, err }, "provider connectivity check failed");
-    return false;
-  }
 }
 
 export interface ProviderRoutesDeps {
@@ -236,7 +217,13 @@ async function handleProviderSwitch(
   if (!auth) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const providerId = requireBodyString(body, "providerId", res, "provider_id_required", "Provider ID is required");
+  const providerId = requireBodyString(
+    body,
+    "providerId",
+    res,
+    "provider_id_required",
+    "Provider ID is required",
+  );
   if (!providerId) return;
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
@@ -300,12 +287,26 @@ async function handleProviderModels(
 
 export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   return [
-    route("/api/providers", "GET", (req, res) => handleProvidersList(deps, req, res)),
-    route("/api/providers", "POST", (req, res) => handleProviderCreate(deps, req, res)),
-    route("/api/providers/current", "PUT", (req, res) => handleProviderSwitch(deps, req, res)),
-    routePattern(/^\/api\/providers\/[^/]+$/, "PUT", (req, res, ctx) => handleProviderUpdate(deps, req, res, ctx.path)),
-    routePattern(/^\/api\/providers\/[^/]+$/, "DELETE", (req, res, ctx) => handleProviderDelete(deps, req, res, ctx.path)),
-    routePattern(/^\/api\/providers\/[^/]+\/verify$/, "POST", (req, res, ctx) => handleProviderVerify(deps, req, res, ctx.path)),
-    routePattern(/^\/api\/providers\/[^/]+\/models$/, "GET", (req, res, ctx) => handleProviderModels(deps, req, res, ctx.path)),
+    route("/api/providers", "GET", (req, res) =>
+      handleProvidersList(deps, req, res),
+    ),
+    route("/api/providers", "POST", (req, res) =>
+      handleProviderCreate(deps, req, res),
+    ),
+    route("/api/providers/current", "PUT", (req, res) =>
+      handleProviderSwitch(deps, req, res),
+    ),
+    routePattern(/^\/api\/providers\/[^/]+$/, "PUT", (req, res, ctx) =>
+      handleProviderUpdate(deps, req, res, ctx.path),
+    ),
+    routePattern(/^\/api\/providers\/[^/]+$/, "DELETE", (req, res, ctx) =>
+      handleProviderDelete(deps, req, res, ctx.path),
+    ),
+    routePattern(/^\/api\/providers\/[^/]+\/verify$/, "POST", (req, res, ctx) =>
+      handleProviderVerify(deps, req, res, ctx.path),
+    ),
+    routePattern(/^\/api\/providers\/[^/]+\/models$/, "GET", (req, res, ctx) =>
+      handleProviderModels(deps, req, res, ctx.path),
+    ),
   ];
 }
