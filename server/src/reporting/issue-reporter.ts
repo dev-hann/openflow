@@ -1,4 +1,5 @@
 import { createLogger } from "../utils/logger.js";
+import { OpenFlowError } from "../utils/errors.js";
 import { generateFingerprint } from "./fingerprint.js";
 
 const log = createLogger("reporting/issue-reporter");
@@ -161,7 +162,7 @@ async function createNewIssue(
 export function createIssueReporter(config: IssueReporterConfig): IssueReporter {
   const parts = config.githubRepo.split("/");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
-    throw new Error(`Invalid githubRepo format: "${config.githubRepo}". Expected "owner/repo".`);
+    throw new OpenFlowError(`Invalid githubRepo format: "${config.githubRepo}". Expected "owner/repo".`, "CONFIG_INVALID");
   }
   const [owner, repo] = parts as [string, string];
   const recentReports: RateLimitEntry[] = [];
