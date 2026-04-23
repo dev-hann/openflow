@@ -46,7 +46,7 @@ export function createContextResolver(deps: ContextResolverDeps) {
     try {
       memory.addMessage({ sessionId, ...params });
     } catch (err: unknown) {
-      log.error({ sessionId, err }, `failed to save ${params.role} message`);
+      log.error({ sessionId, err, role: params.role }, "failed to save message");
     }
   }
 
