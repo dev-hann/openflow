@@ -4,7 +4,6 @@ import { createProviderRoutes } from "./provider-routes.js";
 import type { AuthService } from "./auth.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
-import { getBodyString } from "./middleware.js";
 
 function createMockResponse(): {
   res: ServerResponse;
@@ -152,24 +151,6 @@ function createTestSetup() {
 
   return { authService, providerStore, providerPool, routes, findRoute };
 }
-
-describe("getBodyString", () => {
-  it("should return string value when present", () => {
-    expect(getBodyString({ name: "hello" }, "name")).toBe("hello");
-  });
-
-  it("should return undefined for missing key", () => {
-    expect(getBodyString({ name: "hello" }, "other")).toBeUndefined();
-  });
-
-  it("should return undefined for non-string value", () => {
-    expect(getBodyString({ name: 123 }, "name")).toBeUndefined();
-  });
-
-  it("should return undefined for null value", () => {
-    expect(getBodyString({ name: null }, "name")).toBeUndefined();
-  });
-});
 
 describe("provider routes", () => {
   const setup = createTestSetup();

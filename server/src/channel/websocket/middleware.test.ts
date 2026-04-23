@@ -6,7 +6,6 @@ import {
   sendJson,
   readJsonBody,
   readJsonObject,
-  getBodyStrings,
   setCorsHeaders,
   handleOptions,
 } from "./middleware.js";
@@ -257,15 +256,16 @@ describe("readJsonObject", () => {
     expect(getStatusCode()).toBe(400);
   });
 
-  it("should return parsed array body as-is (arrays are objects in JS)", async () => {
+  it("should return null and send 400 for array body", async () => {
     const req = createMockRequest();
     req[Symbol.asyncIterator] = async function* () {
       yield Buffer.from("[1,2,3]");
     };
-    const { res } = createMockResponse();
+    const { res, getStatusCode } = createMockResponse();
 
     const result = await readJsonObject(req, res);
-    expect(Array.isArray(result)).toBe(true);
+    expect(result).toBeNull();
+    expect(getStatusCode()).toBe(400);
   });
 
   it("should return null and send 400 for null body", async () => {
@@ -278,25 +278,5 @@ describe("readJsonObject", () => {
     const result = await readJsonObject(req, res);
     expect(result).toBeNull();
     expect(getStatusCode()).toBe(400);
-  });
-});
-
-describe("getBodyStrings", () => {
-  it("should extract string values for given keys", () => {
-    const body = { name: "test", token: "abc", count: 42 };
-    const result = getBodyStrings(body, ["name", "token", "count"]);
-    expect(result).toEqual({ name: "test", token: "abc", count: undefined });
-  });
-
-  it("should return undefined for missing keys", () => {
-    const body = { name: "test" };
-    const result = getBodyStrings(body, ["name", "missing"]);
-    expect(result).toEqual({ name: "test", missing: undefined });
-  });
-
-  it("should return undefined for all missing keys", () => {
-    const body = { other: 123 };
-    const result = getBodyStrings(body, ["name", "token"]);
-    expect(result).toEqual({ name: undefined, token: undefined });
   });
 });

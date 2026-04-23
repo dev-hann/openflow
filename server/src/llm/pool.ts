@@ -67,7 +67,7 @@ export function createProviderPool(
     const providers = providerStore.listProviders();
     if (providers.length === 0) return;
 
-    const defaultProvider = providers.find((p: Provider) => p.isDefault) ?? providers[0]!;
+    const defaultProvider = providers.find((p) => p.isDefault) ?? providers[0]!;
     activeProviderId = defaultProvider.id;
     getOrCreateClient(defaultProvider);
 
@@ -121,7 +121,7 @@ export function createProviderPool(
 
     syncFromStore(): void {
       const providers = providerStore.listProviders();
-      const storeIds = new Set(providers.map((p: Provider) => p.id));
+      const storeIds = new Set(providers.map((p) => p.id));
 
       for (const id of clients.keys()) {
         if (!storeIds.has(id)) {
@@ -135,14 +135,14 @@ export function createProviderPool(
       }
 
       if (activeProviderId && !storeIds.has(activeProviderId)) {
-        const fallback = providers.find((p: Provider) => p.isDefault) ?? providers[0];
+        const fallback = providers.find((p) => p.isDefault) ?? providers[0];
         activeProviderId = fallback?.id ?? null;
         log.info({ newActiveId: activeProviderId }, "active provider no longer exists, switched");
       }
     },
 
     listProviders(): { id: string; name: string; model: string; isActive: boolean }[] {
-      return providerStore.listProviders().map((p: Provider) => ({
+      return providerStore.listProviders().map((p) => ({
         id: p.id,
         name: p.name,
         model: p.model,

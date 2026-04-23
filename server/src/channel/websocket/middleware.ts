@@ -105,7 +105,7 @@ export async function readJsonObject(
     sendApiError(res, 400, "invalid_json", `Invalid JSON in request body${detail}`);
     return null;
   }
-  if (typeof result.value !== "object") {
+  if (typeof result.value !== "object" || Array.isArray(result.value)) {
     sendApiError(res, 400, "invalid_body", "Request body must be a JSON object");
     return null;
   }
@@ -120,25 +120,6 @@ export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
     "GET, POST, PUT, DELETE, OPTIONS",
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-}
-
-export function getBodyString(
-  body: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const val = body[key];
-  return typeof val === "string" ? val : undefined;
-}
-
-export function getBodyStrings(
-  body: Record<string, unknown>,
-  keys: string[],
-): Record<string, string | undefined> {
-  const result: Record<string, string | undefined> = {};
-  for (const key of keys) {
-    result[key] = getBodyString(body, key);
-  }
-  return result;
 }
 
 export function validateBody<T>(
