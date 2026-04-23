@@ -245,6 +245,10 @@ class ApiClient {
       {'providerId': providerId},
     );
   }
+
+  Future<void> approveWebAuth(String sessionId) async {
+    await _post('/api/auth/web/approve', {'sessionId': sessionId});
+  }
 }
 
 ApiClient createApiClient(

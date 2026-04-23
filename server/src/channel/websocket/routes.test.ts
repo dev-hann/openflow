@@ -63,7 +63,13 @@ function createMockDeps(): RoutesDeps {
       refreshTokens: vi.fn(),
       unpair: vi.fn(),
       listDevices: vi.fn(),
+      issueTokensForDevice: vi.fn(),
     } as unknown as AuthService,
+    webAuthService: {
+      createSession: vi.fn(() => ({ sessionId: "abc123", expiresInMs: 300_000 })),
+      approveSession: vi.fn(),
+      getStatus: vi.fn(() => ({ status: "pending" })),
+    } as unknown as import("./web-auth.js").WebAuthService,
     memoryStore: {
       createSession: vi.fn(() => ({
         id: "s1",
@@ -270,14 +276,14 @@ describe("createRoutes", () => {
   });
 
   it("should handle undefined req.url and req.method", async () => {
-    const { res, getStatusCode } = createMockResponse();
+    const { res } = createMockResponse();
     const req = {
       headers: {},
       socket: { remoteAddress: "127.0.0.1" },
     } as unknown as IncomingMessage;
 
-    await handleRequest(req, res);
-    expect(getStatusCode()).toBe(404);
+    const handled = await handleRequest(req, res);
+    expect(handled).toBe(false);
   });
 
   it("should handle undefined host header in dispatchRequest", async () => {

@@ -11,6 +11,7 @@ import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/cubits/update_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/screens/provider_edit_screen.dart';
+import 'package:openflow/screens/qr_scanner_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
@@ -261,13 +262,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             authState: authState,
             onServerChanged: _handleServerChanged,
           ),
-          const Divider(height: 1),
+          if (authState.storedAuth != null) ...[
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner),
+              title: const Text('웹 로그인'),
+              subtitle: const Text('QR 코드로 웹에서 로그인'),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) => const QrScannerScreen(),
+                ),
+              ),
+            ),
+          ],
           if (providersState.activeProvider != null)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ActiveProviderCard(
                 provider: providersState.activeProvider!,
                 onTap: () => _showModelSheet(providersState.activeProvider!),

@@ -3,11 +3,12 @@
 ## 프로젝트 개요
 
 - 초경량 개인 AI 비서 (3초 이내 기동)
-- 서버: TypeScript (ESM), Node.js 22+ / 앱: Flutter 3.29+, Dart 3.6+
+- 서버: TypeScript (ESM), Node.js 22+ / 앱: Flutter 3.29+, Dart 3.6+ / 웹: React 19 + Vite
 - 통신: WebSocket + REST API, OpenAI 호환 LLM
 - **전체 스펙:** [`SPEC.md`](./SPEC.md)
 - **서버 지침:** [`server/AGENTS.md`](./server/AGENTS.md)
 - **앱 지침:** [`app/AGENTS.md`](./app/AGENTS.md)
+- **웹 지침:** [`web/AGENTS.md`](./web/AGENTS.md)
 
 ## API-First 워크플로우
 
@@ -62,4 +63,5 @@
 
 - 서버 파일 변경 시: `cd server && pnpm typecheck && pnpm lint && pnpm test`
 - 앱 파일 변경 시: `cd app && flutter analyze && flutter test`
+- 웹 파일 변경 시: `cd web && npm run typecheck && npm run lint && npm test`
 - **검증 실패 시 커밋이 거부된다. 먼저 수정 후 재커밋한다.**

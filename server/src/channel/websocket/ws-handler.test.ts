@@ -75,6 +75,7 @@ function createMockAuthService(validToken: string, sessionKey: string): AuthServ
     refreshTokens: vi.fn(),
     unpair: vi.fn(),
     listDevices: vi.fn(),
+    issueTokensForDevice: vi.fn(),
   };
 }
 

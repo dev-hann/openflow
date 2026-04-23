@@ -32,6 +32,7 @@ export interface AuthService {
   refreshTokens(refreshToken: string): TokenPair | null;
   unpair(sessionKey: string): boolean;
   listDevices(): DeviceRecord[];
+  issueTokensForDevice(label: string): TokenPair;
 }
 
 function generateToken(prefix: string, bytes: number): string {
@@ -220,5 +221,6 @@ export function createAuthService(store?: AuthStore): AuthService {
     refreshTokens,
     unpair,
     listDevices,
+    issueTokensForDevice: issueTokens,
   };
 }
