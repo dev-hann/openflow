@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 
@@ -47,27 +48,33 @@ class ProviderListSection extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        Spacing.md,
-        Spacing.md,
-        Spacing.md,
-        Spacing.sm,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
       ),
       child: Row(
         children: [
           Text(
             'Provider',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colorScheme.mutedForeground,
+                ),
           ),
           const Spacer(),
-          TextButton.icon(
+          ShadButton.ghost(
             onPressed: onAdd,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('추가'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add, size: 18),
+                SizedBox(width: 4),
+                Text('추가'),
+              ],
+            ),
           ),
         ],
       ),
@@ -75,15 +82,15 @@ class ProviderListSection extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(Spacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Center(
         child: Text(
           '등록된 Provider가 없습니다',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.mutedForeground,
+              ),
         ),
       ),
     );
@@ -111,30 +118,14 @@ class _ProviderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListTile(
-      leading: _buildStatusIndicator(theme),
+      leading: _buildStatusIndicator(context),
       title: Row(
         children: [
           Expanded(child: Text(provider.name)),
           if (isActive)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-              child: Text(
-                '활성',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            ShadBadge(
+              child: Text('활성'),
             ),
         ],
       ),
@@ -149,23 +140,24 @@ class _ProviderTile extends StatelessWidget {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : _buildActions(theme),
+          : _buildActions(context),
       onTap: onTap,
     );
   }
 
-  Widget _buildStatusIndicator(ThemeData theme) {
+  Widget _buildStatusIndicator(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     if (isActive) {
       return Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
+          color: colorScheme.secondary,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(
           Icons.check_circle,
-          color: theme.colorScheme.primary,
+          color: colorScheme.primary,
           size: 20,
         ),
       );
@@ -174,37 +166,35 @@ class _ProviderTile extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: colorScheme.card,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: const Icon(Icons.dns_outlined, size: 20),
     );
   }
 
-  Widget _buildActions(ThemeData theme) {
+  Widget _buildActions(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (onModels != null)
-          IconButton(
+          ShadIconButton.ghost(
             icon: const Icon(Icons.tune, size: 20),
-            tooltip: '모델 변경',
             onPressed: onModels,
           ),
         if (onEdit != null)
-          IconButton(
+          ShadIconButton.ghost(
             icon: const Icon(Icons.edit_outlined, size: 20),
-            tooltip: '편집',
             onPressed: onEdit,
           ),
         if (onDelete != null)
-          IconButton(
+          ShadIconButton.ghost(
             icon: Icon(
               Icons.delete_outline,
               size: 20,
-              color: theme.colorScheme.error,
+              color: colorScheme.destructive,
             ),
-            tooltip: '삭제',
             onPressed: onDelete,
           ),
       ],

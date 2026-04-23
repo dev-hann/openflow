@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/constants/presets.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
@@ -198,7 +199,8 @@ class _ProviderFormState extends State<ProviderForm> {
         'model': model
       };
       if (apiKey.isNotEmpty) params['apiKey'] = apiKey;
-      final updated = await api.updateProvider(widget.editProvider!.id, params);
+      final updated =
+          await api.updateProvider(widget.editProvider!.id, params);
       if (!mounted) return;
       cubit.updateProvider(updated);
     } else {
@@ -217,7 +219,7 @@ class _ProviderFormState extends State<ProviderForm> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(Spacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -226,42 +228,37 @@ class _ProviderFormState extends State<ProviderForm> {
               selectedPreset: _selectedPreset,
               onSelected: _selectPreset,
             ),
-          TextField(
+          ShadInput(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: '이름',
-              border: OutlineInputBorder(),
-            ),
+            placeholder: const Text('이름'),
           ),
-          const SizedBox(height: Spacing.md),
-          TextField(
+          const SizedBox(height: AppSpacing.md),
+          ShadInput(
             controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: 'Base URL',
-              border: OutlineInputBorder(),
-            ),
+            placeholder: const Text('Base URL'),
             keyboardType: TextInputType.url,
           ),
           if (_selectedPreset?.needsApiKey ?? true) ...[
-            const SizedBox(height: Spacing.md),
-            TextField(
+            const SizedBox(height: AppSpacing.md),
+            ShadInput(
               controller: _apiKeyController,
-              decoration: InputDecoration(
-                labelText: 'API Key',
-                border: const OutlineInputBorder(),
-                hintText: widget.editProvider != null ? '변경 시에만 입력' : null,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureApiKey ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscureApiKey = !_obscureApiKey),
-                ),
+              placeholder: Text(
+                widget.editProvider != null ? '변경 시에만 입력' : 'API Key',
               ),
               obscureText: _obscureApiKey,
+              trailing: GestureDetector(
+                onTap: () =>
+                    setState(() => _obscureApiKey = !_obscureApiKey),
+                child: Icon(
+                  _obscureApiKey
+                      ? Icons.visibility_off
+                      : Icons.visibility,
+                  size: 18,
+                ),
+              ),
             ),
           ],
-          const SizedBox(height: Spacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           VerifySection(
             verifying: _verifying,
             result: _verifyResult,
@@ -269,22 +266,23 @@ class _ProviderFormState extends State<ProviderForm> {
             onVerify: _verify,
             onSelectModel: (model) => setState(() => _selectedModel = model),
           ),
-          const SizedBox(height: Spacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               if (widget.showSkip)
-                TextButton(
+                ShadButton.ghost(
                   onPressed: widget.onComplete,
                   child: const Text('건너뛰기'),
                 ),
               const Spacer(),
-              FilledButton(
+              ShadButton(
                 onPressed: _submitting ? null : _handleSubmit,
                 child: _submitting
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child:
+                            CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(widget.editProvider != null ? '저장' : '완료'),
               ),

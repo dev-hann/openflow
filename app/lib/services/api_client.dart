@@ -246,10 +246,6 @@ class ApiClient {
     );
   }
 
-  Future<void> approveWebAuth(String sessionId) async {
-    await _post('/api/auth/web/approve', {'sessionId': sessionId});
-  }
-
   Future<void> reportError({
     required String platform,
     required String version,

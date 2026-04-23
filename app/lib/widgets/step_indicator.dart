@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class StepIndicator extends StatelessWidget {
   const StepIndicator({
@@ -12,7 +13,7 @@ class StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = ShadTheme.of(context).colorScheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -25,7 +26,7 @@ class StepIndicator extends StatelessWidget {
           decoration: BoxDecoration(
             color: i == currentIndex
                 ? colorScheme.primary
-                : colorScheme.outlineVariant,
+                : colorScheme.muted,
             borderRadius: BorderRadius.circular(4),
           ),
         ),

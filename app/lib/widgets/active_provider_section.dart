@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
@@ -17,45 +18,44 @@ class ActiveProviderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
     final active = providersState.activeProvider;
 
     return Padding(
-      padding: const EdgeInsets.all(Spacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '활성 Provider',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colorScheme.mutedForeground,
+                ),
           ),
-          const SizedBox(height: Spacing.sm),
+          const SizedBox(height: AppSpacing.sm),
           if (active != null)
             ActiveProviderCard(
               provider: active,
               onTap: () => onTap(active),
             )
           else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(Spacing.md),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 20, color: theme.colorScheme.onSurfaceVariant),
-                    const SizedBox(width: Spacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Provider를 추가하고 활성화하세요',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+            ShadCard(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      size: 20, color: colorScheme.mutedForeground),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Provider를 추가하고 활성화하세요',
+                      style:
+                          Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.mutedForeground,
+                              ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],

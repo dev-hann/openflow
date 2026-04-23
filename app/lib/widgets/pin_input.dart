@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class PinInput extends StatelessWidget {
   const PinInput({
@@ -35,7 +36,7 @@ class PinInput extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
+                color: ShadTheme.of(context).colorScheme.border,
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -53,7 +54,7 @@ class PinInput extends StatelessWidget {
   Widget _buildPinTextField() {
     return SizedBox(
       width: 200,
-      child: TextField(
+      child: ShadInput(
         controller: controller,
         focusNode: focusNode,
         keyboardType: TextInputType.number,
@@ -61,10 +62,6 @@ class PinInput extends StatelessWidget {
         autofocus: true,
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 24, letterSpacing: 8),
-        decoration: const InputDecoration(
-          counterText: '',
-          border: InputBorder.none,
-        ),
         onChanged: onChanged ?? (_) {},
         onSubmitted: (_) {},
       ),

@@ -65,11 +65,6 @@ function createMockDeps(): RoutesDeps {
       listDevices: vi.fn(),
       issueTokensForDevice: vi.fn(),
     } as unknown as AuthService,
-    webAuthService: {
-      createSession: vi.fn(() => ({ sessionId: "abc123", expiresInMs: 300_000 })),
-      approveSession: vi.fn(),
-      getStatus: vi.fn(() => ({ status: "pending" })),
-    } as unknown as import("./web-auth.js").WebAuthService,
     memoryStore: {
       createSession: vi.fn(() => ({
         id: "s1",

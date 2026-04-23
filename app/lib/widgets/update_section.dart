@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/update_cubit.dart';
 import 'package:openflow/services/update_service.dart';
 
@@ -13,27 +14,20 @@ class UpdateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocBuilder<UpdateCubit, UpdateState>(
       builder: (context, updateState) {
         final updateCubit = context.read<UpdateCubit>();
 
         return Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.md,
-            vertical: Spacing.xl,
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xl,
           ),
           child: Column(
             children: [
-              Text(
-                'OpenFlow v${updateState.currentVersion}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-              const SizedBox(height: Spacing.sm),
-              _buildUpdateAction(context, theme, updateState, updateCubit),
+              _buildVersionText(context, updateState),
+              const SizedBox(height: AppSpacing.sm),
+              _buildUpdateAction(context, updateState, updateCubit),
             ],
           ),
         );
@@ -41,18 +35,33 @@ class UpdateSection extends StatelessWidget {
     );
   }
 
+  Widget _buildVersionText(BuildContext context, UpdateState updateState) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
+    return Text(
+      'OpenFlow v${updateState.currentVersion}',
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: colorScheme.border,
+          ),
+    );
+  }
+
   Widget _buildUpdateAction(
     BuildContext context,
-    ThemeData theme,
     UpdateState updateState,
     UpdateCubit updateCubit,
   ) {
     switch (updateState.status) {
       case UpdateStatus.idle:
-        return TextButton.icon(
+        return ShadButton.ghost(
           onPressed: updateCubit.checkForUpdate,
-          icon: const Icon(Icons.system_update_outlined, size: 18),
-          label: const Text('업데이트 확인'),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.system_update_outlined, size: 18),
+              SizedBox(width: 4),
+              Text('업데이트 확인'),
+            ],
+          ),
         );
 
       case UpdateStatus.checking:
@@ -65,41 +74,42 @@ class UpdateSection extends StatelessWidget {
       case UpdateStatus.upToDate:
         return Text(
           '최신 버전입니다',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.tertiary,
-          ),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF22C55E),
+              ),
         );
 
       case UpdateStatus.available:
-        return _buildUpdateAvailable(context, theme, updateState, updateCubit);
+        return _buildUpdateAvailable(context, updateState, updateCubit);
 
       case UpdateStatus.downloading:
-        return _buildDownloadProgress(theme, updateState);
+        return _buildDownloadProgress(context, updateState);
 
       case UpdateStatus.readyToInstall:
-        return _buildInstallButton(context, theme, updateState, updateCubit);
+        return _buildInstallButton(context, updateState, updateCubit);
 
       case UpdateStatus.error:
-        return _buildErrorAction(theme, updateState, updateCubit);
+        return _buildErrorAction(context, updateState, updateCubit);
     }
   }
 
   Widget _buildErrorAction(
-    ThemeData theme,
+    BuildContext context,
     UpdateState updateState,
     UpdateCubit updateCubit,
   ) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Column(
       children: [
         Text(
           updateState.errorMessage ?? '오류가 발생했습니다',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.error,
-          ),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.destructive,
+              ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: Spacing.xs),
-        TextButton(
+        const SizedBox(height: AppSpacing.xs),
+        ShadButton.ghost(
           onPressed: updateCubit.checkForUpdate,
           child: const Text('다시 시도'),
         ),
@@ -109,10 +119,10 @@ class UpdateSection extends StatelessWidget {
 
   Widget _buildUpdateAvailable(
     BuildContext context,
-    ThemeData theme,
     UpdateState updateState,
     UpdateCubit updateCubit,
   ) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     final release = updateState.release!;
     final updateService = context.read<UpdateService>();
     final asset = release.assets
@@ -126,27 +136,28 @@ class UpdateSection extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(Spacing.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+            color: colorScheme.secondary.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              color: colorScheme.primary.withValues(alpha: 0.3),
             ),
           ),
-          child: _buildReleaseDetails(theme, release, sizeText),
+          child: _buildReleaseDetails(context, release, sizeText),
         ),
-        const SizedBox(height: Spacing.sm),
+        const SizedBox(height: AppSpacing.sm),
         _buildUpdateActions(context, updateCubit, release),
       ],
     );
   }
 
   Widget _buildReleaseDetails(
-    ThemeData theme,
+    BuildContext context,
     ReleaseInfo release,
     String sizeText,
   ) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,33 +166,33 @@ class UpdateSection extends StatelessWidget {
             Icon(
               Icons.new_releases_outlined,
               size: 18,
-              color: theme.colorScheme.primary,
+              color: colorScheme.primary,
             ),
-            const SizedBox(width: Spacing.xs),
+            const SizedBox(width: AppSpacing.xs),
             Text(
               '${release.tagName} 사용 가능',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
             ),
             if (sizeText.isNotEmpty) ...[
               const Spacer(),
               Text(
                 sizeText,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.mutedForeground,
+                    ),
               ),
             ],
           ],
         ),
         if (release.releaseNotes.isNotEmpty) ...[
-          const SizedBox(height: Spacing.sm),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             release.releaseNotes,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.mutedForeground,
+                ),
             maxLines: 5,
             overflow: TextOverflow.ellipsis,
           ),
@@ -198,13 +209,19 @@ class UpdateSection extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        FilledButton.icon(
+        ShadButton(
           onPressed: updateCubit.downloadUpdate,
-          icon: const Icon(Icons.download, size: 18),
-          label: const Text('업데이트'),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.download, size: 18),
+              SizedBox(width: 4),
+              Text('업데이트'),
+            ],
+          ),
         ),
-        const SizedBox(width: Spacing.sm),
-        TextButton(
+        const SizedBox(width: AppSpacing.sm),
+        ShadButton.ghost(
           onPressed: () => _openReleasePage(release.htmlUrl),
           child: const Text('릴리즈 페이지'),
         ),
@@ -212,22 +229,18 @@ class UpdateSection extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadProgress(ThemeData theme, UpdateState updateState) {
+  Widget _buildDownloadProgress(BuildContext context, UpdateState updateState) {
     return Column(
       children: [
         Text(
           '다운로드 중... ${updateState.downloadProgress}%',
-          style: theme.textTheme.bodySmall,
+          style: Theme.of(context).textTheme.bodySmall,
         ),
-        const SizedBox(height: Spacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: LinearProgressIndicator(
-              value: updateState.downloadProgress / 100,
-              minHeight: 6,
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: ShadProgress(
+            value: updateState.downloadProgress / 100,
           ),
         ),
       ],
@@ -236,24 +249,29 @@ class UpdateSection extends StatelessWidget {
 
   Widget _buildInstallButton(
     BuildContext context,
-    ThemeData theme,
     UpdateState updateState,
     UpdateCubit updateCubit,
   ) {
     return Column(
       children: [
-        FilledButton.icon(
+        ShadButton(
           onPressed: () =>
               _installApk(context, updateState.downloadedFilePath!),
-          icon: const Icon(Icons.install_mobile, size: 18),
-          label: const Text('설치'),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.install_mobile, size: 18),
+              SizedBox(width: 4),
+              Text('설치'),
+            ],
+          ),
         ),
-        const SizedBox(height: Spacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           '다운로드 완료',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.tertiary,
-          ),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: const Color(0xFF22C55E),
+              ),
         ),
       ],
     );

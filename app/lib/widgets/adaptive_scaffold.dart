@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class AdaptiveScaffold extends StatelessWidget {
   const AdaptiveScaffold({
@@ -37,13 +37,13 @@ class AdaptiveScaffold extends StatelessWidget {
   }
 
   Widget _buildWideLayout(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
     final sortedSessions = List<SessionInfo>.from(sessions)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Row(
       children: [
-        _buildSidebar(context, sortedSessions, theme),
+        _buildSidebar(context, sortedSessions, colorScheme),
         Expanded(child: child),
       ],
     );
@@ -52,22 +52,22 @@ class AdaptiveScaffold extends StatelessWidget {
   Widget _buildSidebar(
     BuildContext context,
     List<SessionInfo> sortedSessions,
-    ThemeData theme,
+    ShadColorScheme colorScheme,
   ) {
     return Container(
       width: 280,
       decoration: BoxDecoration(
         border: Border(
           right: BorderSide(
-            color: theme.colorScheme.outlineVariant,
+            color: colorScheme.border,
             width: 0.5,
           ),
         ),
       ),
       child: Column(
         children: [
-          _buildSidebarHeader(context, theme),
-          const Divider(height: 1),
+          _buildSidebarHeader(context),
+          const ShadSeparator.horizontal(),
           Expanded(
             child: _TabletSessionList(
               sessions: sortedSessions,
@@ -76,7 +76,7 @@ class AdaptiveScaffold extends StatelessWidget {
               onSessionDelete: onSessionDelete,
             ),
           ),
-          const Divider(height: 1),
+          const ShadSeparator.horizontal(),
           ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('설정'),
@@ -87,22 +87,22 @@ class AdaptiveScaffold extends StatelessWidget {
     );
   }
 
-  Widget _buildSidebarHeader(BuildContext context, ThemeData theme) {
+  Widget _buildSidebarHeader(BuildContext context) {
+    final theme = ShadTheme.of(context);
     return Padding(
       padding: EdgeInsets.only(
-        top: Spacing.md + MediaQuery.of(context).padding.top,
-        left: Spacing.md,
-        right: Spacing.sm,
-        bottom: Spacing.sm,
+        top: AppSpacing.md + MediaQuery.of(context).padding.top,
+        left: AppSpacing.md,
+        right: AppSpacing.sm,
+        bottom: AppSpacing.sm,
       ),
       child: Row(
         children: [
-          Text('OpenFlow', style: theme.textTheme.titleLarge),
+          Text('OpenFlow', style: theme.textTheme.large),
           const Spacer(),
-          IconButton(
+          ShadIconButton.ghost(
             onPressed: onNewChat,
             icon: const Icon(Icons.add),
-            tooltip: '새 대화',
           ),
         ],
       ),
@@ -125,15 +125,13 @@ class _TabletSessionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = ShadTheme.of(context);
 
     if (sessions.isEmpty) {
       return Center(
         child: Text(
           '대화가 없습니다',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: theme.textTheme.muted,
         ),
       );
     }
@@ -143,26 +141,27 @@ class _TabletSessionList extends StatelessWidget {
       itemBuilder: (context, index) {
         final session = sessions[index];
         final isActive = session.id == activeSessionId;
-        return ListTile(
-          selected: isActive,
-          selectedTileColor:
-              theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-          leading: const Icon(Icons.chat_bubble_outline, size: 20),
-          title: Text(
-            session.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        return Container(
+          color: isActive
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+              : null,
+          child: ListTile(
+            leading: const Icon(Icons.chat_bubble_outline, size: 20),
+            title: Text(
+              session.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              formatRelativeTime(session.createdAt),
+              style: theme.textTheme.muted,
+            ),
+            trailing: ShadIconButton.ghost(
+              icon: const Icon(Icons.delete_outline, size: 18),
+              onPressed: () => _confirmDelete(context, session),
+            ),
+            onTap: () => onSessionTap(session.id),
           ),
-          subtitle: Text(
-            formatRelativeTime(session.createdAt),
-            style: theme.textTheme.labelSmall,
-          ),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            tooltip: '삭제',
-            onPressed: () => _confirmDelete(context, session),
-          ),
-          onTap: () => onSessionTap(session.id),
         );
       },
     );
@@ -172,17 +171,17 @@ class _TabletSessionList extends StatelessWidget {
     BuildContext context,
     SessionInfo session,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShadDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => ShadDialog(
         title: const Text('세션 삭제'),
-        content: Text("'${session.title}' 세션을 삭제하시겠습니까?"),
+        description: Text("'${session.title}' 세션을 삭제하시겠습니까?"),
         actions: [
-          TextButton(
+          ShadButton.outline(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('취소'),
           ),
-          TextButton(
+          ShadButton.destructive(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('삭제'),
           ),

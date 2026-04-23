@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 enum EmptyStateVariant { disconnected, connecting, empty }
 
@@ -55,37 +55,38 @@ class ChatEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(Spacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               _icon,
               size: 64,
-              color: theme.colorScheme.outline,
+              color: colorScheme.mutedForeground,
             ),
-            const SizedBox(height: Spacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               _title,
-              style: theme.textTheme.titleMedium,
+              style: textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: Spacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               _subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.mutedForeground,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: Spacing.xl),
+            const SizedBox(height: AppSpacing.xl),
             if (variant == EmptyStateVariant.disconnected ||
                 variant == EmptyStateVariant.connecting)
-              FilledButton.tonal(
+              ShadButton.outline(
                 onPressed: variant == EmptyStateVariant.connecting
                     ? null
                     : onReconnect,
@@ -137,46 +138,43 @@ class _SuggestionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: Spacing.sm,
-      crossAxisSpacing: Spacing.sm,
+      mainAxisSpacing: AppSpacing.sm,
+      crossAxisSpacing: AppSpacing.sm,
       childAspectRatio: 2.2,
       children: suggestions.map((card) {
-        return Card(
-          margin: EdgeInsets.zero,
-          child: InkWell(
-            onTap: isSending ? null : () => onSuggestion(card.prompt),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.sm,
-                vertical: Spacing.xs + 2,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    card.icon,
-                    size: 20,
-                    color: theme.colorScheme.primary,
+        return GestureDetector(
+          onTap: isSending ? null : () => onSuggestion(card.prompt),
+          child: ShadCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 6,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  card.icon,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  card.title,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    card.title,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         );

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 
 class VerifySection extends StatefulWidget {
   const VerifySection({
@@ -36,12 +37,12 @@ class _VerifySectionState extends State<VerifySection> {
           onVerify: widget.onVerify,
         ),
         if (widget.result != null) ...[
-          const SizedBox(height: Spacing.sm),
+          const SizedBox(height: AppSpacing.sm),
           _VerifyResultBanner(result: widget.result!),
         ],
         if ((widget.result?.ok ?? false) &&
             widget.result!.models.isNotEmpty) ...[
-          const SizedBox(height: Spacing.sm),
+          const SizedBox(height: AppSpacing.sm),
           _ModelChipSelector(
             models: widget.result!.models,
             selectedModel: widget.selectedModel,
@@ -77,7 +78,7 @@ class _VerifyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton.tonal(
+    return ShadButton.secondary(
       onPressed: verifying ? null : onVerify,
       child: verifying
           ? const SizedBox(
@@ -96,22 +97,20 @@ class _VerifyResultBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(Spacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: result.ok
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.errorContainer,
+        color: result.ok ? colorScheme.secondary : colorScheme.destructive,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Text(
         result.ok ? '연결 성공!' : result.error ?? '연결 실패',
         style: TextStyle(
           color: result.ok
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onErrorContainer,
+              ? colorScheme.foreground
+              : colorScheme.destructiveForeground,
         ),
       ),
     );
@@ -134,27 +133,35 @@ class _ModelChipSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('모델 선택', style: theme.textTheme.labelLarge),
-        const SizedBox(height: Spacing.xs),
-        TextFormField(
-          decoration: const InputDecoration(
-            hintText: '모델 검색...',
-            prefixIcon: Icon(Icons.search),
-            isDense: true,
-            border: OutlineInputBorder(),
+        Text(
+          '모델 선택',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.foreground,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        ShadInput(
+          placeholder: const Text('모델 검색...'),
+          leading: const Padding(
+            padding: EdgeInsets.only(left: AppSpacing.sm),
+            child: Icon(Icons.search, size: 20),
           ),
           onChanged: onSearchChanged,
         ),
-        const SizedBox(height: Spacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 200),
           child: SingleChildScrollView(
             child: Wrap(
-              spacing: Spacing.xs,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: models
                   .where((m) => m.toLowerCase().contains(searchQuery))
                   .map((model) {

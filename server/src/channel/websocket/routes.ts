@@ -9,9 +9,7 @@ import { sendJson, setCorsHeaders, handleOptions } from "./middleware.js";
 import { createAuthRoutes } from "./auth-routes.js";
 import { createProviderRoutes } from "./provider-routes.js";
 import { createSessionRoutes } from "./session-routes.js";
-import { createWebAuthRoutes } from "./web-auth-routes.js";
 import { createReportingRoutes } from "./reporting-routes.js";
-import type { WebAuthService } from "./web-auth.js";
 import type { IssueReporter } from "../../reporting/issue-reporter.js";
 
 const log = createLogger("ws/routes");
@@ -37,7 +35,6 @@ export function routePattern(pattern: RegExp, method: string, handler: RouteHand
 
 export interface RoutesDeps {
   authService: AuthService;
-  webAuthService: WebAuthService;
   memoryStore: MemoryStore;
   providerStore: ProviderStore;
   providerPool: ProviderPool;
@@ -47,18 +44,17 @@ export interface RoutesDeps {
 }
 
 export function createRoutes(deps: RoutesDeps) {
-  const { authService, webAuthService, memoryStore, providerStore, providerPool, pushTokenStore, corsEnabled } =
+  const { authService, memoryStore, providerStore, providerPool, pushTokenStore, corsEnabled } =
     deps;
 
   const authRoutes = createAuthRoutes({ authService });
-  const webAuthRoutes = createWebAuthRoutes({ webAuthService, authService });
   const sessionRoutes = createSessionRoutes({ authService, memoryStore, pushTokenStore });
   const providerRoutes = createProviderRoutes({ authService, providerStore, providerPool });
   const reportingRoutes = deps.issueReporter
     ? createReportingRoutes({ authService, issueReporter: deps.issueReporter })
     : [];
 
-  const routes: Route[] = [...authRoutes, ...webAuthRoutes, ...sessionRoutes, ...providerRoutes, ...reportingRoutes];
+  const routes: Route[] = [...authRoutes, ...sessionRoutes, ...providerRoutes, ...reportingRoutes];
 
   return async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
     setCorsHeaders(res, corsEnabled);

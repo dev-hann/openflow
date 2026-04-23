@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/models/protocol.dart';
@@ -11,6 +9,7 @@ import 'package:openflow/utils/normalize_url.dart';
 import 'package:openflow/widgets/pin_input.dart';
 import 'package:openflow/widgets/provider_form.dart';
 import 'package:openflow/widgets/step_indicator.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({required this.onComplete, super.key});
@@ -144,7 +143,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       appBar: _step.index > 0
           ? AppBar(
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(LucideIcons.arrowLeft),
                 onPressed: _previousStep,
               ),
             )
@@ -155,42 +154,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildBody(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(Spacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            const SizedBox(height: Spacing.xxl),
+            const SizedBox(height: AppSpacing.xxl),
             Icon(
-              Icons.auto_awesome,
+              LucideIcons.sparkles,
               size: 64,
-              color: theme.colorScheme.primary,
+              color: colorScheme.primary,
             ),
-            const SizedBox(height: Spacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'OpenFlow',
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: Spacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               '개인 AI 비서',
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: colorScheme.mutedForeground,
               ),
             ),
-            const SizedBox(height: Spacing.xxl),
+            const SizedBox(height: AppSpacing.xxl),
             StepIndicator(currentIndex: _step.index),
-            const SizedBox(height: Spacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             Expanded(child: _buildStep()),
             if (_error != null)
               Padding(
-                padding: const EdgeInsets.only(top: Spacing.md),
+                padding: const EdgeInsets.only(top: AppSpacing.md),
                 child: Text(
                   _error!,
-                  style: TextStyle(color: theme.colorScheme.error),
+                  style: TextStyle(color: colorScheme.destructive),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -218,21 +218,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           '서버 주소 입력',
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        const SizedBox(height: Spacing.md),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        ShadInput(
           controller: _serverController,
-          decoration: const InputDecoration(
-            hintText: '예: 192.168.1.100:3000',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.dns_outlined),
-          ),
+          placeholder: const Text('예: 192.168.1.100:3000'),
+          leading: const Icon(LucideIcons.server),
           keyboardType: TextInputType.url,
           onSubmitted: (_) => _submitServer(),
         ),
-        const SizedBox(height: Spacing.lg),
+        const SizedBox(height: AppSpacing.lg),
         SizedBox(
           width: double.infinity,
-          child: FilledButton(
+          child: ShadButton(
             onPressed: _loading ? null : _submitServer,
             child: _loading
                 ? const SizedBox(
@@ -248,30 +245,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPinStep() {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Column(
       children: [
         Text(
           'PIN 입력',
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        const SizedBox(height: Spacing.sm),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           '서버 화면에 표시된 6자리 PIN을 입력하세요',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: colorScheme.mutedForeground,
               ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: Spacing.lg),
+        const SizedBox(height: AppSpacing.lg),
         PinInput(
           controller: _pinController,
           focusNode: _pinFocusNode,
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: Spacing.lg),
+        const SizedBox(height: AppSpacing.lg),
         SizedBox(
           width: double.infinity,
-          child: FilledButton(
+          child: ShadButton(
             onPressed: _loading ? null : _submitPin,
             child: _loading
                 ? const SizedBox(

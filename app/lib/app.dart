@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/config/theme.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/chat_cubit.dart';
@@ -23,17 +24,19 @@ class OpenFlowMaterialApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ShadApp(
       title: 'OpenFlow',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
+      materialThemeBuilder: (context, theme) => theme.copyWith(
+        appBarTheme: const AppBarTheme(elevation: 0),
+      ),
       home: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
           if (authState.storedAuth == null) {
-            return OnboardingScreen(
-              onComplete: () {},
-            );
+            return OnboardingScreen(onComplete: () {});
           }
           return const MainScreen();
         },
@@ -78,6 +81,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final shadTheme = ShadTheme.of(context);
+
     return BlocBuilder<SessionsCubit, SessionsState>(
       builder: (context, sessionsState) {
         final activeSession = sessionsState.sessions
@@ -86,7 +91,7 @@ class _MainScreenState extends State<MainScreen> {
         final title = activeSession?.title ?? '새 대화';
 
         final scaffold = Scaffold(
-          appBar: _buildAppBar(context, title),
+          appBar: _buildAppBar(context, title, shadTheme),
           body: const ChatScreen(),
         );
 
@@ -103,12 +108,17 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, String title) {
-    final theme = Theme.of(context);
-
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    String title,
+    ShadThemeData shadTheme,
+  ) {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(Icons.menu),
+        icon: Icon(
+          Icons.menu,
+          color: shadTheme.colorScheme.foreground,
+        ),
         onPressed: _showSessionSheet,
       ),
       title: GestureDetector(
@@ -117,8 +127,8 @@ class _MainScreenState extends State<MainScreen> {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: _ConnectionIndicator(theme: theme),
+          padding: const EdgeInsets.only(right: AppSpacing.md),
+          child: _ConnectionIndicator(shadTheme: shadTheme),
         ),
       ],
     );
@@ -197,7 +207,7 @@ class _AppBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final shadTheme = ShadTheme.of(context);
 
     return Column(
       children: [
@@ -205,7 +215,11 @@ class _AppBarTitle extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleMedium,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: shadTheme.colorScheme.foreground,
+          ),
         ),
         BlocBuilder<ProvidersCubit, ProvidersState>(
           builder: (context, providersState) {
@@ -218,8 +232,9 @@ class _AppBarTitle extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: TextStyle(
+                fontSize: 11,
+                color: shadTheme.colorScheme.mutedForeground,
               ),
             );
           },
@@ -230,9 +245,9 @@ class _AppBarTitle extends StatelessWidget {
 }
 
 class _ConnectionIndicator extends StatelessWidget {
-  const _ConnectionIndicator({required this.theme});
+  const _ConnectionIndicator({required this.shadTheme});
 
-  final ThemeData theme;
+  final ShadThemeData shadTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -245,8 +260,8 @@ class _ConnectionIndicator extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: authState.isConnected
-                ? theme.colorScheme.tertiary
-                : theme.colorScheme.error,
+                ? const Color(0xFF22C55E)
+                : shadTheme.colorScheme.destructive,
           ),
         );
       },

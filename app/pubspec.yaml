@@ -3,12 +3,11 @@ description: 초경량 개인 AI 비서
 version: 0.8.0+290
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.11.0
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
   dio: ^5.7.0
   equatable: ^2.0.7
   flutter_bloc: ^9.1.0
@@ -22,7 +21,9 @@ dependencies:
   url_launcher: ^6.3.1
   speech_to_text: ^7.0.0
   web_socket_channel: ^3.0.2
-  mobile_scanner: ^6.0.5
+  shadcn_ui: ^0.54.0
+  mix: ^2.0.2
+  animated_toggle_switch: ^0.8.7
 
 dev_dependencies:
   flutter_test:

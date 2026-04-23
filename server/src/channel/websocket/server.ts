@@ -1,13 +1,10 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
-import { resolve as resolvePath } from "node:path";
 
 import { createLogger } from "../../utils/logger.js";
 import { createAuthService, type AuthService } from "./auth.js";
 import { createWsHandler } from "./ws-handler.js";
 import { createRoutes } from "./routes.js";
-import { createStaticHandler } from "./static.js";
-import { createWebAuthService } from "./web-auth.js";
 import type { Channel } from "../types.js";
 import type { AgentEngine } from "../../agent/index.js";
 import type { MemoryStore, ProviderStore } from "../../memory/index.js";
@@ -24,7 +21,6 @@ export interface WebSocketChannelConfig {
   host: string;
   port: number;
   cors: boolean;
-  webRoot?: string;
 }
 
 export interface WebSocketChannelDeps {
@@ -47,7 +43,6 @@ export function createWebSocketChannel(
   deps: WebSocketChannelDeps,
 ): WebSocketChannel {
   const authService = createAuthService();
-  const webAuthService = createWebAuthService(authService);
 
   const wsHandler = createWsHandler({
     authService,
@@ -56,7 +51,6 @@ export function createWebSocketChannel(
 
   const routes = createRoutes({
     authService,
-    webAuthService,
     memoryStore: deps.memoryStore,
     providerStore: deps.providerStore,
     providerPool: deps.providerPool,
@@ -64,10 +58,6 @@ export function createWebSocketChannel(
     corsEnabled: config.cors,
     issueReporter: deps.issueReporter,
   });
-
-  const staticHandler = config.webRoot
-    ? createStaticHandler(resolvePath(config.webRoot))
-    : null;
 
   let server: Server | undefined;
   let wss: WebSocketServer | undefined;
@@ -82,13 +72,10 @@ export function createWebSocketChannel(
     async start(): Promise<void> {
       server = createServer((req: IncomingMessage, res: ServerResponse) => {
         routes(req, res).then(async (handled) => {
-          if (handled) return;
-          if (staticHandler) {
-            const served = await staticHandler(req, res);
-            if (served) return;
+          if (!handled) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "not_found" }));
           }
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "not_found" }));
         }).catch((err) => {
           log.error({ err }, "unhandled request error");
         });

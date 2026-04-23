@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:openflow/models/protocol.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class MessageActions extends StatefulWidget {
   const MessageActions({
@@ -23,48 +23,16 @@ class MessageActions extends StatefulWidget {
   State<MessageActions> createState() => _MessageActionsState();
 }
 
-class _MessageActionsState extends State<MessageActions>
-    with TickerProviderStateMixin {
+class _MessageActionsState extends State<MessageActions> {
   bool _liked = false;
   bool _disliked = false;
   bool _copied = false;
   bool _isRegenerating = false;
-
-  late final AnimationController _likeController;
-  late final AnimationController _dislikeController;
-  late final AnimationController _regenerateController;
+  bool _likeAnimating = false;
+  bool _dislikeAnimating = false;
 
   bool get _isUser => widget.message.role == MessageRole.user;
   bool get _isAssistant => widget.message.role == MessageRole.assistant;
-
-  @override
-  void initState() {
-    super.initState();
-    _likeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-      lowerBound: 1.0,
-      upperBound: 1.3,
-    );
-    _dislikeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-      lowerBound: 1.0,
-      upperBound: 1.3,
-    );
-    _regenerateController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-  }
-
-  @override
-  void dispose() {
-    _likeController.dispose();
-    _dislikeController.dispose();
-    _regenerateController.dispose();
-    super.dispose();
-  }
 
   void _handleCopy() {
     Clipboard.setData(ClipboardData(text: widget.message.content));
@@ -85,33 +53,38 @@ class _MessageActionsState extends State<MessageActions>
     setState(() {
       _liked = !_liked;
       if (_liked) _disliked = false;
+      _likeAnimating = true;
     });
-    _likeController.forward().then((_) => _likeController.reverse());
+    Future<void>.delayed(300.ms, () {
+      if (mounted) setState(() => _likeAnimating = false);
+    });
   }
 
   void _handleDislike() {
     setState(() {
       _disliked = !_disliked;
       if (_disliked) _liked = false;
+      _dislikeAnimating = true;
     });
-    _dislikeController.forward().then((_) => _dislikeController.reverse());
+    Future<void>.delayed(300.ms, () {
+      if (mounted) setState(() => _dislikeAnimating = false);
+    });
   }
 
   Future<void> _handleRegenerate() async {
     if (_isRegenerating) return;
     setState(() => _isRegenerating = true);
-    await _regenerateController.forward();
+    await Future<void>.delayed(300.ms);
     widget.onRegenerate?.call();
     if (mounted) {
-      _regenerateController.reset();
       setState(() => _isRegenerating = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final iconColor = theme.colorScheme.onSurfaceVariant;
+    final colorScheme = ShadTheme.of(context).colorScheme;
+    final iconColor = colorScheme.mutedForeground;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -119,7 +92,7 @@ class _MessageActionsState extends State<MessageActions>
         _ActionButton(
           icon: _copied ? Icons.check : Icons.copy_outlined,
           tooltip: _copied ? '복사됨' : '복사',
-          color: _copied ? theme.colorScheme.primary : iconColor,
+          color: _copied ? colorScheme.primary : iconColor,
           onPressed: _handleCopy,
         ),
         if (_isUser && widget.onEdit != null)
@@ -137,28 +110,35 @@ class _MessageActionsState extends State<MessageActions>
             tooltip: '재생성',
             color: iconColor,
             onPressed: _handleRegenerate,
-            rotationController: _regenerateController,
-          ),
+          )
+              .animate(target: _isRegenerating ? 1.0 : 0.0)
+              .rotate(duration: 300.ms),
         if (_isAssistant)
-          ScaleTransition(
-            scale: _likeController,
-            child: _ActionButton(
-              icon: _liked ? Icons.thumb_up : Icons.thumb_up_outlined,
-              tooltip: '좋아요',
-              color: _liked ? theme.colorScheme.primary : iconColor,
-              onPressed: _handleLike,
-            ),
-          ),
+          _ActionButton(
+            icon: _liked ? Icons.thumb_up : Icons.thumb_up_outlined,
+            tooltip: '좋아요',
+            color: _liked ? colorScheme.primary : iconColor,
+            onPressed: _handleLike,
+          )
+              .animate(target: _likeAnimating ? 1.0 : 0.0)
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(1.3, 1.3),
+                duration: 150.ms,
+              ),
         if (_isAssistant)
-          ScaleTransition(
-            scale: _dislikeController,
-            child: _ActionButton(
-              icon: _disliked ? Icons.thumb_down : Icons.thumb_down_outlined,
-              tooltip: '싫어요',
-              color: _disliked ? theme.colorScheme.error : iconColor,
-              onPressed: _handleDislike,
-            ),
-          ),
+          _ActionButton(
+            icon: _disliked ? Icons.thumb_down : Icons.thumb_down_outlined,
+            tooltip: '싫어요',
+            color: _disliked ? colorScheme.destructive : iconColor,
+            onPressed: _handleDislike,
+          )
+              .animate(target: _dislikeAnimating ? 1.0 : 0.0)
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(1.3, 1.3),
+                duration: 150.ms,
+              ),
       ],
     );
   }
@@ -170,28 +150,17 @@ class _ActionButton extends StatelessWidget {
     required this.tooltip,
     required this.color,
     required this.onPressed,
-    this.rotationController,
   });
 
   final IconData icon;
   final String tooltip;
   final Color color;
   final VoidCallback onPressed;
-  final AnimationController? rotationController;
 
   @override
   Widget build(BuildContext context) {
-    Widget iconWidget = Icon(icon, size: 16);
-
-    if (rotationController != null) {
-      iconWidget = RotationTransition(
-        turns: rotationController!,
-        child: iconWidget,
-      );
-    }
-
     return IconButton(
-      icon: iconWidget,
+      icon: Icon(icon, size: 16),
       tooltip: tooltip,
       color: color,
       onPressed: onPressed,

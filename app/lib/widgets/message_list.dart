@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/widgets/message_bubble.dart';
 import 'package:openflow/widgets/thinking_indicator.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class MessageList extends StatefulWidget {
   const MessageList({
@@ -104,7 +104,7 @@ class MessageListState extends State<MessageList> {
         ListView.builder(
           reverse: true,
           controller: _controller,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           itemCount: widget.messages.length +
               (widget.isSending ? 1 : 0) +
               (widget.isLoadingMore ? 1 : 0),
@@ -114,13 +114,16 @@ class MessageListState extends State<MessageList> {
             }
             final adjustedIndex = widget.isSending ? index - 1 : index;
             if (adjustedIndex >= widget.messages.length) {
-              return const Padding(
-                padding: EdgeInsets.all(Spacing.md),
+              return Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Center(
                   child: SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: ShadTheme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
               );

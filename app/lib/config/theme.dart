@@ -1,49 +1,67 @@
 import 'package:flutter/material.dart';
-
-import 'package:openflow/config/tokens.dart';
-
-const Color _seedColor = AppColors.brandPrimary;
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light() {
-    final base = ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: _seedColor,
+  static ShadThemeData light() {
+    return ShadThemeData(
+      colorScheme: const ShadVioletColorScheme.light(),
       brightness: Brightness.light,
+      radius: const BorderRadius.all(Radius.circular(10)),
+      cardTheme: ShadCardTheme(
+        radius: const BorderRadius.all(Radius.circular(12)),
+        border: ShadBorder.all(
+          color: const Color(0xFFE5E7EB),
+          padding: EdgeInsets.zero,
+        ),
+        padding: const EdgeInsets.all(16),
+      ),
+      inputTheme: const ShadInputTheme(
+        style: TextStyle(fontSize: 15, color: Color(0xff030712)),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+      primaryButtonTheme: const ShadButtonTheme(
+        backgroundColor: Color(0xFF7C3AED),
+        hoverBackgroundColor: Color(0xFF6D28D9),
+      ),
+      progressTheme: ShadProgressTheme(
+        color: const Color(0xFF7C3AED),
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+      ),
+      primaryBadgeTheme: const ShadBadgeTheme(
+        backgroundColor: Color(0xFF7C3AED),
+      ),
     );
-    return _customize(base);
   }
 
-  static ThemeData dark() {
-    final base = ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: _seedColor,
+  static ShadThemeData dark() {
+    return ShadThemeData(
+      colorScheme: const ShadVioletColorScheme.dark(),
       brightness: Brightness.dark,
-    );
-    return _customize(base);
-  }
-
-  static ThemeData _customize(ThemeData base) {
-    return base.copyWith(
-      inputDecorationTheme: base.inputDecorationTheme.copyWith(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+      radius: const BorderRadius.all(Radius.circular(10)),
+      cardTheme: ShadCardTheme(
+        radius: const BorderRadius.all(Radius.circular(12)),
+        border: ShadBorder.all(
+          color: const Color(0xFF1F2937),
+          padding: EdgeInsets.zero,
         ),
-        filled: true,
+        padding: const EdgeInsets.all(16),
       ),
-      cardTheme: base.cardTheme.copyWith(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: base.colorScheme.outlineVariant),
-        ),
+      inputTheme: const ShadInputTheme(
+        style: TextStyle(fontSize: 15, color: Color(0xFFF9FAFB)),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
-      floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+      primaryButtonTheme: const ShadButtonTheme(
+        backgroundColor: Color(0xFF6D28D9),
+        hoverBackgroundColor: Color(0xFF5B21B6),
+      ),
+      progressTheme: ShadProgressTheme(
+        color: const Color(0xFF6D28D9),
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+      ),
+      primaryBadgeTheme: const ShadBadgeTheme(
+        backgroundColor: Color(0xFF6D28D9),
       ),
     );
   }

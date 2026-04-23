@@ -105,7 +105,7 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
       : undefined;
 
   const wsChannel = createWebSocketChannel(
-    { host: config.websocket.host, port: config.websocket.port, cors: config.websocket.cors, webRoot: config.websocket.webRoot },
+    { host: config.websocket.host, port: config.websocket.port, cors: config.websocket.cors },
     {
       agentEngine: agent,
       memoryStore: memory,

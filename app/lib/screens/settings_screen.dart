@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
@@ -11,7 +12,6 @@ import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/cubits/update_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/screens/provider_edit_screen.dart';
-import 'package:openflow/screens/qr_scanner_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
@@ -60,17 +60,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleServerChanged() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShadDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => ShadDialog(
         title: const Text('서버 변경'),
-        content: const Text('다른 서버로 변경하면 모든 데이터가 초기화됩니다. 계속하시겠습니까?'),
+        description:
+            const Text('다른 서버로 변경하면 모든 데이터가 초기화됩니다. 계속하시겠습니까?'),
         actions: [
-          TextButton(
+          ShadButton.outline(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('취소'),
           ),
-          FilledButton(
+          ShadButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('변경'),
           ),
@@ -133,21 +134,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .firstOrNull;
     if (provider == null) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showShadDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => ShadDialog(
         title: const Text('Provider 삭제'),
-        content: Text("'${provider.name}'을(를) 삭제하시겠습니까?"),
+        description: Text("'${provider.name}'을(를) 삭제하시겠습니까?"),
         actions: [
-          TextButton(
+          ShadButton.outline(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('취소'),
           ),
-          FilledButton(
+          ShadButton.destructive(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-            ),
             child: const Text('삭제'),
           ),
         ],
@@ -262,28 +260,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             authState: authState,
             onServerChanged: _handleServerChanged,
           ),
-          if (authState.storedAuth != null) ...[
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.qr_code_scanner),
-              title: const Text('웹 로그인'),
-              subtitle: const Text('QR 코드로 웹에서 로그인'),
-              onTap: () => Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(
-                  builder: (_) => const QrScannerScreen(),
-                ),
-              ),
-            ),
-          ],
           if (providersState.activeProvider != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ActiveProviderCard(
                 provider: providersState.activeProvider!,
                 onTap: () => _showModelSheet(providersState.activeProvider!),
               ),
             ),
-          const Divider(height: 1),
+          const ShadSeparator.horizontal(),
           ProviderListSection(
             providersState: providersState,
             onAdd: _navigateToProviderEdit,
@@ -292,7 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onEdit: _navigateToProviderEdit,
             onDelete: _deleteProvider,
           ),
-          const Divider(height: 1),
+          const ShadSeparator.horizontal(),
           const UpdateSection(),
         ],
       ),

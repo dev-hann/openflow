@@ -65,7 +65,6 @@ export const openFlowConfigSchema = z.object({
       host: z.string().default("127.0.0.1"),
       port: z.coerce.number().int().default(9800),
       cors: z.boolean().default(true),
-      webRoot: z.string().optional(),
     })
     .default({}),
   logging: z

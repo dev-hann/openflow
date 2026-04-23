@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
 
 class ActiveProviderCard extends StatelessWidget {
@@ -15,59 +16,59 @@ class ActiveProviderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
 
-    return Card(
-      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: BorderSide(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-        ),
+    return ShadCard(
+      padding: EdgeInsets.zero,
+      border: ShadBorder.all(
+        radius: BorderRadius.circular(AppRadius.md),
+        color: colorScheme.primary.withValues(alpha: 0.3),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
-          padding: const EdgeInsets.all(Spacing.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(Spacing.sm),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
+                  color: colorScheme.secondary,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(
                   Icons.smart_toy_outlined,
                   size: 24,
-                  color: theme.colorScheme.primary,
+                  color: colorScheme.primary,
                 ),
               ),
-              const SizedBox(width: Spacing.md),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       provider.name,
-                      style: theme.textTheme.titleSmall,
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      provider.model.isNotEmpty ? provider.model : '모델 미선택',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: provider.model.isNotEmpty
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.colorScheme.error,
-                      ),
+                      provider.model.isNotEmpty
+                          ? provider.model
+                          : '모델 미선택',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: provider.model.isNotEmpty
+                                ? colorScheme.mutedForeground
+                                : colorScheme.destructive,
+                          ),
                     ),
                   ],
                 ),
               ),
               Icon(
                 Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
+                color: colorScheme.mutedForeground,
               ),
             ],
           ),

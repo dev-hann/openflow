@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/session_grouper.dart';
 import 'package:openflow/widgets/session_tile.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class SessionSheet extends StatelessWidget {
   const SessionSheet({
@@ -35,13 +34,9 @@ class SessionSheet extends StatelessWidget {
     required VoidCallback onSettings,
     String? activeSessionId,
   }) {
-    return showModalBottomSheet<void>(
+    return showShadSheet(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
+      side: ShadSheetSide.bottom,
       builder: (_) => BlocBuilder<SessionsCubit, SessionsState>(
         builder: (context, sessionsState) => SessionSheet(
           sessions: sessionsState.sessions,
@@ -57,34 +52,27 @@ class SessionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) {
-        return _SessionSheetContent(
-          sessions: sessions,
-          activeSessionId: activeSessionId,
-          onSessionTap: (id) {
-            Navigator.of(context).pop();
-            onSessionTap(id);
-          },
-          onNewChat: () {
-            Navigator.of(context).pop();
-            onNewChat();
-          },
-          onSessionDelete: (id) {
-            Navigator.of(context).pop();
-            onSessionDelete(id);
-          },
-          onSettings: () {
-            Navigator.of(context).pop();
-            onSettings();
-          },
-          scrollController: scrollController,
-        );
-      },
+    return ShadSheet(
+      child: _SessionSheetContent(
+        sessions: sessions,
+        activeSessionId: activeSessionId,
+        onSessionTap: (id) {
+          Navigator.of(context).pop();
+          onSessionTap(id);
+        },
+        onNewChat: () {
+          Navigator.of(context).pop();
+          onNewChat();
+        },
+        onSessionDelete: (id) {
+          Navigator.of(context).pop();
+          onSessionDelete(id);
+        },
+        onSettings: () {
+          Navigator.of(context).pop();
+          onSettings();
+        },
+      ),
     );
   }
 }
@@ -97,7 +85,6 @@ class _SessionSheetContent extends StatefulWidget {
     required this.onNewChat,
     required this.onSessionDelete,
     required this.onSettings,
-    required this.scrollController,
   });
 
   final List<SessionInfo> sessions;
@@ -106,7 +93,6 @@ class _SessionSheetContent extends StatefulWidget {
   final VoidCallback onNewChat;
   final ValueChanged<String> onSessionDelete;
   final VoidCallback onSettings;
-  final ScrollController scrollController;
 
   @override
   State<_SessionSheetContent> createState() => _SessionSheetContentState();
@@ -114,6 +100,13 @@ class _SessionSheetContent extends StatefulWidget {
 
 class _SessionSheetContentState extends State<_SessionSheetContent> {
   String _searchQuery = '';
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   List<SessionInfo> get _filteredSessions {
     if (_searchQuery.isEmpty) return widget.sessions;
@@ -124,21 +117,24 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
   }
 
   void _showSessionActions(SessionInfo session) {
-    showModalBottomSheet<void>(
+    showShadSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('세션 삭제'),
-              onTap: () {
-                Navigator.pop(ctx);
-                widget.onSessionDelete(session.id);
-              },
-            ),
-          ],
+      side: ShadSheetSide.bottom,
+      builder: (ctx) => ShadSheet(
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('세션 삭제'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  widget.onSessionDelete(session.id);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -152,15 +148,16 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
     final grouped = groupSessionsByDate(sorted);
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildHandle(context),
         _buildHeader(context),
         _buildSearchField(context),
-        const SizedBox(height: Spacing.xs),
-        Expanded(
+        const SizedBox(height: AppSpacing.xs),
+        Flexible(
           child: _buildSessionList(context, sorted, grouped),
         ),
-        const Divider(height: 1),
+        const ShadSeparator.horizontal(),
         ListTile(
           leading: const Icon(Icons.settings_outlined),
           title: const Text('설정'),
@@ -173,17 +170,17 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
   Widget _buildHandle(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        Spacing.md,
-        Spacing.sm,
-        Spacing.md,
-        Spacing.xs,
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xs,
       ),
       child: Center(
         child: Container(
           width: 32,
           height: 4,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: ShadTheme.of(context).colorScheme.border,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -192,16 +189,16 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = ShadTheme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         children: [
-          Text('대화', style: Theme.of(context).textTheme.titleLarge),
+          Text('대화', style: theme.textTheme.large),
           const Spacer(),
-          IconButton(
+          ShadIconButton.ghost(
             onPressed: widget.onNewChat,
             icon: const Icon(Icons.add),
-            tooltip: '새 대화',
           ),
         ],
       ),
@@ -211,22 +208,19 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
   Widget _buildSearchField(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.xs,
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
       ),
-      child: TextField(
+      child: ShadInput(
         onChanged: (v) => setState(() => _searchQuery = v),
-        decoration: InputDecoration(
-          hintText: '검색...',
-          prefixIcon: const Icon(Icons.search, size: 20),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.full),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: Spacing.md,
-            vertical: Spacing.sm,
-          ),
-          isDense: true,
+        placeholder: const Text('검색...'),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: AppSpacing.sm),
+          child: Icon(Icons.search, size: 20),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
       ),
     );
@@ -237,22 +231,21 @@ class _SessionSheetContentState extends State<_SessionSheetContent> {
     List<SessionInfo> sorted,
     Map<String, List<SessionInfo>> grouped,
   ) {
-    final theme = Theme.of(context);
+    final theme = ShadTheme.of(context);
 
     if (sorted.isEmpty) {
       return Center(
         child: Text(
           _searchQuery.isEmpty ? '대화가 없습니다' : '검색 결과가 없습니다',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: theme.textTheme.muted,
         ),
       );
     }
 
     return ListView.builder(
-      controller: widget.scrollController,
-      padding: const EdgeInsets.only(bottom: Spacing.xl),
+      controller: _scrollController,
+      shrinkWrap: true,
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       itemCount: grouped.entries.fold<int>(
         0,
         (sum, e) => sum + 1 + e.value.length,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/widgets/voice_input_button.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class InputBar extends StatefulWidget {
   const InputBar({required this.onSend, super.key, this.disabled = false});
@@ -38,21 +38,21 @@ class _InputBarState extends State<InputBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = ShadTheme.of(context).colorScheme;
     final canSend = _controller.text.trim().isNotEmpty && !widget.disabled;
 
     return Container(
       padding: EdgeInsets.only(
-        left: Spacing.sm,
-        right: Spacing.sm,
-        top: Spacing.xs,
-        bottom: Spacing.sm + MediaQuery.of(context).padding.bottom,
+        left: AppSpacing.sm,
+        right: AppSpacing.sm,
+        top: AppSpacing.xs,
+        bottom: AppSpacing.sm + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: colorScheme.background,
         border: Border(
           top: BorderSide(
-            color: theme.colorScheme.outlineVariant,
+            color: colorScheme.border,
             width: 0.5,
           ),
         ),
@@ -69,7 +69,6 @@ class _InputBarState extends State<InputBar> {
                 onChanged: (_) => setState(() {}),
                 onSubmitted: (_) => _handleSend(),
                 enabled: !widget.disabled,
-                theme: theme,
               ),
             ),
             VoiceInputButton(
@@ -79,7 +78,6 @@ class _InputBarState extends State<InputBar> {
             _AnimatedSendButton(
               canSend: canSend,
               onPressed: _handleSend,
-              theme: theme,
             ),
           ],
         ),
@@ -95,21 +93,20 @@ class _TextFieldContainer extends StatelessWidget {
     required this.onChanged,
     required this.onSubmitted,
     required this.enabled,
-    required this.theme,
   });
   final TextEditingController controller;
   final FocusNode focusNode;
   final ValueChanged<String> onChanged;
   final ValueChanged<String> onSubmitted;
   final bool enabled;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return Container(
       constraints: const BoxConstraints(maxHeight: 120),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: colorScheme.muted,
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: TextField(
@@ -124,7 +121,7 @@ class _TextFieldContainer extends StatelessWidget {
           hintText: '무엇이든 물어보세요...',
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(
-            horizontal: Spacing.md,
+            horizontal: AppSpacing.md,
             vertical: 12,
           ),
         ),
@@ -137,14 +134,13 @@ class _AnimatedSendButton extends StatelessWidget {
   const _AnimatedSendButton({
     required this.canSend,
     required this.onPressed,
-    required this.theme,
   });
   final bool canSend;
   final VoidCallback onPressed;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: IconButton.filled(
@@ -152,10 +148,10 @@ class _AnimatedSendButton extends StatelessWidget {
         icon: const Icon(Icons.send, size: 20),
         style: IconButton.styleFrom(
           backgroundColor:
-              canSend ? theme.colorScheme.primary : Colors.transparent,
+              canSend ? colorScheme.primary : Colors.transparent,
           foregroundColor: canSend
-              ? theme.colorScheme.onPrimary
-              : theme.colorScheme.onSurfaceVariant,
+              ? colorScheme.primaryForeground
+              : colorScheme.mutedForeground,
         ),
       ),
     );

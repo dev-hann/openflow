@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:openflow/config/design_tokens.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
-MarkdownStyleSheet buildMarkdownStyleSheet(ThemeData theme, Color fgColor) {
+MarkdownStyleSheet buildMarkdownStyleSheet(ShadThemeData theme, Color fgColor) {
+  final cs = theme.colorScheme;
   return MarkdownStyleSheet(
     p: TextStyle(color: fgColor, fontSize: 15, height: 1.5),
     h1: TextStyle(
@@ -25,12 +28,12 @@ MarkdownStyleSheet buildMarkdownStyleSheet(ThemeData theme, Color fgColor) {
     ),
     code: TextStyle(
       color: fgColor,
-      backgroundColor: theme.colorScheme.surfaceContainerHigh,
+      backgroundColor: cs.muted,
       fontSize: 13,
     ),
     codeblockDecoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(8),
+      color: cs.muted,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
     ),
     blockquote: TextStyle(
       color: fgColor.withValues(alpha: 0.85),
@@ -38,17 +41,17 @@ MarkdownStyleSheet buildMarkdownStyleSheet(ThemeData theme, Color fgColor) {
       height: 1.5,
     ),
     blockquoteDecoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerLow,
+      color: cs.muted,
       borderRadius: BorderRadius.circular(4),
       border: Border(
         left: BorderSide(
-          color: theme.colorScheme.primary,
+          color: cs.primary,
           width: 3,
         ),
       ),
     ),
     blockquotePadding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-    listBullet: TextStyle(color: theme.colorScheme.primary),
+    listBullet: TextStyle(color: cs.primary),
     tableHead: TextStyle(
       fontWeight: FontWeight.w600,
       fontSize: 13,
@@ -57,7 +60,7 @@ MarkdownStyleSheet buildMarkdownStyleSheet(ThemeData theme, Color fgColor) {
     tableBody: TextStyle(fontSize: 13, color: fgColor),
     tableHeadAlign: TextAlign.center,
     tableBorder: TableBorder.all(
-      color: theme.colorScheme.outlineVariant,
+      color: cs.border,
       width: 0.5,
     ),
     tableCellsPadding: const EdgeInsets.all(6),

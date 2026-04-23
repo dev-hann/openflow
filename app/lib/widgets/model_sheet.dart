@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class ModelSheet extends StatelessWidget {
   const ModelSheet({
@@ -20,12 +20,9 @@ class ModelSheet extends StatelessWidget {
     required List<String> models,
     required String currentModel,
   }) {
-    return showModalBottomSheet<String>(
+    return showShadSheet<String>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
+      side: ShadSheetSide.bottom,
       builder: (_) => ModelSheet(
         providerName: providerName,
         models: models,
@@ -36,52 +33,51 @@ class ModelSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _SheetHeader(title: '$providerName 모델', theme: theme),
-          const Divider(height: 1),
-          if (models.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(Spacing.xl),
-              child: Text('사용 가능한 모델이 없습니다'),
-            ),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: models.length,
-              itemBuilder: (context, index) => _ModelListTile(
-                model: models[index],
-                isActive: models[index] == currentModel,
-                theme: theme,
+    return ShadSheet(
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetHeader(title: '$providerName 모델'),
+            const ShadSeparator.horizontal(),
+            if (models.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.xl),
+                child: Text('사용 가능한 모델이 없습니다'),
+              ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: models.length,
+                itemBuilder: (context, index) => _ModelListTile(
+                  model: models[index],
+                  isActive: models[index] == currentModel,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: Spacing.md),
-        ],
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _SheetHeader extends StatelessWidget {
-  const _SheetHeader({required this.title, required this.theme});
+  const _SheetHeader({required this.title});
   final String title;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          Spacing.md, Spacing.md, Spacing.md, Spacing.sm),
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
       child: Row(
         children: [
-          Text(title, style: theme.textTheme.titleMedium),
+          Text(title, style: theme.textTheme.large),
           const Spacer(),
-          IconButton(
+          ShadIconButton.ghost(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -95,14 +91,13 @@ class _ModelListTile extends StatelessWidget {
   const _ModelListTile({
     required this.model,
     required this.isActive,
-    required this.theme,
   });
   final String model;
   final bool isActive;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    final theme = ShadTheme.of(context);
     return ListTile(
       leading: Icon(
         isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
@@ -120,7 +115,7 @@ class _ModelListTile extends StatelessWidget {
       trailing: isActive
           ? Text(
               '사용 중',
-              style: theme.textTheme.labelSmall?.copyWith(
+              style: theme.textTheme.muted.copyWith(
                 color: theme.colorScheme.primary,
               ),
             )

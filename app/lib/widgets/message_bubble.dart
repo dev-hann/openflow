@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
-import 'package:openflow/constants/dimensions.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/protocol.dart';
 import 'package:openflow/utils/format_time.dart';
 import 'package:openflow/utils/markdown_styles.dart';
 import 'package:openflow/widgets/message_actions.dart';
 import 'package:openflow/widgets/streaming_cursor.dart';
 import 'package:openflow/widgets/typing_indicator.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MessageBubble extends StatefulWidget {
@@ -34,9 +35,9 @@ class MessageBubble extends StatefulWidget {
 
 class _MessageBubbleState extends State<MessageBubble> {
   MarkdownStyleSheet? _cachedStyleSheet;
-  ThemeData? _cachedTheme;
+  ShadThemeData? _cachedTheme;
 
-  MarkdownStyleSheet _getStyleSheet(ThemeData theme, Color fgColor) {
+  MarkdownStyleSheet _getStyleSheet(ShadThemeData theme, Color fgColor) {
     if (_cachedStyleSheet != null && identical(_cachedTheme, theme)) {
       return _cachedStyleSheet!;
     }
@@ -55,7 +56,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = ShadTheme.of(context);
     final message = widget.message;
     final isUser = message.role == MessageRole.user;
 
@@ -65,10 +66,10 @@ class _MessageBubbleState extends State<MessageBubble> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: isUser ? 48 : Spacing.md,
-        right: isUser ? Spacing.md : 48,
-        top: widget.isFirstInGroup ? Spacing.sm : 2,
-        bottom: widget.isLastInGroup ? Spacing.sm : 2,
+        left: isUser ? 48 : AppSpacing.md,
+        right: isUser ? AppSpacing.md : 48,
+        top: widget.isFirstInGroup ? AppSpacing.sm : 2,
+        bottom: widget.isLastInGroup ? AppSpacing.sm : 2,
       ),
       child: Column(
         crossAxisAlignment:
@@ -95,16 +96,16 @@ class _MessageBubbleState extends State<MessageBubble> {
     );
   }
 
-  Widget _buildAvatar(ThemeData theme) {
+  Widget _buildAvatar(ShadThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: CircleAvatar(
         radius: 14,
-        backgroundColor: theme.colorScheme.primaryContainer,
+        backgroundColor: theme.colorScheme.secondary,
         child: Icon(
           Icons.smart_toy_outlined,
           size: 16,
-          color: theme.colorScheme.onPrimaryContainer,
+          color: theme.colorScheme.secondaryForeground,
         ),
       ),
     );
@@ -125,17 +126,17 @@ class _MessageBubbleState extends State<MessageBubble> {
     );
   }
 
-  Widget _buildBubble(BuildContext context, ThemeData theme, bool isUser) {
+  Widget _buildBubble(BuildContext context, ShadThemeData theme, bool isUser) {
     final bgColor = isUser
         ? theme.colorScheme.primary
-        : theme.colorScheme.surfaceContainerHighest;
+        : theme.colorScheme.card;
     final fgColor =
-        isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
+        isUser ? theme.colorScheme.primaryForeground : theme.colorScheme.foreground;
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.sm,
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
         color: bgColor,
@@ -148,23 +149,23 @@ class _MessageBubbleState extends State<MessageBubble> {
   BorderRadius _buildRadius(bool isUser) {
     return BorderRadius.only(
       topLeft: isUser || !widget.isFirstInGroup
-          ? const Radius.circular(16)
+          ? const Radius.circular(AppRadius.lg)
           : const Radius.circular(4),
       topRight: !isUser || !widget.isFirstInGroup
-          ? const Radius.circular(16)
+          ? const Radius.circular(AppRadius.lg)
           : const Radius.circular(4),
       bottomLeft: isUser || !widget.isLastInGroup
-          ? const Radius.circular(16)
+          ? const Radius.circular(AppRadius.lg)
           : const Radius.circular(4),
       bottomRight: !isUser || !widget.isLastInGroup
-          ? const Radius.circular(16)
+          ? const Radius.circular(AppRadius.lg)
           : const Radius.circular(4),
     );
   }
 
   Widget _buildContent(
     BuildContext context,
-    ThemeData theme,
+    ShadThemeData theme,
     bool isUser,
     Color fgColor,
   ) {
