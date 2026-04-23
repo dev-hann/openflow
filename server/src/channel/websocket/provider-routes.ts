@@ -9,7 +9,7 @@ import {
   sendJson,
   readJsonObject,
   requireAuth,
-  requireBodyString,
+  getBodyString,
   sendApiError,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
@@ -107,10 +107,10 @@ async function handleProviderCreate(
   if (!auth) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const name = requireBodyString(body, "name");
-  const baseUrl = requireBodyString(body, "baseUrl");
-  const apiKey = requireBodyString(body, "apiKey");
-  const model = requireBodyString(body, "model");
+  const name = getBodyString(body, "name");
+  const baseUrl = getBodyString(body, "baseUrl");
+  const apiKey = getBodyString(body, "apiKey");
+  const model = getBodyString(body, "model");
   const isDefault =
     typeof body.isDefault === "boolean" ? body.isDefault : undefined;
   if (!name || !baseUrl || !apiKey || !model) {
@@ -166,10 +166,10 @@ async function handleProviderUpdate(
   const body = await readJsonObject(req, res);
   if (!body) return;
   const updated = deps.providerStore.updateProvider(providerId, {
-    name: requireBodyString(body, "name"),
-    baseUrl: requireBodyString(body, "baseUrl"),
-    apiKey: requireBodyString(body, "apiKey"),
-    model: requireBodyString(body, "model"),
+    name: getBodyString(body, "name"),
+    baseUrl: getBodyString(body, "baseUrl"),
+    apiKey: getBodyString(body, "apiKey"),
+    model: getBodyString(body, "model"),
   });
   if (!updated) {
     sendApiError(res, 404, "provider_not_found", "Provider not found");
@@ -206,7 +206,7 @@ async function handleProviderSwitch(
   if (!auth) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const providerId = requireBodyString(body, "providerId");
+  const providerId = getBodyString(body, "providerId");
   if (!providerId) {
     sendApiError(res, 400, "provider_id_required", "Provider ID is required");
     return;

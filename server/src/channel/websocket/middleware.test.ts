@@ -6,7 +6,7 @@ import {
   sendJson,
   readJsonBody,
   readJsonObject,
-  requireBodyStrings,
+  getBodyStrings,
   setCorsHeaders,
   handleOptions,
 } from "./middleware.js";
@@ -279,22 +279,22 @@ describe("readJsonObject", () => {
   });
 });
 
-describe("requireBodyStrings", () => {
+describe("getBodyStrings", () => {
   it("should extract string values for given keys", () => {
     const body = { name: "test", token: "abc", count: 42 };
-    const result = requireBodyStrings(body, ["name", "token", "count"]);
+    const result = getBodyStrings(body, ["name", "token", "count"]);
     expect(result).toEqual({ name: "test", token: "abc", count: undefined });
   });
 
   it("should return undefined for missing keys", () => {
     const body = { name: "test" };
-    const result = requireBodyStrings(body, ["name", "missing"]);
+    const result = getBodyStrings(body, ["name", "missing"]);
     expect(result).toEqual({ name: "test", missing: undefined });
   });
 
   it("should return undefined for all missing keys", () => {
     const body = { other: 123 };
-    const result = requireBodyStrings(body, ["name", "token"]);
+    const result = getBodyStrings(body, ["name", "token"]);
     expect(result).toEqual({ name: undefined, token: undefined });
   });
 });

@@ -8,7 +8,7 @@ import {
   readJsonBody,
   readJsonObject,
   requireAuth,
-  requireBodyString,
+  getBodyString,
   sendApiError,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
@@ -119,9 +119,9 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = requireBodyString(body, "token");
-    const platform = requireBodyString(body, "platform");
-    const label = requireBodyString(body, "label");
+    const token = getBodyString(body, "token");
+    const platform = getBodyString(body, "platform");
+    const label = getBodyString(body, "label");
     if (!token) {
       sendApiError(res, 400, "token_required", "Push token is required");
       return;
@@ -143,7 +143,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = requireBodyString(body, "token");
+    const token = getBodyString(body, "token");
     if (!token) {
       sendApiError(res, 400, "token_required", "Push token is required");
       return;

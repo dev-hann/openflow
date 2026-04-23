@@ -113,7 +113,7 @@ export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-export function requireBodyString(
+export function getBodyString(
   body: Record<string, unknown>,
   key: string,
 ): string | undefined {
@@ -121,13 +121,13 @@ export function requireBodyString(
   return typeof val === "string" ? val : undefined;
 }
 
-export function requireBodyStrings(
+export function getBodyStrings(
   body: Record<string, unknown>,
   keys: string[],
 ): Record<string, string | undefined> {
   const result: Record<string, string | undefined> = {};
   for (const key of keys) {
-    result[key] = requireBodyString(body, key);
+    result[key] = getBodyString(body, key);
   }
   return result;
 }

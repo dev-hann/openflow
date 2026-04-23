@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, requireBodyString, sendApiError } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, type Route } from "./routes.js";
 
@@ -65,8 +65,8 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     }
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const pin = requireBodyString(body, "pin");
-    const label = requireBodyString(body, "label");
+    const pin = getBodyString(body, "pin");
+    const label = getBodyString(body, "label");
     if (!pin) {
       sendApiError(res, 400, "pin_required", "PIN code is required");
       return;
@@ -90,7 +90,7 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     }
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const refreshToken = requireBodyString(body, "refreshToken");
+    const refreshToken = getBodyString(body, "refreshToken");
     if (!refreshToken) {
       sendApiError(res, 400, "refresh_token_required", "Refresh token is required");
       return;

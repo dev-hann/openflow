@@ -4,7 +4,7 @@ import { createProviderRoutes } from "./provider-routes.js";
 import type { AuthService } from "./auth.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
-import { requireBodyString } from "./middleware.js";
+import { getBodyString } from "./middleware.js";
 
 function createMockResponse(): {
   res: ServerResponse;
@@ -153,21 +153,21 @@ function createTestSetup() {
   return { authService, providerStore, providerPool, routes, findRoute };
 }
 
-describe("requireBodyString", () => {
+describe("getBodyString", () => {
   it("should return string value when present", () => {
-    expect(requireBodyString({ name: "hello" }, "name")).toBe("hello");
+    expect(getBodyString({ name: "hello" }, "name")).toBe("hello");
   });
 
   it("should return undefined for missing key", () => {
-    expect(requireBodyString({ name: "hello" }, "other")).toBeUndefined();
+    expect(getBodyString({ name: "hello" }, "other")).toBeUndefined();
   });
 
   it("should return undefined for non-string value", () => {
-    expect(requireBodyString({ name: 123 }, "name")).toBeUndefined();
+    expect(getBodyString({ name: 123 }, "name")).toBeUndefined();
   });
 
   it("should return undefined for null value", () => {
-    expect(requireBodyString({ name: null }, "name")).toBeUndefined();
+    expect(getBodyString({ name: null }, "name")).toBeUndefined();
   });
 });
 

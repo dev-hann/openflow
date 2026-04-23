@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, requireBodyString, sendApiError } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError } from "./middleware.js";
 import { route, type Route } from "./routes.js";
 import type { AuthService } from "./auth.js";
 import type { IssueReporter } from "../../reporting/issue-reporter.js";
@@ -30,10 +30,10 @@ export function createReportingRoutes(deps: ReportingRoutesDeps): Route[] {
     const body = await readJsonObject(req, res);
     if (!body) return;
 
-    const platform = requireBodyString(body, "platform");
-    const version = requireBodyString(body, "version");
-    const errorCode = requireBodyString(body, "errorCode");
-    const message = requireBodyString(body, "message");
+    const platform = getBodyString(body, "platform");
+    const version = getBodyString(body, "version");
+    const errorCode = getBodyString(body, "errorCode");
+    const message = getBodyString(body, "message");
 
     if (!isValidPlatform(platform)) {
       sendApiError(res, 400, "invalid_platform", "Platform must be server, app, or web");
