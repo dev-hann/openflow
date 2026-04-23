@@ -178,32 +178,34 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _handleSessionDelete(String id) async {
     final authCubit = context.read<AuthCubit>();
     final token = await authCubit.getValidToken();
-    if (token == null) return;
+    if (token == null || !mounted) return;
     try {
       final api = createApiClient(
         authCubit.state.storedAuth!.serverUrl,
         token: token,
       );
       await api.deleteSession(id);
-      if (mounted) {
-        final wasActive =
-            context.read<SessionsCubit>().state.activeSessionId == id;
-        context.read<SessionsCubit>().removeSession(id);
-        if (wasActive) {
-          final chatCubit = context.read<ChatCubit>();
-          final ws = context.read<WebSocketService>();
-          final newActiveId = context
-              .read<SessionsCubit>()
-              .state
-              .activeSessionId;
-          chatCubit.clearMessages();
-          if (newActiveId != null) {
-            ws.send(WsSwitchSession(sessionId: newActiveId));
-          }
+      if (!mounted) return;
+      final wasActive =
+          context.read<SessionsCubit>().state.activeSessionId == id;
+      context.read<SessionsCubit>().removeSession(id);
+      if (wasActive) {
+        final chatCubit = context.read<ChatCubit>();
+        final ws = context.read<WebSocketService>();
+        final newActiveId = context.read<SessionsCubit>().state.activeSessionId;
+        chatCubit.clearMessages();
+        if (newActiveId != null) {
+          chatCubit.setLoading(true);
+          ws.send(WsSwitchSession(sessionId: newActiveId));
         }
       }
+      ShadToaster.of(context).show(const ShadToast(title: Text('세션이 삭제되었습니다')));
     } on Object catch (e) {
-      debugPrint('Failed to delete session: $e');
+      if (mounted) {
+        ShadToaster.of(
+          context,
+        ).show(ShadToast.destructive(title: Text('세션 삭제 실패: $e')));
+      }
     }
   }
 
