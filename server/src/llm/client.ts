@@ -209,8 +209,6 @@ async function sendRequest(
 
     throwRetryExhausted(result);
   }
-
-  throw new OpenFlowError("Max retries exceeded", "LLM_REQUEST_FAILED");
 }
 
 function buildChatBody(params: ChatParams): Record<string, unknown> {
