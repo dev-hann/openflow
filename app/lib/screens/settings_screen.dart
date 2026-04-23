@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
@@ -13,6 +14,7 @@ import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
 import 'package:openflow/widgets/app_scaffold.dart';
+import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/connection_section.dart';
 import 'package:openflow/widgets/model_sheet.dart';
 import 'package:openflow/widgets/provider_list_section.dart';
@@ -27,6 +29,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isProvidersLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,9 +49,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final providers = await api.listProviders();
-      if (mounted) context.read<ProvidersCubit>().setProviders(providers);
+      if (mounted) {
+        context.read<ProvidersCubit>().setProviders(providers);
+        setState(() => _isProvidersLoaded = true);
+      }
     } on Object catch (e) {
       debugPrint('Failed to load providers: $e');
+      if (mounted) setState(() => _isProvidersLoaded = true);
     }
 
     try {
@@ -282,14 +290,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         const ShadSeparator.horizontal(),
-        ProviderListSection(
-          providersState: providersState,
-          onAdd: _navigateToProviderEdit,
-          onSwitchProvider: _switchProvider,
-          onShowModels: _showModelSheet,
-          onEdit: _navigateToProviderEdit,
-          onDelete: _deleteProvider,
-        ),
+        if (!_isProvidersLoaded)
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: Center(child: AppSpinner()),
+          )
+        else
+          ProviderListSection(
+            providersState: providersState,
+            onAdd: _navigateToProviderEdit,
+            onSwitchProvider: _switchProvider,
+            onShowModels: _showModelSheet,
+            onEdit: _navigateToProviderEdit,
+            onDelete: _deleteProvider,
+          ),
         const ShadSeparator.horizontal(),
         const UpdateSection(),
       ],

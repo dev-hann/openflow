@@ -241,22 +241,27 @@ function buildChatBody(params: ChatParams): Record<string, unknown> {
   return body;
 }
 
-function parseChatResponse(raw: unknown): LlmResponse {
+function extractLlmMessage(raw: unknown): Record<string, unknown> | null {
   if (typeof raw !== "object" || raw === null) {
     throw new OpenFlowError("Invalid LLM response format", "LLM_REQUEST_FAILED");
   }
   const response = raw as Record<string, unknown>;
   const choices = response.choices;
-  if (!Array.isArray(choices) || choices.length === 0) {
-    throw new OpenFlowError("No choices in LLM response", "LLM_REQUEST_FAILED");
-  }
+  if (!Array.isArray(choices) || choices.length === 0) return null;
 
   const firstChoice = choices[0] as Record<string, unknown> | undefined;
   if (!firstChoice || typeof firstChoice.message !== "object" || firstChoice.message === null) {
     throw new OpenFlowError("Invalid message in LLM response", "LLM_REQUEST_FAILED");
   }
 
-  const message = firstChoice.message as Record<string, unknown>;
+  return firstChoice.message as Record<string, unknown>;
+}
+
+function parseChatResponse(raw: unknown): LlmResponse {
+  const message = extractLlmMessage(raw);
+  if (!message) {
+    throw new OpenFlowError("No choices in LLM response", "LLM_REQUEST_FAILED");
+  }
   const toolCallsRaw = message.tool_calls as Array<unknown> | undefined;
 
   if (toolCallsRaw && toolCallsRaw.length > 0) {
@@ -267,17 +272,11 @@ function parseChatResponse(raw: unknown): LlmResponse {
 }
 
 function parseCompleteResponse(raw: unknown): string {
-  if (typeof raw !== "object" || raw === null) {
-    throw new OpenFlowError("Invalid LLM response format", "LLM_REQUEST_FAILED");
-  }
-  const response = raw as Record<string, unknown>;
-  const choices = response.choices;
-  if (!Array.isArray(choices) || choices.length === 0) return "";
-
-  const firstChoice = choices[0] as Record<string, unknown> | undefined;
-  if (!firstChoice || typeof firstChoice.message !== "object" || firstChoice.message === null)
+  try {
+    const message = extractLlmMessage(raw);
+    if (!message) return "";
+    return typeof message.content === "string" ? message.content : "";
+  } catch {
     return "";
-
-  const message = firstChoice.message as Record<string, unknown>;
-  return typeof message.content === "string" ? message.content : "";
+  }
 }
