@@ -160,21 +160,17 @@ async function handleProviderUpdate(
   res: ServerResponse,
   path: string,
 ): Promise<void> {
-  const providerId = requireProviderId(deps, req, res, path);
-  if (!providerId) return;
+  const provider = requireProvider(deps, req, res, path);
+  if (!provider) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
   const parsed = validateBody(body, ProviderUpdateSchema, res);
   if (!parsed) return;
-  const updated = deps.providerStore.updateProvider(providerId, parsed);
-  if (!updated) {
-    sendApiError(res, 404, "provider_not_found", "Provider not found");
-    return;
-  }
+  const updated = deps.providerStore.updateProvider(provider.id, parsed);
   deps.providerPool.syncFromStore();
-  log.info({ providerId }, "provider updated via API");
+  log.info({ providerId: provider.id }, "provider updated via API");
   const activeId = deps.providerPool.getActiveProviderId();
-  sendJson(res, 200, providerToJson(updated, activeId));
+  sendJson(res, 200, providerToJson(updated ?? provider, activeId));
 }
 
 async function handleProviderDelete(

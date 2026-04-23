@@ -296,6 +296,12 @@ describe("session routes", () => {
 
   describe("DELETE /api/sessions/:id", () => {
     it("should delete a session", async () => {
+      vi.mocked(memoryStore.getSession).mockReturnValue({
+        id: "sess_1",
+        title: "Test",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
       const route = findRoute("/api/sessions/sess_1", "DELETE");
       expect(route).toBeDefined();
       const { res, getStatusCode, getBody } = createMockResponse();

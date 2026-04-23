@@ -65,3 +65,8 @@ export function rowToSearchResult(row: Record<string, unknown>, query: string) {
     snippet: buildSearchSnippet(row.content as string, query),
   };
 }
+
+export function rowToCount(row: Record<string, unknown>, fallback = 0): number {
+  const raw = row.count;
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : fallback;
+}

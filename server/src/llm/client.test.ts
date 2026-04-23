@@ -378,7 +378,7 @@ describe("createLlmClient", () => {
 
       const client = createLlmClient(baseConfig);
       await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
-        "Invalid tool_call at index 0",
+        "Invalid message shape in LLM response",
       );
     });
 
@@ -404,7 +404,7 @@ describe("createLlmClient", () => {
 
       const client = createLlmClient(baseConfig);
       await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
-        "Invalid tool_call at index 0",
+        "Invalid message shape in LLM response",
       );
     });
 
@@ -430,7 +430,7 @@ describe("createLlmClient", () => {
 
       const client = createLlmClient(baseConfig);
       await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
-        "Invalid tool_call at index 0",
+        "Invalid message shape in LLM response",
       );
     });
   });

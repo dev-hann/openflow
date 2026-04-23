@@ -17,6 +17,7 @@ import {
   rowToMessage,
   rowToApiMessage,
   rowToSearchResult,
+  rowToCount,
   escapeLikeWildcards,
 } from "./row-mappers.js";
 
@@ -170,7 +171,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     getMessageCount(sessionId: string): number {
       return wrapDb("getMessageCount", () => {
         const row = stmts.countMessages.get(sessionId) as Record<string, unknown>;
-        return (row?.count ?? 0) as number;
+        return rowToCount(row);
       });
     },
 
@@ -181,7 +182,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     ): { messages: VisibleMessage[]; total: number } {
       return wrapDb("getVisibleMessages", () => {
         const countRow = stmts.countVisibleMessages.get(sessionId) as Record<string, unknown>;
-        const total = (countRow?.count ?? 0) as number;
+        const total = rowToCount(countRow);
         const rows = stmts.getVisibleMessages.all(sessionId, limit, offset) as Array<
           Record<string, unknown>
         >;
@@ -202,7 +203,7 @@ export function createMemoryStore(dbPath: string): MemoryStore {
     buildContext(sessionId: string, maxSize: number): ChatMessage[] {
       return wrapDb("buildContext", () => {
         const countRow = stmts.countMessages.get(sessionId) as Record<string, unknown>;
-        const total = (countRow?.count ?? 0) as number;
+        const total = rowToCount(countRow);
         const offset = Math.max(0, total - maxSize);
         const rows = stmts.getMessagesOffset.all(sessionId, maxSize, offset) as Array<
           Record<string, unknown>

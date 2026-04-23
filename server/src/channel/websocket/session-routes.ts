@@ -86,6 +86,11 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
       sendApiError(res, 400, "session_id_required", "Session ID is required in the URL path");
       return;
     }
+    const session = memoryStore.getSession(sessionId);
+    if (!session) {
+      sendApiError(res, 404, "session_not_found", "Session not found");
+      return;
+    }
     memoryStore.deleteSession(sessionId);
     sendJson(res, 200, { ok: true });
   }

@@ -2,7 +2,7 @@ import { createLogger } from "../utils/logger.js";
 import { OpenFlowError, getErrorMessage } from "../utils/errors.js";
 import { sleep } from "../utils/retry.js";
 import { z } from "zod";
-import type { ChatParams, CompleteParams, LlmResponse, ToolCall } from "./types.js";
+import type { ChatParams, CompleteParams, LlmResponse } from "./types.js";
 import { parseSseStream } from "./sse-parser.js";
 
 const log = createLogger("llm");
@@ -48,18 +48,10 @@ const ToolCallSchema = z.object({
   }),
 });
 
-function parseToolCalls(raw: unknown[]): ToolCall[] {
-  return raw.map((tc, index) => {
-    const result = ToolCallSchema.safeParse(tc);
-    if (!result.success) {
-      throw new OpenFlowError(
-        `Invalid tool_call at index ${index}: ${result.error.issues.map((i) => i.message).join(", ")}`,
-        "LLM_STREAM_ERROR",
-      );
-    }
-    return result.data;
-  });
-}
+const LlmMessageSchema = z.object({
+  tool_calls: z.array(ToolCallSchema).optional(),
+  content: z.union([z.string(), z.null()]).optional(),
+});
 
 export function createLlmClient(config: LlmConfig): LlmClient {
   return {
@@ -231,7 +223,7 @@ function buildChatBody(params: ChatParams): Record<string, unknown> {
   return body;
 }
 
-function extractLlmMessage(raw: unknown): Record<string, unknown> | null {
+function extractLlmMessage(raw: unknown): z.infer<typeof LlmMessageSchema> | null {
   if (typeof raw !== "object" || raw === null) {
     throw new OpenFlowError("Invalid LLM response format", "LLM_REQUEST_FAILED");
   }
@@ -244,7 +236,14 @@ function extractLlmMessage(raw: unknown): Record<string, unknown> | null {
     throw new OpenFlowError("Invalid message in LLM response", "LLM_REQUEST_FAILED");
   }
 
-  return firstChoice.message as Record<string, unknown>;
+  const parsed = LlmMessageSchema.safeParse(firstChoice.message);
+  if (!parsed.success) {
+    throw new OpenFlowError(
+      `Invalid message shape in LLM response: ${parsed.error.issues.map((i) => i.message).join(", ")}`,
+      "LLM_REQUEST_FAILED",
+    );
+  }
+  return parsed.data;
 }
 
 function parseChatResponse(raw: unknown): LlmResponse {
@@ -252,10 +251,9 @@ function parseChatResponse(raw: unknown): LlmResponse {
   if (!message) {
     throw new OpenFlowError("No choices in LLM response", "LLM_REQUEST_FAILED");
   }
-  const toolCallsRaw = message.tool_calls as Array<unknown> | undefined;
 
-  if (toolCallsRaw && toolCallsRaw.length > 0) {
-    return { type: "tool_calls", toolCalls: parseToolCalls(toolCallsRaw) };
+  if (message.tool_calls && message.tool_calls.length > 0) {
+    return { type: "tool_calls", toolCalls: message.tool_calls };
   }
 
   return { type: "text", content: typeof message.content === "string" ? message.content : "" };
