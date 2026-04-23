@@ -79,7 +79,7 @@ export function withTransaction(db: DatabaseSync, fn: () => void): void {
   try {
     fn();
     db.exec("COMMIT");
-  } catch (err) {
+  } catch (err: unknown) {
     db.exec("ROLLBACK");
     throw err;
   }

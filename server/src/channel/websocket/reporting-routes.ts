@@ -54,7 +54,7 @@ export function createReportingRoutes(deps: ReportingRoutesDeps): Route[] {
       message,
       stackTrace: typeof stackTraceVal === "string" ? stackTraceVal : undefined,
       metadata:
-        metadataVal && typeof metadataVal === "object" && !Array.isArray(metadataVal)
+        metadataVal && typeof metadataVal === "object" && !Array.isArray(metadataVal) && metadataVal !== null
           ? (metadataVal as Record<string, unknown>)
           : undefined,
     });

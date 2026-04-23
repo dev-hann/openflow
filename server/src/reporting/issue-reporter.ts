@@ -203,7 +203,7 @@ export function createIssueReporter(config: IssueReporterConfig): IssueReporter 
         return { ok: true, issueNumber: created.number, issueUrl: created.url };
       }
       return { ok: false };
-    } catch (err) {
+    } catch (err: unknown) {
       log.error({ err }, "failed to report error to GitHub");
       return { ok: false };
     }
