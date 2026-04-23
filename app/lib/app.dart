@@ -93,7 +93,7 @@ class _MainScreenState extends State<MainScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context, title, shadTheme),
+                _buildAppBar(context, title),
                 const Expanded(child: ChatScreen()),
               ],
             ),
@@ -113,11 +113,8 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildAppBar(
-    BuildContext context,
-    String title,
-    ShadThemeData shadTheme,
-  ) {
+  Widget _buildAppBar(BuildContext context, String title) {
+    final shadTheme = ShadTheme.of(context);
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
@@ -141,9 +138,9 @@ class _MainScreenState extends State<MainScreen> {
               child: _AppBarTitle(title: title),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: _ConnectionIndicator(shadTheme: shadTheme),
+          const Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: _ConnectionIndicator(),
           ),
         ],
       ),
@@ -272,12 +269,11 @@ class _AppBarTitle extends StatelessWidget {
 }
 
 class _ConnectionIndicator extends StatelessWidget {
-  const _ConnectionIndicator({required this.shadTheme});
-
-  final ShadThemeData shadTheme;
+  const _ConnectionIndicator();
 
   @override
   Widget build(BuildContext context) {
+    final shadTheme = ShadTheme.of(context);
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         return Container(
