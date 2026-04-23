@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { createLogger } from "../../utils/logger.js";
+import { getErrorMessage } from "../../utils/errors.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { components } from "../../generated/api.js";
@@ -244,7 +245,7 @@ async function handleProviderVerify(
     }
     sendJson(res, 200, { ok: true });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = getErrorMessage(err);
     sendJson(res, 200, { ok: false, error: msg });
   }
 }
@@ -279,7 +280,7 @@ async function handleProviderModels(
     const models = (json.data ?? []).map((m) => m.id).sort();
     sendJson(res, 200, { models });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = getErrorMessage(err);
     sendApiError(res, 500, "provider_request_failed", msg);
   }
 }

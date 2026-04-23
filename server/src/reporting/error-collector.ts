@@ -1,5 +1,6 @@
 import type { IssueReporter, ErrorReport } from "./issue-reporter.js";
 import { createLogger } from "../utils/logger.js";
+import { getErrorMessage } from "../utils/errors.js";
 
 const log = createLogger("reporting/error-collector");
 
@@ -8,7 +9,7 @@ export function createErrorCollector(
   serverVersion: string,
 ): void {
   function handleError(source: string, err: unknown): void {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     const stackTrace = err instanceof Error ? err.stack : undefined;
 
     const report: ErrorReport = {

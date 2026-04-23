@@ -1,5 +1,5 @@
 import { createLogger } from "../utils/logger.js";
-import { OpenFlowError } from "../utils/errors.js";
+import { OpenFlowError, getErrorMessage } from "../utils/errors.js";
 import { sleep } from "../utils/retry.js";
 import type { ChatParams, CompleteParams, LlmResponse, ToolCall } from "./types.js";
 import { parseSseStream } from "./sse-parser.js";
@@ -98,8 +98,7 @@ async function handleStreamResponse(
     log.info({ model: config.model, duration, streamed: true }, "LLM request completed");
     return result;
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new OpenFlowError(`Stream error after partial delivery: ${msg}`, "LLM_STREAM_ERROR", err);
+    throw new OpenFlowError(`Stream error after partial delivery: ${getErrorMessage(err)}`, "LLM_STREAM_ERROR", err);
   }
 }
 
@@ -108,7 +107,7 @@ function classifyAttemptError(err: unknown): never | RetrySignal {
   if (err instanceof Error && err.name === "AbortError") {
     throw new OpenFlowError("Request timed out", "LLM_TIMEOUT");
   }
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = getErrorMessage(err);
   return { __retry: true, errorMessage: msg, cause: err } satisfies RetrySignal;
 }
 

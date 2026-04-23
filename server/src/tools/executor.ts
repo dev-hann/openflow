@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 
 import { createLogger } from "../utils/logger.js";
-import { OpenFlowError } from "../utils/errors.js";
+import { OpenFlowError, getErrorMessage } from "../utils/errors.js";
 import { createBrowserTools } from "./browser.js";
 import type { InternalTool, ToolDefinition, ChannelSender } from "./types.js";
 import { isExecError } from "./types.js";
@@ -179,7 +179,7 @@ export function createToolExecutor(
         );
         return { toolCallId: call.id, content, isError: false };
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = getErrorMessage(err);
         const duration = Date.now() - startedAt;
         log.error({ toolName: call.name, duration, err: msg }, "tool execution failed");
         return {

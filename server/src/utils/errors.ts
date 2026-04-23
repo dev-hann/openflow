@@ -36,6 +36,10 @@ export function err<E extends OpenFlowError>(error: E): Result<never, E> {
   return { ok: false, error };
 }
 
+export function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export function ensureOpenFlowError(
   err: unknown,
   fallbackMessage: string,

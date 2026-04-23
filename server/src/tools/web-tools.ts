@@ -8,6 +8,7 @@ import {
   optionalNumber,
 } from "./utils.js";
 import { OpenFlowError } from "../utils/errors.js";
+import { getErrorMessage } from "../utils/errors.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 
 function htmlToPlainText(html: string): string {
@@ -118,7 +119,7 @@ export const webFetchTool: InternalTool = {
       return truncate(text, maxLen);
     } catch (err: unknown) {
       throw new OpenFlowError(
-        `Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to fetch ${url}: ${getErrorMessage(err)}`,
         "TOOL_EXECUTION_FAILED",
         err,
       );
@@ -176,7 +177,7 @@ export const webSearchTool: InternalTool = {
         .join("\n\n");
     } catch (err: unknown) {
       throw new OpenFlowError(
-        `Search failed: ${err instanceof Error ? err.message : String(err)}`,
+        `Search failed: ${getErrorMessage(err)}`,
         "TOOL_EXECUTION_FAILED",
         err,
       );
@@ -225,7 +226,7 @@ export const httpClientTool: InternalTool = {
       return text;
     } catch (err: unknown) {
       throw new OpenFlowError(
-        `HTTP request failed: ${err instanceof Error ? err.message : String(err)}`,
+        `HTTP request failed: ${getErrorMessage(err)}`,
         "TOOL_EXECUTION_FAILED",
         err,
       );

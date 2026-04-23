@@ -1,6 +1,7 @@
 import { Expo } from "expo-server-sdk";
 
 import { createLogger } from "../utils/logger.js";
+import { getErrorMessage } from "../utils/errors.js";
 import type { PushTicket, PushMessage } from "./types.js";
 import type { PushTokenStore } from "./token-store.js";
 
@@ -113,7 +114,7 @@ export function createNotificationService(
       return {
         id: "error",
         status: "error",
-        message: err instanceof Error ? err.message : String(err),
+        message: getErrorMessage(err),
       };
     }
   }
