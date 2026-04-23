@@ -92,13 +92,12 @@ export async function readJsonObject(
   res: ServerResponse,
 ): Promise<Record<string, unknown> | null> {
   const body = await readJsonBody(req);
-  if (!body || typeof body !== "object") {
-    sendApiError(
-      res,
-      400,
-      "invalid_body",
-      "Request body must be a JSON object",
-    );
+  if (body === null) {
+    sendApiError(res, 400, "invalid_json", "Invalid JSON in request body");
+    return null;
+  }
+  if (typeof body !== "object") {
+    sendApiError(res, 400, "invalid_body", "Request body must be a JSON object");
     return null;
   }
   return body as Record<string, unknown>;
