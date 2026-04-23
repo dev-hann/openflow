@@ -8,7 +8,12 @@ import { isExecError } from "./types.js";
 import { truncate, requireString, optionalNumber } from "./utils.js";
 import { webFetchTool, webSearchTool, httpClientTool } from "./web-tools.js";
 import { createFileReadTool, createFileWriteTool, createListDirTool } from "./file-tools.js";
-import { createSendMessageTool, createSendImageTool } from "./channel-tools.js";
+import {
+  createSendMessageTool,
+  createSendImageTool,
+  SEND_MESSAGE_TOOL_NAME,
+  SEND_IMAGE_TOOL_NAME,
+} from "./channel-tools.js";
 export type { InternalTool, ToolDefinition, ChannelSender, ExecError } from "./types.js";
 export { isExecError } from "./types.js";
 
@@ -152,8 +157,8 @@ export function createToolExecutor(
     },
 
     updateSender(newSender: ChannelSender): void {
-      allTools.delete("send_message");
-      allTools.delete("send_image");
+      allTools.delete(SEND_MESSAGE_TOOL_NAME);
+      allTools.delete(SEND_IMAGE_TOOL_NAME);
       register(createSendMessageTool(newSender));
       register(createSendImageTool(newSender, workspace));
     },

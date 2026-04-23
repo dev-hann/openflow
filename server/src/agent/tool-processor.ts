@@ -87,7 +87,7 @@ export function createToolProcessor(deps: ToolProcessorDeps) {
     log.info({ sessionId, toolName, round }, "executing tool");
 
     const result = await executeWithConfirmation(toolCall.id, toolName, parsedArgs, chatId);
-    if (result.isError && tools.needsConfirmation(toolName)) {
+    if (result.isError && result.content.includes("거부")) {
       log.info({ sessionId, toolName, round }, "tool execution denied by user");
     }
 

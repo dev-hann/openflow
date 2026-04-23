@@ -48,6 +48,10 @@ fi
 cd "$PROJECT_ROOT"
 git add "$PUBSPEC" app/pubspec.lock
 git commit -m "app: bump version to $VERSION"
-git push
 
-echo "Version bumped to $VERSION. CI will auto-release."
+TAG="v$VERSION"
+git tag "$TAG"
+git push
+git push origin "$TAG"
+
+echo "Released $TAG (build $BUILD_NUMBER). CI will build and upload APK."

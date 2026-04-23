@@ -5,9 +5,12 @@ import type { InternalTool, ChannelSender } from "./types.js";
 import { validateWorkspacePath } from "./file-tools.js";
 import { requireString, optionalString } from "./utils.js";
 
+export const SEND_MESSAGE_TOOL_NAME = "send_message";
+export const SEND_IMAGE_TOOL_NAME = "send_image";
+
 export function createSendMessageTool(sender: ChannelSender): InternalTool {
   return {
-    name: "send_message",
+    name: SEND_MESSAGE_TOOL_NAME,
     definition: {
       type: "function",
       function: {
@@ -40,7 +43,7 @@ export function createSendMessageTool(sender: ChannelSender): InternalTool {
 
 export function createSendImageTool(sender: ChannelSender, workspace: string): InternalTool {
   return {
-    name: "send_image",
+    name: SEND_IMAGE_TOOL_NAME,
     definition: {
       type: "function",
       function: {

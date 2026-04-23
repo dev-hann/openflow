@@ -15,6 +15,7 @@ description: 앱(Flutter/Dart) 코드베이스를 자동 분석→설계→구�
 - **상태 관리는 git만 사용한다.** backlog.md, improvements 문서 등 별도 상태 파일은 사용하지 않는다.
 - **app/AGENTS.md의 모든 규칙을 준수한다.**
 - **서버 스킬(continuous-improvement)이 선행 실행된 경우, 그 결과를 참조한다.**
+- **서브태스크는 `pubspec.yaml`을 직접 수정하지 않는다.** 버전 벝프는 `scripts/release.sh`만 수행한다.
 
 ## 아키텍처
 
@@ -104,6 +105,15 @@ Task(
 - **실패**: "[HH:MM:SS] Loop N 실패: {이유}. 재시도." 출력 후 동일 N으로 재dispatch
 - **타임아웃 (30분)**: 서브태스크가 30분 초과로 중단된 경우, "[HH:MM:SS] Loop N 타임아웃 (30분 초과). 재시." 출력 후 동일 N으로 재dispatch
 - **3회 연속 실패/타임아웃**: N 증분 후 다음 루프
+
+### 2.5. 배포 판단 (오케스트레이터만)
+
+서브태스크 결과에서 개선 내용을 분석하여 배포 여부를 판단한다. (AGENTS.md 자동 배포 트리거 표 참조)
+
+- 조건 충족 시: `./scripts/release.sh <version>` 실행 후 "[HH:MM:SS] Released v<version>." 출력
+- 미충족 시: 다음 루프로 계속 진행
+
+누적 기준은 세션 내 이전 루프 결과도 합산한다.
 
 ### 3. 즉시 다음 루프
 
