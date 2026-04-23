@@ -136,7 +136,7 @@ class _ProviderFormState extends State<ProviderForm> {
         }
       });
     } on Object catch (e) {
-      _setVerifyError(e.toString());
+      _setVerifyError(toUserMessage(e));
     }
   }
 

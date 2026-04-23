@@ -43,11 +43,11 @@ class _InputBarState extends State<InputBar> {
     final canSend = _controller.text.trim().isNotEmpty && !widget.disabled;
 
     return Container(
-      padding: EdgeInsets.only(
+      padding: const EdgeInsets.only(
         left: AppSpacing.sm,
         right: AppSpacing.sm,
         top: AppSpacing.xs,
-        bottom: AppSpacing.sm + MediaQuery.of(context).padding.bottom,
+        bottom: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
         color: colorScheme.background,

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/models/verify_result.dart';
@@ -39,7 +40,7 @@ class _VerifySectionState extends State<VerifySection> {
         if ((widget.result?.ok ?? false) &&
             widget.result!.models.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
-          _ModelChipSelector(
+          _ModelInlineSelector(
             models: widget.result!.models,
             selectedModel: widget.selectedModel,
             searchQuery: _searchQuery,
@@ -93,8 +94,8 @@ class _VerifyResultBanner extends StatelessWidget {
   }
 }
 
-class _ModelChipSelector extends StatelessWidget {
-  const _ModelChipSelector({
+class _ModelInlineSelector extends StatelessWidget {
+  const _ModelInlineSelector({
     required this.models,
     required this.selectedModel,
     required this.searchQuery,
@@ -110,6 +111,9 @@ class _ModelChipSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ShadTheme.of(context).colorScheme;
+    final filtered = models
+        .where((m) => m.toLowerCase().contains(searchQuery))
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,44 +142,85 @@ class _ModelChipSelector extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 200),
-          child: SingleChildScrollView(
-            child: Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: models
-                  .where((m) => m.toLowerCase().contains(searchQuery))
-                  .map((model) {
-                    final isSelected = model == selectedModel;
-                    return GestureDetector(
-                      onTap: () => onSelectModel(model),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.secondary,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text(
-                          model,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isSelected
-                                ? colorScheme.primaryForeground
-                                : colorScheme.foreground,
-                          ),
-                        ),
-                      ),
-                    );
-                  })
-                  .toList(),
-            ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              final model = filtered[index];
+              final isSelected = model == selectedModel;
+              return _ModelListTile(
+                model: model,
+                isSelected: isSelected,
+                colorScheme: colorScheme,
+                onTap: () => onSelectModel(model),
+              );
+            },
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ModelListTile extends StatelessWidget {
+  const _ModelListTile({
+    required this.model,
+    required this.isSelected,
+    required this.colorScheme,
+    required this.onTap,
+  });
+
+  final String model;
+  final bool isSelected;
+  final ShadColorScheme colorScheme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? LucideIcons.circleDot : LucideIcons.circle,
+              size: 18,
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.mutedForeground,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                model,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isSelected ? colorScheme.primary : colorScheme.foreground,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Text(
+                '선택됨',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.primary,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

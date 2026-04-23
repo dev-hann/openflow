@@ -88,14 +88,19 @@ class _MainScreenState extends State<MainScreen> {
             .firstOrNull;
         final title = activeSession?.title ?? '새 대화';
 
+        final viewInsets = MediaQuery.of(context).viewInsets;
+
         final scaffold = ColoredBox(
           color: shadTheme.colorScheme.background,
-          child: SafeArea(
-            child: Column(
-              children: [
-                _buildAppBar(context, title),
-                const Expanded(child: ChatScreen()),
-              ],
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets.bottom),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildAppBar(context, title),
+                  const Expanded(child: ChatScreen()),
+                ],
+              ),
             ),
           ),
         );

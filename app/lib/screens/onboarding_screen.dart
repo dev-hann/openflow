@@ -145,27 +145,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     return ColoredBox(
       color: colorScheme.background,
-      child: SafeArea(
-        child: Column(
-          children: [
-            if (_step.index > 0)
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    ShadIconButton.ghost(
-                      icon: Icon(
-                        LucideIcons.arrowLeft,
-                        color: colorScheme.foreground,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              if (_step.index > 0)
+                Container(
+                  height: 56,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      ShadIconButton.ghost(
+                        icon: Icon(
+                          LucideIcons.arrowLeft,
+                          color: colorScheme.foreground,
+                        ),
+                        onPressed: _previousStep,
                       ),
-                      onPressed: _previousStep,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            Expanded(child: _buildBody(context)),
-          ],
+              Expanded(child: _buildBody(context)),
+            ],
+          ),
         ),
       ),
     );

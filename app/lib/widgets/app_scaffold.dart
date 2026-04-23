@@ -21,26 +21,22 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ShadTheme.of(context).colorScheme;
-
-    var current = body;
-
-    if (resizeToAvoidBottomInset) {
-      current = MediaQuery.removePadding(
-        context: context,
-        removeBottom: true,
-        child: current,
-      );
-    }
+    final viewInsets = MediaQuery.of(context).viewInsets;
 
     return ColoredBox(
       color: colorScheme.background,
-      child: SafeArea(
-        child: Column(
-          children: [
-            if (title != null || leading != null || actions != null)
-              _AppBar(title: title, leading: leading, actions: actions),
-            Expanded(child: current),
-          ],
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: resizeToAvoidBottomInset ? viewInsets.bottom : 0,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              if (title != null || leading != null || actions != null)
+                _AppBar(title: title, leading: leading, actions: actions),
+              Expanded(child: body),
+            ],
+          ),
         ),
       ),
     );
