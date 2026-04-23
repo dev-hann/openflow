@@ -20,6 +20,13 @@ export interface NotificationService extends PushService {
   notifyAll(title: string, body: string, data?: Record<string, unknown>): Promise<void>;
 }
 
+interface ExpoPushResult {
+  status: "ok" | "error";
+  id?: string;
+  message?: string;
+  details?: { error?: string };
+}
+
 export function createNotificationService(
   config: ExpoPushConfig,
   tokenStore: PushTokenStore,
@@ -40,13 +47,6 @@ export function createNotificationService(
   }
 
   const expo = new Expo();
-
-  interface ExpoPushResult {
-    status: "ok" | "error";
-    id?: string;
-    message?: string;
-    details?: { error?: string };
-  }
 
   function processTicket(r: ExpoPushResult, recipientToken: string): PushTicket {
     if (r.status === "error") {
