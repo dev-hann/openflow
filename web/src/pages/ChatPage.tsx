@@ -7,6 +7,7 @@ import type { WsServerMessage } from "@/api/types";
 import { MessageList } from "@/components/MessageBubble";
 import { InputBar } from "@/components/InputBar";
 import { SessionList } from "@/components/SessionList";
+import { LogoIcon } from "@/components/LogoIcon";
 
 export function ChatPage() {
   const { accessToken, logout } = useAuthStore();
@@ -144,7 +145,7 @@ export function ChatPage() {
   );
 
   return (
-    <div className="h-screen flex bg-zinc-950 text-white">
+    <div className="h-screen flex bg-surface-bg text-text-primary">
       <SessionList
         sessions={sessions}
         activeId={activeSessionId}
@@ -153,8 +154,9 @@ export function ChatPage() {
         onDelete={handleDeleteSession}
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-12 border-b border-zinc-800 flex items-center px-4 bg-zinc-900">
-          <span className="text-sm text-zinc-400">
+        <header className="h-12 border-b border-border-default flex items-center px-4 bg-surface-card">
+          <LogoIcon className="w-6 h-6 mr-2 shrink-0" />
+          <span className="text-sm text-text-secondary truncate">
             {activeSessionId
               ? sessions.find((s) => s.id === activeSessionId)?.title || "대화"
               : "새 대화를 시작하세요"}
@@ -162,7 +164,7 @@ export function ChatPage() {
           <div className="ml-auto">
             <button
               onClick={logout}
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="text-xs text-text-tertiary hover:text-text-secondary transition-colors"
             >
               로그아웃
             </button>

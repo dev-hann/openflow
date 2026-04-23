@@ -1,0 +1,64 @@
+name: Auto Respond to Issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze and respond
+        uses: actions/github-script@v7
+        env:
+          IS_BOT: ${{ github.event.issue.user.type == 'Bot' }}
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const isBot = process.env.IS_BOT === 'true';
+            const labels = isBot ? ['auto-reported'] : ['triage'];
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: isBot ? ['auto-reported'] : ['triage'],
+            });
+
+            let analysis;
+            try {
+              const { execSync } = require('child_process');
+              const result = execSync(`node scripts/analyze-issue.mjs`, {
+                env: {
+                  ...process.env,
+                  ISSUE_TITLE: issue.title,
+                  ISSUE_BODY: issue.body || '',
+                  IS_BOT: isBot ? 'true' : 'false',
+                  ISSUE_NUMBER: String(issue.number),
+                },
+                encoding: 'utf-8',
+              });
+              analysis = result.trim();
+            } catch (err) {
+              analysis = 'Analysis failed: ' + (err.stderr || err.message);
+            }
+
+            if (analysis) {
+              const header = isBot
+                ? '## Automated Error Analysis'
+                : '## Issue Analysis';
+              const body = `${header}\n\n${analysis}\n\n---\n*This analysis was generated automatically.*`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: body,
+              });
+            }

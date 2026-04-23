@@ -1,0 +1,66 @@
+name: Cascade Close Dependencies
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  cascade-close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close dependent issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const closedNumber = context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const query = `repo:${owner}/${repo} is:issue is:open in:body "rootCauses: [\\"#${closedNumber}\\"]"`;
+            const searchResult = await github.rest.search.issuesAndPullRequests({
+              q: query,
+            });
+
+            const dependents = searchResult.data.items;
+
+            for (const dep of dependents) {
+              if (dep.labels.some(l => l.name === 'no-auto-close')) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: dep.number,
+                  body: `Root cause #${closedNumber} has been resolved, but this issue has \`no-auto-close\` label. Please verify manually.`,
+                });
+                continue;
+              }
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: dep.number,
+                body: `Automatically closing: root cause #${closedNumber} has been resolved.\n\nIf this issue persists, a new report will be created automatically.`,
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: dep.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+
+              console.log(`Closed #${dep.number} (dependent on #${closedNumber})`);
+            }
+
+            if (dependents.length > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: closedNumber,
+                body: `Cascade: closed ${dependents.length} dependent issue(s): ${dependents.map(d => `#${d.number}`).join(', ')}`,
+              });
+            }

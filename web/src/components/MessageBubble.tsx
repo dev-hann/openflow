@@ -32,8 +32,8 @@ export function MessageBubble({ role, content, isStreaming }: BubbleProps) {
       <div
         className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
           isUser
-            ? "bg-indigo-600 text-white"
-            : "bg-zinc-800 text-zinc-100"
+            ? "bg-brand-primary text-text-primary"
+            : "bg-surface-elevated text-zinc-100"
         }`}
       >
         {isUser ? (
@@ -41,7 +41,7 @@ export function MessageBubble({ role, content, isStreaming }: BubbleProps) {
         ) : (
           <div className="text-sm">
             <MarkdownContent content={content} />
-            {isStreaming && <span className="inline-block w-1.5 h-4 bg-indigo-400 animate-pulse ml-0.5" />}
+            {isStreaming && <span className="inline-block w-1.5 h-4 bg-brand-primary-light animate-pulse ml-0.5" />}
           </div>
         )}
       </div>

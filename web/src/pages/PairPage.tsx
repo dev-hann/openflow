@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import QRCode from "qrcode";
 import { api } from "@/api/client";
+import { LogoIcon } from "@/components/LogoIcon";
 import { useAuthStore } from "@/stores/auth";
 
 type PairStatus = "loading" | "showing_qr" | "approved" | "expired" | "error";
@@ -147,11 +148,14 @@ export function PairPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl p-8 shadow-xl">
+    <div className="min-h-screen bg-surface-bg flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-surface-card rounded-2xl p-8 shadow-xl">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">OpenFlow</h1>
-          <p className="text-zinc-400 text-sm" role="status" aria-live="polite">
+          <div className="flex justify-center mb-4">
+            <LogoIcon className="w-16 h-16" />
+          </div>
+          <h1 className="text-2xl font-bold text-text-primary mb-2">OpenFlow</h1>
+          <p className="text-text-secondary text-sm" role="status" aria-live="polite">
             {status === "loading" && "QR 코드를 생성하는 중..."}
             {status === "showing_qr" && "휴대폰 앱으로 QR 코드를 스캔하세요"}
             {status === "approved" && "인증 완료!"}
@@ -162,7 +166,7 @@ export function PairPage() {
 
         {status === "loading" && (
           <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-2 border-zinc-600 border-t-indigo-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-border-subtle border-t-brand-primary rounded-full animate-spin" />
           </div>
         )}
 
@@ -171,7 +175,7 @@ export function PairPage() {
             <div className="bg-white/5 rounded-xl p-4">
               <img src={qrDataUrl} alt="OpenFlow 앱으로 스캔할 QR 코드" className="w-64 h-64" />
             </div>
-            <p className="text-zinc-500 text-xs">
+            <p className="text-text-tertiary text-xs">
               만료까지 {formatCountdown(countdown)}
             </p>
           </div>
@@ -179,8 +183,8 @@ export function PairPage() {
 
         {status === "approved" && (
           <div className="flex justify-center py-4">
-            <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-12 h-12 rounded-full bg-status-success-bg flex items-center justify-center">
+              <svg className="w-6 h-6 text-status-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -190,13 +194,13 @@ export function PairPage() {
         {(status === "expired" || status === "error") && (
           <div className="space-y-4">
             {error && (
-              <div className="bg-red-950/50 border border-red-900/50 rounded-lg p-3">
-                <p className="text-red-400 text-sm">{error}</p>
+              <div className="bg-status-error-bg border border-status-error-bg rounded-lg p-3">
+                <p className="text-status-error text-sm">{error}</p>
               </div>
             )}
             <button
               onClick={initSession}
-              className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+              className="w-full rounded-lg bg-brand-primary py-2.5 text-sm font-medium text-text-primary hover:bg-brand-primary-hover transition-colors"
             >
               다시 시도
             </button>

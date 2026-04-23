@@ -73,6 +73,15 @@ export const openFlowConfigSchema = z.object({
       level: z.enum(["debug", "info", "warn", "error"]).default("info"),
     })
     .default({}),
+  reporting: z
+    .object({
+      enabled: z.boolean().default(false),
+      githubRepo: z.string().default("dev-hann/openflow"),
+      githubToken: z.string().optional(),
+      rateLimitPerMinute: z.number().int().positive().default(5),
+      minLogLevel: z.enum(["error", "warn"]).default("error"),
+    })
+    .default({}),
 });
 
 export type OpenFlowConfig = z.infer<typeof openFlowConfigSchema>;

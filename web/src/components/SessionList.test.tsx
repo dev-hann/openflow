@@ -52,7 +52,7 @@ describe("SessionList", () => {
   it("should highlight active session", () => {
     render(<SessionList sessions={sessions} activeId="s1" onSelect={vi.fn()} onCreate={vi.fn()} onDelete={vi.fn()} />);
 
-    const activeEl = screen.getByText("First chat").closest("div[class*='bg-zinc-800']");
+    const activeEl = screen.getByText("First chat").closest("div[class*='bg-surface-elevated']");
     expect(activeEl).toBeTruthy();
   });
 });

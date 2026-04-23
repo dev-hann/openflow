@@ -13,6 +13,7 @@ import type { AgentEngine } from "../../agent/index.js";
 import type { MemoryStore, ProviderStore } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
+import type { IssueReporter } from "../../reporting/issue-reporter.js";
 
 const log = createLogger("ws/server");
 
@@ -33,6 +34,7 @@ export interface WebSocketChannelDeps {
   providerPool: ProviderPool;
   pushTokenStore: PushTokenStore;
   createSession: (title: string) => { id: string };
+  issueReporter?: IssueReporter;
 }
 
 export interface WebSocketChannel extends Channel {
@@ -60,6 +62,7 @@ export function createWebSocketChannel(
     providerPool: deps.providerPool,
     pushTokenStore: deps.pushTokenStore,
     corsEnabled: config.cors,
+    issueReporter: deps.issueReporter,
   });
 
   const staticHandler = config.webRoot

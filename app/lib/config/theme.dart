@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-const _seedColor = Color(0xFF4F46E5);
+import 'package:openflow/config/tokens.dart';
+
+const Color _seedColor = AppColors.brandPrimary;
 
 class AppTheme {
   AppTheme._();

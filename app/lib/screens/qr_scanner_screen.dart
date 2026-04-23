@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import 'package:openflow/config/tokens.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
@@ -109,12 +110,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.videocam_off, size: 48, color: Colors.white54),
+                      const Icon(Icons.videocam_off, size: 48, color: AppColors.textSecondary),
                       const SizedBox(height: 16),
                       Text(
                         error.errorDetails?.message ?? '카메라를 사용할 수 없습니다',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70),
+                        style: const TextStyle(color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 16),
                       FilledButton(
@@ -129,7 +130,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           ),
           if (_processing)
             const ColoredBox(
-              color: Colors.black54,
+              color: Color(0x89000000),
               child: Center(child: CircularProgressIndicator()),
             ),
           Align(
@@ -137,10 +138,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: Colors.black54,
+              color: const Color(0x89000000),
               child: Text(
                 _processing ? '처리 중...' : '웹 화면의 QR 코드를 스캔하세요',
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ),

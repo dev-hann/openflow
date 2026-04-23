@@ -9,7 +9,9 @@ import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/cubits/settings_cubit.dart';
 import 'package:openflow/cubits/update_cubit.dart';
+import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/auth_storage.dart';
+import 'package:openflow/services/error_reporter.dart';
 import 'package:openflow/services/update_service.dart';
 import 'package:openflow/services/websocket_service.dart';
 
@@ -18,6 +20,9 @@ void main() {
 
   final authStorage = AuthStorage();
   final wsService = WebSocketService();
+
+  final apiClient = createApiClient('http://localhost:9800');
+  ErrorReporter.init(apiClient).catchError((_) {});
 
   runApp(
     OpenFlowApp(

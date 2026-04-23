@@ -10,6 +10,8 @@ import type { ConfirmationHandler } from "../tools/confirmation.js";
 import { createNotificationService, createPushTokenStore } from "../notification/index.js";
 import { watchConfig } from "../config/loader.js";
 import type { OpenFlowConfig } from "../config/schema.js";
+import { IssueReporter } from "../reporting/issue-reporter.js";
+import { setupErrorCollector } from "../reporting/error-collector.js";
 
 const log = createLogger("cli");
 
@@ -93,6 +95,15 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
     process.exit(1);
   }
 
+  const issueReporter =
+    config.reporting.enabled && config.reporting.githubToken
+      ? new IssueReporter({
+          githubToken: config.reporting.githubToken,
+          githubRepo: config.reporting.githubRepo,
+          rateLimitPerMinute: config.reporting.rateLimitPerMinute,
+        })
+      : undefined;
+
   const wsChannel = createWebSocketChannel(
     { host: config.websocket.host, port: config.websocket.port, cors: config.websocket.cors, webRoot: config.websocket.webRoot },
     {
@@ -102,11 +113,17 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
       providerPool,
       pushTokenStore,
       createSession: (title: string) => memory.createSession(title),
+      issueReporter,
     },
   );
 
   log.info("starting WebSocket server...");
   await wsChannel.start();
+
+  if (issueReporter) {
+    setupErrorCollector(issueReporter, "0.1.0");
+    log.info("error reporting enabled");
+  }
 
   const sender: ChannelSender = {
     sendMessage: async (_chatId, text) => {

@@ -91,6 +91,7 @@ function createTestConfig(overrides?: Partial<OpenFlowConfig>): OpenFlowConfig {
     skills: { enabled: true, extraDirs: [], entries: {} },
     websocket: { enabled: true, host: "127.0.0.1", port: 19800, cors: true },
     logging: { level: "info" as const },
+    reporting: { enabled: false, githubRepo: "dev-hann/openflow", rateLimitPerMinute: 5, minLogLevel: "error" as const },
     ...overrides,
   };
 }

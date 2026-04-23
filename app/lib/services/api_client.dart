@@ -249,6 +249,28 @@ class ApiClient {
   Future<void> approveWebAuth(String sessionId) async {
     await _post('/api/auth/web/approve', {'sessionId': sessionId});
   }
+
+  Future<void> reportError({
+    required String platform,
+    required String version,
+    required String errorCode,
+    required String message,
+    String? stackTrace,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _post('/api/errors', {
+        'platform': platform,
+        'version': version,
+        'errorCode': errorCode,
+        'message': message,
+        if (stackTrace != null) 'stackTrace': stackTrace,
+        if (metadata != null) 'metadata': metadata,
+      });
+    } catch (_) {
+      // silently ignore - error reporting should not cause more errors
+    }
+  }
 }
 
 ApiClient createApiClient(

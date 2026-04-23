@@ -331,6 +331,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProviderModelsResponse"
 
+  /api/errors:
+    post:
+      operationId: reportError
+      summary: Report a runtime error for automatic GitHub issue creation
+      tags: [Errors]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ErrorReportRequest"
+      responses:
+        "200":
+          description: Error reported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorReportResponse"
+        "400":
+          description: Invalid report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   securitySchemes:
     BearerAuth:
@@ -584,3 +617,38 @@ components:
           items:
             type: string
       required: [models]
+
+    ErrorPlatform:
+      type: string
+      enum: [server, app, web]
+
+    ErrorReportRequest:
+      type: object
+      properties:
+        platform:
+          $ref: "#/components/schemas/ErrorPlatform"
+        version:
+          type: string
+        errorCode:
+          type: string
+        message:
+          type: string
+        stackTrace:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [platform, version, errorCode, message]
+
+    ErrorReportResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        issueNumber:
+          type: integer
+          nullable: true
+        issueUrl:
+          type: string
+          nullable: true
+      required: [ok]
