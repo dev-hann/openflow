@@ -161,9 +161,15 @@ export const webSearchTool: InternalTool = {
       const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
       const html = await withRetry(
         async () => {
-          const resp = await fetch(url);
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          return await resp.text();
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 30_000);
+          try {
+            const resp = await fetch(url, { signal: controller.signal });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return await resp.text();
+          } finally {
+            clearTimeout(timer);
+          }
         },
         { delays: [500, 1000, 2000], shouldRetry: isRetryableHttpError },
       );
