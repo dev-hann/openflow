@@ -94,11 +94,15 @@ async function findExistingIssue(
       githubToken,
       `/search/issues?q=${encodeURIComponent(query)}`,
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      log.debug({ status: res.status }, "GitHub issue search returned non-OK status");
+      return null;
+    }
     const data = (await res.json()) as { items?: { number: number }[] };
     if (data.items && data.items.length > 0) return data.items[0]!.number;
     return null;
-  } catch {
+  } catch (err: unknown) {
+    log.debug({ err }, "GitHub issue search failed");
     return null;
   }
 }
