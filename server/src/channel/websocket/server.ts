@@ -116,10 +116,7 @@ export function createWebSocketChannel(
         server!.listen(config.port, config.host, () => resolve());
       });
 
-      log.info(
-        { host: config.host, port: config.port },
-        `WebSocket + HTTP server listening on ${config.host}:${config.port}`,
-      );
+      log.info({ host: config.host, port: config.port }, "server listening");
     },
 
     async stop(): Promise<void> {
