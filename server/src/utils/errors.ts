@@ -35,3 +35,13 @@ export function ok<T>(value: T): Result<T, never> {
 export function err<E extends OpenFlowError>(error: E): Result<never, E> {
   return { ok: false, error };
 }
+
+export function ensureOpenFlowError(
+  err: unknown,
+  fallbackMessage: string,
+  code: ErrorCode,
+): OpenFlowError {
+  return err instanceof OpenFlowError
+    ? err
+    : new OpenFlowError(fallbackMessage, code, err);
+}

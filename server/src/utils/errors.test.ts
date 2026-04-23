@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { OpenFlowError, ok, err, type Result } from "./errors.js";
+import { OpenFlowError, ok, err, ensureOpenFlowError, type Result } from "./errors.js";
 
 describe("OpenFlowError", () => {
   it("should create error with code and message", () => {
@@ -65,5 +65,30 @@ describe("Result type helpers", () => {
     } else {
       expect.unreachable("should be err");
     }
+  });
+});
+
+describe("ensureOpenFlowError", () => {
+  it("should return existing OpenFlowError as-is", () => {
+    const original = new OpenFlowError("original", "LLM_TIMEOUT");
+    const result = ensureOpenFlowError(original, "fallback", "LLM_REQUEST_FAILED");
+    expect(result).toBe(original);
+  });
+
+  it("should wrap non-OpenFlowError with fallback message and code", () => {
+    const cause = new Error("network failure");
+    const result = ensureOpenFlowError(cause, "LLM request failed", "LLM_REQUEST_FAILED");
+    expect(result).toBeInstanceOf(OpenFlowError);
+    expect(result.message).toBe("LLM request failed");
+    expect(result.code).toBe("LLM_REQUEST_FAILED");
+    expect(result.cause).toBe(cause);
+  });
+
+  it("should wrap non-Error values", () => {
+    const result = ensureOpenFlowError("string error", "fallback", "DB_ERROR");
+    expect(result).toBeInstanceOf(OpenFlowError);
+    expect(result.message).toBe("fallback");
+    expect(result.code).toBe("DB_ERROR");
+    expect(result.cause).toBe("string error");
   });
 });

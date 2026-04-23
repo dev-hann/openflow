@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
-import { OpenFlowError } from "../utils/errors.js";
+import { OpenFlowError, ensureOpenFlowError } from "../utils/errors.js";
 import type { LlmClient, ChatMessage, LlmResponse, ToolDefinition } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { ToolExecutor, ChannelSender } from "../tools/index.js";
@@ -106,10 +106,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
         signal,
       });
     } catch (err: unknown) {
-      const error =
-        err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
+      const error = ensureOpenFlowError(err, "LLM request failed", "LLM_REQUEST_FAILED");
       log.error({ round, err: error.message, code: error.code }, "LLM request failed");
       throw error;
     }
@@ -194,10 +191,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       try {
         response = await callLlmOnce(messages, toolDefinitions, onToken, signal, round);
       } catch (err: unknown) {
-        const error =
-          err instanceof OpenFlowError
-            ? err
-            : new OpenFlowError("LLM request failed", "LLM_REQUEST_FAILED", err);
+        const error = ensureOpenFlowError(err, "LLM request failed", "LLM_REQUEST_FAILED");
         return { type: "error", error };
       }
 
@@ -222,10 +216,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     try {
       messages = await contextResolver.buildConversationContext(sessionId, systemPromptOverride);
     } catch (err: unknown) {
-      const error =
-        err instanceof OpenFlowError
-          ? err
-          : new OpenFlowError("Failed to build context", "LLM_REQUEST_FAILED", err);
+      const error = ensureOpenFlowError(err, "Failed to build context", "LLM_REQUEST_FAILED");
       return { type: "error", error };
     }
 
