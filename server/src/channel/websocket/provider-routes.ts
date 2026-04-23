@@ -9,9 +9,8 @@ import {
   sendJson,
   readJsonObject,
   requireAuth,
-  getBodyString,
-  requireBodyString,
   sendApiError,
+  validateBody,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, routePattern, type Route } from "./routes.js";
@@ -19,6 +18,12 @@ import {
   fetchProviderModels,
   verifyProviderConnectivity,
 } from "./provider-connectivity.js";
+import {
+  ProviderCreateSchema,
+  ProviderUpdateSchema,
+  ProviderSwitchSchema,
+  ProviderModelsResponseSchema,
+} from "./provider-schemas.js";
 
 const log = createLogger("ws/provider-routes");
 
@@ -117,42 +122,23 @@ async function handleProviderCreate(
   if (!auth) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const name = getBodyString(body, "name");
-  const baseUrl = getBodyString(body, "baseUrl");
-  const apiKey = getBodyString(body, "apiKey");
-  const model = getBodyString(body, "model");
-  const isDefault =
-    typeof body.isDefault === "boolean" ? body.isDefault : undefined;
-  if (!name || !baseUrl || !apiKey || !model) {
-    sendApiError(
-      res,
-      400,
-      "fields_required",
-      "name, baseUrl, apiKey, model are required",
-    );
-    return;
-  }
-  const provider = deps.providerStore.addProvider({
-    name,
-    baseUrl,
-    apiKey,
-    model,
-    isDefault,
-  });
-  if (isDefault) {
+  const parsed = validateBody(body, ProviderCreateSchema, res);
+  if (!parsed) return;
+  const provider = deps.providerStore.addProvider(parsed);
+  if (parsed.isDefault) {
     deps.providerStore.setDefault(provider.id);
     deps.providerPool.syncFromStore();
     deps.providerPool.switchProvider(provider.id);
   } else {
     deps.providerPool.syncFromStore();
   }
-  log.info({ providerId: provider.id, name }, "provider created via API");
+  log.info({ providerId: provider.id, name: provider.name }, "provider created via API");
 
-  verifyProviderConnectivity(baseUrl, apiKey)
+  verifyProviderConnectivity(parsed.baseUrl, parsed.apiKey)
     .then((verified) => {
       if (!verified) {
         log.warn(
-          { providerId: provider.id, name },
+          { providerId: provider.id, name: provider.name },
           "provider created but connectivity check failed",
         );
       }
@@ -178,12 +164,9 @@ async function handleProviderUpdate(
   if (!providerId) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const updated = deps.providerStore.updateProvider(providerId, {
-    name: getBodyString(body, "name"),
-    baseUrl: getBodyString(body, "baseUrl"),
-    apiKey: getBodyString(body, "apiKey"),
-    model: getBodyString(body, "model"),
-  });
+  const parsed = validateBody(body, ProviderUpdateSchema, res);
+  if (!parsed) return;
+  const updated = deps.providerStore.updateProvider(providerId, parsed);
   if (!updated) {
     sendApiError(res, 404, "provider_not_found", "Provider not found");
     return;
@@ -217,23 +200,17 @@ async function handleProviderSwitch(
   if (!auth) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const providerId = requireBodyString(
-    body,
-    "providerId",
-    res,
-    "provider_id_required",
-    "Provider ID is required",
-  );
-  if (!providerId) return;
-  const provider = deps.providerStore.getProvider(providerId);
+  const parsed = validateBody(body, ProviderSwitchSchema, res);
+  if (!parsed) return;
+  const provider = deps.providerStore.getProvider(parsed.providerId);
   if (!provider) {
     sendApiError(res, 404, "provider_not_found", "Provider not found");
     return;
   }
-  deps.providerPool.switchProvider(providerId);
-  deps.providerStore.setDefault(providerId);
-  log.info({ providerId }, "provider switched via API");
-  sendJson(res, 200, { providerId });
+  deps.providerPool.switchProvider(parsed.providerId);
+  deps.providerStore.setDefault(parsed.providerId);
+  log.info({ providerId: parsed.providerId }, "provider switched via API");
+  sendJson(res, 200, { providerId: parsed.providerId });
 }
 
 async function handleProviderVerify(
@@ -276,8 +253,11 @@ async function handleProviderModels(
       );
       return;
     }
-    const json = (await resp.json()) as { data?: Array<{ id: string }> };
-    const models = (json.data ?? []).map((m) => m.id).sort();
+    const raw = await resp.json();
+    const parsed = ProviderModelsResponseSchema.safeParse(raw);
+    const models = parsed.success
+      ? parsed.data.data.map((m) => m.id).sort()
+      : [];
     sendJson(res, 200, { models });
   } catch (err: unknown) {
     const msg = getErrorMessage(err);

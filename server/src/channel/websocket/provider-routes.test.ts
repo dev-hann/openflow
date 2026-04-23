@@ -219,7 +219,7 @@ describe("provider routes", () => {
       });
       expect(getStatusCode()).toBe(400);
       const body = JSON.parse(getBody()) as { error: string };
-      expect(body.error).toContain("required");
+      expect(body.error).toBe("validation_error");
     });
 
     it("should create provider with all required fields", async () => {

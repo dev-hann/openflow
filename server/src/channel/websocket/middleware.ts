@@ -1,5 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { z } from "zod";
+
 import type { AuthService } from "./auth.js";
 import { createLogger } from "../../utils/logger.js";
 import { OpenFlowError } from "../../utils/errors.js";
@@ -170,6 +172,20 @@ export function isValidReportPlatform(value: string | undefined): value is Repor
 
 export function isValidObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function validateBody<T>(
+  body: unknown,
+  schema: z.ZodSchema<T>,
+  res: ServerResponse,
+): T | null {
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    const messages = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+    sendApiError(res, 400, "validation_error", messages);
+    return null;
+  }
+  return result.data;
 }
 
 export function handleOptions(
