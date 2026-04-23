@@ -18,168 +18,182 @@ export interface IssueReporterConfig {
   rateLimitPerMinute: number;
 }
 
+export interface IssueReporter {
+  report(
+    report: ErrorReport,
+  ): Promise<{ ok: boolean; issueNumber?: number; issueUrl?: string }>;
+}
+
 interface RateLimitEntry {
   timestamp: number;
 }
 
-export class IssueReporter {
-  private config: IssueReporterConfig;
-  private recentReports: RateLimitEntry[] = [];
+async function githubApi(
+  githubToken: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const url = `https://api.github.com${path}`;
+  return fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${githubToken}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...options.headers,
+    },
+  });
+}
 
-  constructor(config: IssueReporterConfig) {
-    this.config = config;
+function buildIssueBody(report: ErrorReport, fingerprint: string): string {
+  const parts: string[] = [];
+  parts.push(`<!-- openflow-error-report`);
+  parts.push(`fingerprint: ${fingerprint}`);
+  parts.push(`platform: ${report.platform}`);
+  parts.push(`-->`);
+  parts.push("");
+  parts.push(`## Auto Error Report`);
+  parts.push("");
+  parts.push(`| Field | Value |`);
+  parts.push(`|-------|-------|`);
+  parts.push(`| Platform | \`${report.platform}\` |`);
+  parts.push(`| Version | \`${report.version}\` |`);
+  parts.push(`| Error Code | \`${report.errorCode}\` |`);
+  parts.push("");
+  parts.push(`**Message:** ${report.message}`);
+  if (report.stackTrace) {
+    parts.push("");
+    parts.push("<details><summary>Stack Trace</summary>");
+    parts.push("");
+    parts.push("```");
+    parts.push(report.stackTrace);
+    parts.push("```");
+    parts.push("</details>");
+  }
+  if (report.metadata && Object.keys(report.metadata).length > 0) {
+    parts.push("");
+    parts.push("<details><summary>Metadata</summary>");
+    parts.push("");
+    parts.push("```json");
+    parts.push(JSON.stringify(report.metadata, null, 2));
+    parts.push("```");
+    parts.push("</details>");
+  }
+  return parts.join("\n");
+}
+
+async function findExistingIssue(
+  githubToken: string,
+  owner: string,
+  repo: string,
+  fingerprint: string,
+): Promise<number | null> {
+  try {
+    const query = `repo:${owner}/${repo} is:issue is:open label:auto-reported in:body "${fingerprint}"`;
+    const res = await githubApi(
+      githubToken,
+      `/search/issues?q=${encodeURIComponent(query)}`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { items?: { number: number }[] };
+    if (data.items && data.items.length > 0) return data.items[0]!.number;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function addComment(
+  githubToken: string,
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  report: ErrorReport,
+): Promise<void> {
+  const body = [
+    `**Recurrence reported** (${new Date().toISOString()})`,
+    "",
+    `| Field | Value |`,
+    `|-------|-------|`,
+    `| Platform | \`${report.platform}\` |`,
+    `| Version | \`${report.version}\` |`,
+    `| Message | ${report.message} |`,
+  ].join("\n");
+
+  await githubApi(githubToken, `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body }),
+  });
+}
+
+async function createNewIssue(
+  githubToken: string,
+  owner: string,
+  repo: string,
+  report: ErrorReport,
+  fingerprint: string,
+): Promise<{ number: number; url: string } | null> {
+  const title = `[auto] [${report.platform}] ${report.errorCode}: ${report.message.slice(0, 80)}`;
+  const body = buildIssueBody(report, fingerprint);
+  const labels = ["bug", "auto-reported", report.platform];
+
+  const res = await githubApi(githubToken, `/repos/${owner}/${repo}/issues`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, body, labels }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    log.error({ status: res.status, body: text }, "failed to create issue");
+    return null;
   }
 
-  private checkRateLimit(): boolean {
+  const data = (await res.json()) as { number: number; html_url: string };
+  return { number: data.number, url: data.html_url };
+}
+
+export function createIssueReporter(config: IssueReporterConfig): IssueReporter {
+  const [owner, repo] = config.githubRepo.split("/") as [string, string];
+  const recentReports: RateLimitEntry[] = [];
+
+  function checkRateLimit(): boolean {
     const now = Date.now();
     const windowStart = now - 60_000;
-    this.recentReports = this.recentReports.filter((e) => e.timestamp > windowStart);
-    if (this.recentReports.length >= this.config.rateLimitPerMinute) {
+    while (recentReports.length > 0 && recentReports[0]!.timestamp <= windowStart) {
+      recentReports.shift();
+    }
+    if (recentReports.length >= config.rateLimitPerMinute) {
       return false;
     }
-    this.recentReports.push({ timestamp: now });
+    recentReports.push({ timestamp: now });
     return true;
   }
 
-  private async githubApi(
-    path: string,
-    options: RequestInit = {},
-  ): Promise<Response> {
-    const url = `https://api.github.com${path}`;
-    return fetch(url, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${this.config.githubToken}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        ...options.headers,
-      },
-    });
-  }
-
-  private buildIssueBody(report: ErrorReport, fingerprint: string): string {
-    const parts: string[] = [];
-    parts.push(`<!-- openflow-error-report`);
-    parts.push(`fingerprint: ${fingerprint}`);
-    parts.push(`platform: ${report.platform}`);
-    parts.push(`-->`);
-    parts.push("");
-    parts.push(`## Auto Error Report`);
-    parts.push("");
-    parts.push(`| Field | Value |`);
-    parts.push(`|-------|-------|`);
-    parts.push(`| Platform | \`${report.platform}\` |`);
-    parts.push(`| Version | \`${report.version}\` |`);
-    parts.push(`| Error Code | \`${report.errorCode}\` |`);
-    parts.push("");
-    parts.push(`**Message:** ${report.message}`);
-    if (report.stackTrace) {
-      parts.push("");
-      parts.push("<details><summary>Stack Trace</summary>");
-      parts.push("");
-      parts.push("```");
-      parts.push(report.stackTrace);
-      parts.push("```");
-      parts.push("</details>");
-    }
-    if (report.metadata && Object.keys(report.metadata).length > 0) {
-      parts.push("");
-      parts.push("<details><summary>Metadata</summary>");
-      parts.push("");
-      parts.push("```json");
-      parts.push(JSON.stringify(report.metadata, null, 2));
-      parts.push("```");
-      parts.push("</details>");
-    }
-    return parts.join("\n");
-  }
-
-  private async findExistingIssue(fingerprint: string): Promise<number | null> {
-    try {
-      const [owner, repo] = this.config.githubRepo.split("/");
-      const query = `repo:${owner}/${repo} is:issue is:open label:auto-reported in:body "${fingerprint}"`;
-      const res = await this.githubApi(
-        `/search/issues?q=${encodeURIComponent(query)}`,
-      );
-      if (!res.ok) return null;
-      const data = (await res.json()) as { items?: { number: number }[] };
-      if (data.items && data.items.length > 0) return data.items[0]!.number;
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  private async addComment(
-    issueNumber: number,
-    report: ErrorReport,
-  ): Promise<void> {
-    const [owner, repo] = this.config.githubRepo.split("/");
-    const body = [
-      `**Recurrence reported** (${new Date().toISOString()})`,
-      "",
-      `| Field | Value |`,
-      `|-------|-------|`,
-      `| Platform | \`${report.platform}\` |`,
-      `| Version | \`${report.version}\` |`,
-      `| Message | ${report.message} |`,
-    ].join("\n");
-
-    await this.githubApi(`/repos/${owner}/${repo}/issues/${issueNumber}/comments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
-    });
-  }
-
-  private async createNewIssue(
-    report: ErrorReport,
-    fingerprint: string,
-  ): Promise<{ number: number; url: string } | null> {
-    const [owner, repo] = this.config.githubRepo.split("/");
-    const title = `[auto] [${report.platform}] ${report.errorCode}: ${report.message.slice(0, 80)}`;
-    const body = this.buildIssueBody(report, fingerprint);
-    const labels = ["bug", "auto-reported", report.platform];
-
-    const res = await this.githubApi(`/repos/${owner}/${repo}/issues`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, body, labels }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      log.error({ status: res.status, body: text }, "failed to create issue");
-      return null;
-    }
-
-    const data = (await res.json()) as { number: number; html_url: string };
-    return { number: data.number, url: data.html_url };
-  }
-
-  async report(
-    report: ErrorReport,
+  async function report(
+    errorReport: ErrorReport,
   ): Promise<{ ok: boolean; issueNumber?: number; issueUrl?: string }> {
-    if (!this.checkRateLimit()) {
+    if (!checkRateLimit()) {
       log.warn("rate limit exceeded, dropping error report");
       return { ok: false };
     }
 
     const fingerprint = generateFingerprint(
-      report.platform,
-      report.errorCode,
-      report.stackTrace,
+      errorReport.platform,
+      errorReport.errorCode,
+      errorReport.stackTrace,
     );
 
     try {
-      const existingNumber = await this.findExistingIssue(fingerprint);
+      const existingNumber = await findExistingIssue(config.githubToken, owner, repo, fingerprint);
       if (existingNumber !== null) {
-        await this.addComment(existingNumber, report);
+        await addComment(config.githubToken, owner, repo, existingNumber, errorReport);
         log.info({ issueNumber: existingNumber }, "added recurrence comment to existing issue");
         return { ok: true, issueNumber: existingNumber };
       }
 
-      const created = await this.createNewIssue(report, fingerprint);
+      const created = await createNewIssue(config.githubToken, owner, repo, errorReport, fingerprint);
       if (created) {
         log.info({ issueNumber: created.number, url: created.url }, "created new issue");
         return { ok: true, issueNumber: created.number, issueUrl: created.url };
@@ -190,4 +204,6 @@ export class IssueReporter {
       return { ok: false };
     }
   }
+
+  return { report };
 }

@@ -10,7 +10,7 @@ import type { ConfirmationHandler } from "../tools/confirmation.js";
 import { createNotificationService, createPushTokenStore } from "../notification/index.js";
 import { watchConfig } from "../config/loader.js";
 import type { OpenFlowConfig } from "../config/schema.js";
-import { IssueReporter } from "../reporting/issue-reporter.js";
+import { createIssueReporter } from "../reporting/issue-reporter.js";
 import { createErrorCollector } from "../reporting/error-collector.js";
 
 const log = createLogger("cli");
@@ -97,7 +97,7 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
 
   const issueReporter =
     config.reporting.enabled && config.reporting.githubToken
-      ? new IssueReporter({
+      ? createIssueReporter({
           githubToken: config.reporting.githubToken,
           githubRepo: config.reporting.githubRepo,
           rateLimitPerMinute: config.reporting.rateLimitPerMinute,
