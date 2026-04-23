@@ -247,7 +247,7 @@ async function handleProviderModels(
     if (!resp.ok) {
       sendApiError(
         res,
-        resp.status,
+        502,
         "provider_request_failed",
         `Failed to fetch models: HTTP ${resp.status}`,
       );

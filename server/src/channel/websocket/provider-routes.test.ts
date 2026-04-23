@@ -561,7 +561,7 @@ describe("provider routes", () => {
         path: "/api/providers/prov_1/models",
         clientIp: "127.0.0.1",
       });
-      expect(getStatusCode()).toBe(403);
+      expect(getStatusCode()).toBe(502);
       const body = JSON.parse(getBody()) as { error: string; message: string };
       expect(body.error).toBe("provider_request_failed");
       expect(body.message).toContain("403");
