@@ -9,19 +9,13 @@ import {
   requireAuth,
   getBodyString,
   sendApiError,
+  isValidPushPlatform,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
 import { route, routePattern, type Route } from "./routes.js";
 
 const log = createLogger("ws/session-routes");
-
-const VALID_PLATFORMS = ["ios", "android", "web"] as const;
-type Platform = (typeof VALID_PLATFORMS)[number];
-
-function isValidPlatform(value: string | undefined): value is Platform {
-  return value !== undefined && (VALID_PLATFORMS as readonly string[]).includes(value);
-}
 
 export interface SessionRoutesDeps {
   authService: AuthService;
@@ -126,7 +120,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
       sendApiError(res, 400, "token_required", "Push token is required");
       return;
     }
-    if (!isValidPlatform(platform)) {
+    if (!isValidPushPlatform(platform)) {
       sendApiError(res, 400, "invalid_platform", "Platform must be ios, android, or web");
       return;
     }

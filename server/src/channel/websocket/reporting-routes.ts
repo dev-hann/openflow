@@ -1,16 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError, isValidReportPlatform } from "./middleware.js";
 import { route, type Route } from "./routes.js";
 import type { AuthService } from "./auth.js";
 import type { IssueReporter } from "../../reporting/issue-reporter.js";
-
-const VALID_PLATFORMS = ["server", "app", "web"] as const;
-type Platform = (typeof VALID_PLATFORMS)[number];
-
-function isValidPlatform(value: string | undefined): value is Platform {
-  return value !== undefined && (VALID_PLATFORMS as readonly string[]).includes(value);
-}
 
 export interface ReportingRoutesDeps {
   authService: AuthService;
@@ -35,7 +28,7 @@ export function createReportingRoutes(deps: ReportingRoutesDeps): Route[] {
     const errorCode = getBodyString(body, "errorCode");
     const message = getBodyString(body, "message");
 
-    if (!isValidPlatform(platform)) {
+    if (!isValidReportPlatform(platform)) {
       sendApiError(res, 400, "invalid_platform", "Platform must be server, app, or web");
       return;
     }

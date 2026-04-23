@@ -139,6 +139,20 @@ export function getBodyStrings(
   return result;
 }
 
+const PUSH_PLATFORMS = ["ios", "android", "web"] as const;
+type PushPlatform = (typeof PUSH_PLATFORMS)[number];
+
+export function isValidPushPlatform(value: string | undefined): value is PushPlatform {
+  return value !== undefined && (PUSH_PLATFORMS as readonly string[]).includes(value);
+}
+
+const REPORT_PLATFORMS = ["server", "app", "web"] as const;
+type ReportPlatform = (typeof REPORT_PLATFORMS)[number];
+
+export function isValidReportPlatform(value: string | undefined): value is ReportPlatform {
+  return value !== undefined && (REPORT_PLATFORMS as readonly string[]).includes(value);
+}
+
 export function handleOptions(
   req: IncomingMessage,
   res: ServerResponse,
