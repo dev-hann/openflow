@@ -42,13 +42,11 @@ export function createContextResolver(deps: ContextResolverDeps) {
       content: string;
       toolCalls?: ToolCall[];
     },
-  ): boolean {
+  ): void {
     try {
       memory.addMessage({ sessionId, ...params });
-      return true;
     } catch (err: unknown) {
       log.error({ sessionId, err, role: params.role }, "failed to save message");
-      return false;
     }
   }
 

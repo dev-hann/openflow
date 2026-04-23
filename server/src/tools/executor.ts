@@ -179,12 +179,11 @@ export function createToolExecutor(
         );
         return { toolCallId: call.id, content, isError: false };
       } catch (err: unknown) {
-        const msg = getErrorMessage(err);
         const duration = Date.now() - startedAt;
-        log.error({ toolName: call.name, duration, err: msg }, "tool execution failed");
+        log.error({ toolName: call.name, duration, err }, "tool execution failed");
         return {
           toolCallId: call.id,
-          content: `Tool error: ${msg}`,
+          content: `Tool error: ${getErrorMessage(err)}`,
           isError: true,
         };
       }

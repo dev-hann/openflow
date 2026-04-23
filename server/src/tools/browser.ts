@@ -29,7 +29,8 @@ function isChromiumInstalled(): boolean {
   if (!existsSync(dir)) return false;
   try {
     return readdirSync(dir).some((d) => d.startsWith("chromium"));
-  } catch {
+  } catch (err: unknown) {
+    log.debug({ err, dir }, "failed to check Chromium installation");
     return false;
   }
 }
