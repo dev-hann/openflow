@@ -275,7 +275,8 @@ function parseCompleteResponse(raw: unknown): string {
     const message = extractLlmMessage(raw);
     if (!message) return "";
     return typeof message.content === "string" ? message.content : "";
-  } catch {
+  } catch (err: unknown) {
+    log.debug({ err }, "failed to parse complete response, returning empty");
     return "";
   }
 }

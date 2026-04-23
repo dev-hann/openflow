@@ -7,8 +7,7 @@ import {
   optionalString,
   optionalNumber,
 } from "./utils.js";
-import { OpenFlowError } from "../utils/errors.js";
-import { getErrorMessage } from "../utils/errors.js";
+import { OpenFlowError, getErrorMessage } from "../utils/errors.js";
 import { withRetry, isRetryableHttpError } from "../utils/retry.js";
 
 function htmlToPlainText(html: string): string {
