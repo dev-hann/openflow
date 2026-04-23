@@ -8,7 +8,8 @@ export type ErrorCode =
   | "DB_ERROR"
   | "DB_MIGRATION_FAILED"
   | "NOTIFICATION_ERROR"
-  | "PERMISSION_DENIED";
+  | "PERMISSION_DENIED"
+  | "REPORT_ERROR";
 
 export class OpenFlowError extends Error {
   readonly code: ErrorCode;
