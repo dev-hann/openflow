@@ -60,7 +60,7 @@ export function createContextResolver(deps: ContextResolverDeps) {
           ? cause
           : new OpenFlowError("Failed to save user message", "DB_ERROR", cause);
       log.error(
-        { sessionId, err: error.message },
+        { sessionId, err: error },
         "failed to save user message",
       );
       return err(error);
@@ -84,7 +84,7 @@ export function createContextResolver(deps: ContextResolverDeps) {
         err instanceof OpenFlowError
           ? err
           : new OpenFlowError("Failed to build context", "DB_ERROR", err);
-      log.error({ sessionId, err: error.message }, "failed to build context");
+      log.error({ sessionId, err: error }, "failed to build context");
       throw error;
     }
   }

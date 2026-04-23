@@ -225,6 +225,7 @@ async function handleProviderVerify(
     }
     sendJson(res, 200, { ok: true });
   } catch (err: unknown) {
+    log.debug({ err, providerId: provider.id }, "provider connectivity check failed");
     const msg = getErrorMessage(err);
     sendJson(res, 200, { ok: false, error: msg });
   }

@@ -107,7 +107,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       });
     } catch (err: unknown) {
       const error = ensureOpenFlowError(err, "LLM request failed", "LLM_REQUEST_FAILED");
-      log.error({ round, err: error.message, code: error.code }, "LLM request failed");
+      log.error({ round, err: error, code: error.code }, "LLM request failed");
       throw error;
     }
   }

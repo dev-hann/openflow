@@ -45,7 +45,7 @@ export function loadConfig(): OpenFlowConfig {
   const result = openFlowConfigSchema.safeParse(parsed);
   if (!result.success) {
     const issues = result.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
-    throw new OpenFlowError(`Configuration validation failed:\n${issues}`, "CONFIG_INVALID");
+    throw new OpenFlowError(`Configuration validation failed:\n${issues}`, "CONFIG_INVALID", result.error);
   }
 
   const config = result.data;

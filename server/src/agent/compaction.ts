@@ -13,6 +13,7 @@ Do NOT include greetings, pleasantries, or meta-commentary.
 Write in third person. Be comprehensive but concise.`;
 
 const CHARS_PER_TOKEN = 4;
+const MAX_CONVERSATION_CHARS = 80_000;
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / CHARS_PER_TOKEN);
@@ -85,16 +86,15 @@ export function createCompaction(deps: CompactionDeps): CompactionService {
   }
 
   async function generateSummary(messages: ChatMessage[]): Promise<string | null> {
-    const MAX_CHARS = 80_000;
     let conversation = messages.map(messageToText).join("\n\n");
 
-    if (conversation.length > MAX_CHARS) {
+    if (conversation.length > MAX_CONVERSATION_CHARS) {
       const texts = messages.map(messageToText);
       const recentTexts: string[] = [];
       let totalLen = 0;
       for (let i = texts.length - 1; i >= 0; i--) {
         totalLen += texts[i]!.length + 2;
-        if (totalLen > MAX_CHARS) break;
+        if (totalLen > MAX_CONVERSATION_CHARS) break;
         recentTexts.unshift(texts[i]!);
       }
       conversation = `[Earlier conversation omitted for length]\n\n` + recentTexts.join("\n\n");

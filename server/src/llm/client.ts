@@ -200,7 +200,7 @@ async function sendRequest(
       if (result.status) {
         log.warn({ status: result.status, attempt }, "server error, retrying");
       } else {
-        log.warn({ err: result.errorMessage, attempt }, "request failed, retrying");
+        log.warn({ err: result.cause ?? result.errorMessage, attempt }, "request failed, retrying");
       }
       const jitter = Math.random() * 500;
       await sleep(RETRY_DELAYS[attempt]! + jitter);
