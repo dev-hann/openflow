@@ -30,7 +30,7 @@ function maskApiKey(apiKey: string): string {
 
 function providerToJson(
   p: Provider,
-  isActive: boolean,
+  activeId: string | null,
 ): components["schemas"]["ProviderResponse"] {
   return {
     id: p.id,
@@ -39,10 +39,19 @@ function providerToJson(
     apiKey: maskApiKey(p.apiKey),
     model: p.model,
     isDefault: p.isDefault,
-    isActive,
+    isActive: p.id === activeId,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
+}
+
+function resolveProviderId(
+  res: ServerResponse,
+  path: string,
+): string | null {
+  const id = extractProviderId(path);
+  if (!id) sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
+  return id;
 }
 
 async function fetchProviderModels(
@@ -84,7 +93,7 @@ async function handleProvidersList(
   const activeId = deps.providerPool.getActiveProviderId();
   const providers = deps.providerStore
     .listProviders()
-    .map((p) => providerToJson(p, p.id === activeId));
+    .map((p) => providerToJson(p, activeId));
   sendJson(res, 200, { providers, activeProviderId: activeId });
 }
 
@@ -139,14 +148,8 @@ async function handleProviderCreate(
       );
     });
 
-  sendJson(
-    res,
-    201,
-    providerToJson(
-      provider,
-      provider.id === deps.providerPool.getActiveProviderId(),
-    ),
-  );
+  const activeId = deps.providerPool.getActiveProviderId();
+  sendJson(res, 201, providerToJson(provider, activeId));
 }
 
 async function handleProviderUpdate(
@@ -157,16 +160,8 @@ async function handleProviderUpdate(
 ): Promise<void> {
   const auth = requireAuth(req, res, deps.authService);
   if (!auth) return;
-  const providerId = extractProviderId(path);
-  if (!providerId) {
-    sendApiError(
-      res,
-      400,
-      "provider_id_required",
-      "Provider ID is required in the URL path",
-    );
-    return;
-  }
+  const providerId = resolveProviderId(res, path);
+  if (!providerId) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
   const updated = deps.providerStore.updateProvider(providerId, {
@@ -181,14 +176,8 @@ async function handleProviderUpdate(
   }
   deps.providerPool.syncFromStore();
   log.info({ providerId }, "provider updated via API");
-  sendJson(
-    res,
-    200,
-    providerToJson(
-      updated,
-      updated.id === deps.providerPool.getActiveProviderId(),
-    ),
-  );
+  const activeId = deps.providerPool.getActiveProviderId();
+  sendJson(res, 200, providerToJson(updated, activeId));
 }
 
 async function handleProviderDelete(
@@ -199,16 +188,8 @@ async function handleProviderDelete(
 ): Promise<void> {
   const auth = requireAuth(req, res, deps.authService);
   if (!auth) return;
-  const providerId = extractProviderId(path);
-  if (!providerId) {
-    sendApiError(
-      res,
-      400,
-      "provider_id_required",
-      "Provider ID is required in the URL path",
-    );
-    return;
-  }
+  const providerId = resolveProviderId(res, path);
+  if (!providerId) return;
   deps.providerStore.deleteProvider(providerId);
   deps.providerPool.syncFromStore();
   log.info({ providerId }, "provider deleted via API");
@@ -248,16 +229,8 @@ async function handleProviderVerify(
 ): Promise<void> {
   const auth = requireAuth(req, res, deps.authService);
   if (!auth) return;
-  const providerId = extractProviderId(path);
-  if (!providerId) {
-    sendApiError(
-      res,
-      400,
-      "provider_id_required",
-      "Provider ID is required in the URL path",
-    );
-    return;
-  }
+  const providerId = resolveProviderId(res, path);
+  if (!providerId) return;
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
     sendApiError(res, 404, "provider_not_found", "Provider not found");
@@ -284,16 +257,8 @@ async function handleProviderModels(
 ): Promise<void> {
   const auth = requireAuth(req, res, deps.authService);
   if (!auth) return;
-  const providerId = extractProviderId(path);
-  if (!providerId) {
-    sendApiError(
-      res,
-      400,
-      "provider_id_required",
-      "Provider ID is required in the URL path",
-    );
-    return;
-  }
+  const providerId = resolveProviderId(res, path);
+  if (!providerId) return;
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
     sendApiError(res, 404, "provider_not_found", "Provider not found");
@@ -321,26 +286,12 @@ async function handleProviderModels(
 
 export function createProviderRoutes(deps: ProviderRoutesDeps): Route[] {
   return [
-    route("/api/providers", "GET", (req, res) =>
-      handleProvidersList(deps, req, res),
-    ),
-    route("/api/providers", "POST", (req, res) =>
-      handleProviderCreate(deps, req, res),
-    ),
-    route("/api/providers/current", "PUT", (req, res) =>
-      handleProviderSwitch(deps, req, res),
-    ),
-    routePattern(/^\/api\/providers\/[^/]+$/, "PUT", (req, res, ctx) =>
-      handleProviderUpdate(deps, req, res, ctx.path),
-    ),
-    routePattern(/^\/api\/providers\/[^/]+$/, "DELETE", (req, res, ctx) =>
-      handleProviderDelete(deps, req, res, ctx.path),
-    ),
-    routePattern(/^\/api\/providers\/[^/]+\/verify$/, "POST", (req, res, ctx) =>
-      handleProviderVerify(deps, req, res, ctx.path),
-    ),
-    routePattern(/^\/api\/providers\/[^/]+\/models$/, "GET", (req, res, ctx) =>
-      handleProviderModels(deps, req, res, ctx.path),
-    ),
+    route("/api/providers", "GET", (req, res) => handleProvidersList(deps, req, res)),
+    route("/api/providers", "POST", (req, res) => handleProviderCreate(deps, req, res)),
+    route("/api/providers/current", "PUT", (req, res) => handleProviderSwitch(deps, req, res)),
+    routePattern(/^\/api\/providers\/[^/]+$/, "PUT", (req, res, ctx) => handleProviderUpdate(deps, req, res, ctx.path)),
+    routePattern(/^\/api\/providers\/[^/]+$/, "DELETE", (req, res, ctx) => handleProviderDelete(deps, req, res, ctx.path)),
+    routePattern(/^\/api\/providers\/[^/]+\/verify$/, "POST", (req, res, ctx) => handleProviderVerify(deps, req, res, ctx.path)),
+    routePattern(/^\/api\/providers\/[^/]+\/models$/, "GET", (req, res, ctx) => handleProviderModels(deps, req, res, ctx.path)),
   ];
 }
