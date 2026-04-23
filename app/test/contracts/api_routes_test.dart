@@ -28,10 +28,7 @@ void main() {
     final mockClient = MockClient((req) {
       capturedRequests.add(req);
       return Future.value(
-        http.Response(
-          jsonEncode(_okBodyFor(req.method, req.url.path)),
-          200,
-        ),
+        http.Response(jsonEncode(_okBodyFor(req.method, req.url.path)), 200),
       );
     });
 

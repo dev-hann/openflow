@@ -49,10 +49,8 @@ void main() {
   group('pairVerify', () {
     test('sends POST /api/auth/pair/verify with pin and label', () async {
       apiClient = createTestClient();
-      customHandler = (req) => okResponse({
-            'accessToken': 'at_test',
-            'refreshToken': 'rt_test',
-          });
+      customHandler = (req) =>
+          okResponse({'accessToken': 'at_test', 'refreshToken': 'rt_test'});
       await apiClient.pairVerify('123456', 'pixel');
       final req = lastRequest();
       expect(req.method, 'POST');
@@ -66,10 +64,8 @@ void main() {
   group('refreshToken', () {
     test('sends POST /api/auth/refresh with refreshToken field', () async {
       apiClient = createTestClient();
-      customHandler = (req) => okResponse({
-            'accessToken': 'at_new',
-            'refreshToken': 'rt_new',
-          });
+      customHandler = (req) =>
+          okResponse({'accessToken': 'at_new', 'refreshToken': 'rt_new'});
       await apiClient.refreshToken('rt_old');
       final req = lastRequest();
       expect(req.method, 'POST');
@@ -151,12 +147,12 @@ void main() {
     test('sends POST /api/providers', () async {
       apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({
-            'id': 'p1',
-            'name': 'test',
-            'baseUrl': 'http://x',
-            'model': 'gpt-4',
-            'createdAt': 1000,
-          });
+        'id': 'p1',
+        'name': 'test',
+        'baseUrl': 'http://x',
+        'model': 'gpt-4',
+        'createdAt': 1000,
+      });
       await apiClient.createProvider({
         'name': 'test',
         'baseUrl': 'http://x',
@@ -173,12 +169,12 @@ void main() {
     test('sends PUT /api/providers/:id', () async {
       apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({
-            'id': 'p1',
-            'name': 'new',
-            'baseUrl': 'http://x',
-            'model': 'gpt-4',
-            'createdAt': 1000,
-          });
+        'id': 'p1',
+        'name': 'new',
+        'baseUrl': 'http://x',
+        'model': 'gpt-4',
+        'createdAt': 1000,
+      });
       await apiClient.updateProvider('p1', {'name': 'new'});
       final req = lastRequest();
       expect(req.method, 'PUT');
@@ -211,8 +207,8 @@ void main() {
     test('sends GET /api/providers/:id/models', () async {
       apiClient = createTestClient(token: 'at_test');
       customHandler = (req) => okResponse({
-            'models': ['gpt-4'],
-          });
+        'models': ['gpt-4'],
+      });
       await apiClient.fetchProviderModels('p1');
       final req = lastRequest();
       expect(req.method, 'GET');
@@ -236,17 +232,17 @@ void main() {
     test('throws ApiException on 4xx response', () {
       apiClient = createTestClient();
       customHandler = (req) => http.Response(
-            jsonEncode(
-              <String, dynamic>{
-                'code': 'invalid_or_expired_pin',
-                'message': 'Invalid PIN',
-              },
-            ),
-            401,
-          );
+        jsonEncode(<String, dynamic>{
+          'code': 'invalid_or_expired_pin',
+          'message': 'Invalid PIN',
+        }),
+        401,
+      );
       expect(
         () => apiClient.pairVerify('000000', 'test'),
-        throwsA(isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401)),
+        throwsA(
+          isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401),
+        ),
       );
     });
   });

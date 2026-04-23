@@ -23,9 +23,7 @@ void main() {
       'setServerUrl updates url',
       build: () => cubit,
       act: (c) => c.setServerUrl('http://localhost:9800'),
-      expect: () => [
-        const SettingsState(serverUrl: 'http://localhost:9800'),
-      ],
+      expect: () => [const SettingsState(serverUrl: 'http://localhost:9800')],
     );
 
     blocTest<SettingsCubit, SettingsState>(

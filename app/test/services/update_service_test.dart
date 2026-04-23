@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
 import 'package:openflow/services/update_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -49,18 +48,15 @@ void main() {
 
     group('downloadApk', () {
       test('throws when no apk asset exists', () {
-        final release = ReleaseInfo(
+        const release = ReleaseInfo(
           tagName: 'v1.0.0',
           version: '1.0.0',
           releaseNotes: '',
           htmlUrl: '',
-          assets: const [],
+          assets: [],
         );
 
-        expect(
-          () => service.downloadApk(release),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => service.downloadApk(release), throwsA(isA<Exception>()));
       });
     });
   });

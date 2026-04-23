@@ -4,11 +4,7 @@ import 'package:openflow/cubits/sessions_cubit.dart';
 import 'package:openflow/models/protocol.dart';
 
 SessionInfo _session(String id, {String title = 'Test'}) {
-  return SessionInfo(
-    id: id,
-    title: title,
-    createdAt: DateTime(2025),
-  );
+  return SessionInfo(id: id, title: title, createdAt: DateTime(2025));
 }
 
 void main() {
@@ -46,9 +42,7 @@ void main() {
       act: (c) {
         c.setActiveSessionId('s1');
       },
-      expect: () => [
-        const SessionsState(activeSessionId: 's1'),
-      ],
+      expect: () => [const SessionsState(activeSessionId: 's1')],
     );
 
     blocTest<SessionsCubit, SessionsState>(
@@ -87,10 +81,7 @@ void main() {
         c.removeSession('s1');
       },
       expect: () => [
-        SessionsState(
-          sessions: [_session('s2')],
-          activeSessionId: 's2',
-        ),
+        SessionsState(sessions: [_session('s2')], activeSessionId: 's2'),
       ],
     );
 
@@ -105,24 +96,19 @@ void main() {
         c.removeSession('s2');
       },
       expect: () => [
-        SessionsState(
-          sessions: [_session('s1')],
-          activeSessionId: 's1',
-        ),
+        SessionsState(sessions: [_session('s1')], activeSessionId: 's1'),
       ],
     );
 
     blocTest<SessionsCubit, SessionsState>(
       'addSession ignores duplicate id',
       build: () => cubit,
-      seed: () => SessionsState(
-        sessions: [_session('s1')],
-        activeSessionId: 's1',
-      ),
+      seed: () =>
+          SessionsState(sessions: [_session('s1')], activeSessionId: 's1'),
       act: (c) {
         c.addSession(_session('s1', title: 'Updated'));
       },
-      expect: () => [],
+      expect: () => <SessionsState>[],
     );
 
     blocTest<SessionsCubit, SessionsState>(
@@ -150,16 +136,12 @@ void main() {
     blocTest<SessionsCubit, SessionsState>(
       'removeSession clears active when last session removed',
       build: () => cubit,
-      seed: () => SessionsState(
-        sessions: [_session('s1')],
-        activeSessionId: 's1',
-      ),
+      seed: () =>
+          SessionsState(sessions: [_session('s1')], activeSessionId: 's1'),
       act: (c) {
         c.removeSession('s1');
       },
-      expect: () => [
-        const SessionsState(),
-      ],
+      expect: () => [const SessionsState()],
     );
   });
 }

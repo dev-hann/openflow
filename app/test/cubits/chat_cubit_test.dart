@@ -287,9 +287,7 @@ void main() {
       act: (cubit) {
         cubit.setError('something went wrong');
       },
-      expect: () => [
-        const ChatState(errorMessage: 'something went wrong'),
-      ],
+      expect: () => [const ChatState(errorMessage: 'something went wrong')],
     );
 
     blocTest<ChatCubit, ChatState>(

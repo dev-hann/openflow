@@ -14,10 +14,14 @@ void main() {
 
     setUp(() {
       mockService = MockUpdateService();
-      when(() => mockService.getCurrentVersion())
-          .thenAnswer((_) async => '1.0.0');
-      when(() => mockService.checkForUpdate(currentVersion: any(named: 'currentVersion')))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockService.getCurrentVersion(),
+      ).thenAnswer((_) async => '1.0.0');
+      when(
+        () => mockService.checkForUpdate(
+          currentVersion: any(named: 'currentVersion'),
+        ),
+      ).thenAnswer((_) async => null);
       cubit = UpdateCubit(mockService);
       addTearDown(cubit.close);
     });
@@ -37,9 +41,7 @@ void main() {
       'loadCurrentVersion updates currentVersion',
       build: () => cubit,
       act: (c) => c.loadCurrentVersion(),
-      expect: () => [
-        const UpdateState(currentVersion: '1.0.0'),
-      ],
+      expect: () => [const UpdateState(currentVersion: '1.0.0')],
       verify: (_) {
         verify(() => mockService.getCurrentVersion()).called(1);
       },
@@ -49,7 +51,7 @@ void main() {
       'checkForUpdate finds update',
       build: () => cubit,
       setUp: () {
-        final release = ReleaseInfo(
+        const release = ReleaseInfo(
           tagName: 'v1.1.0',
           version: '1.1.0',
           releaseNotes: 'Bug fixes',
@@ -62,14 +64,20 @@ void main() {
             ),
           ],
         );
-        when(() => mockService.checkForUpdate(currentVersion: any(named: 'currentVersion')))
-            .thenAnswer((_) async => release);
+        when(
+          () => mockService.checkForUpdate(
+            currentVersion: any(named: 'currentVersion'),
+          ),
+        ).thenAnswer((_) async => release);
       },
       act: (c) => c.checkForUpdate(),
       expect: () => [
         const UpdateState(currentVersion: '1.0.0'),
-        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.checking, errorMessage: null),
-        UpdateState(
+        const UpdateState(
+          currentVersion: '1.0.0',
+          status: UpdateStatus.checking,
+        ),
+        const UpdateState(
           currentVersion: '1.0.0',
           status: UpdateStatus.available,
           release: ReleaseInfo(
@@ -95,8 +103,14 @@ void main() {
       act: (c) => c.checkForUpdate(),
       expect: () => [
         const UpdateState(currentVersion: '1.0.0'),
-        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.checking, errorMessage: null),
-        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.upToDate),
+        const UpdateState(
+          currentVersion: '1.0.0',
+          status: UpdateStatus.checking,
+        ),
+        const UpdateState(
+          currentVersion: '1.0.0',
+          status: UpdateStatus.upToDate,
+        ),
       ],
     );
 
@@ -104,13 +118,19 @@ void main() {
       'checkForUpdate handles error',
       build: () => cubit,
       setUp: () {
-        when(() => mockService.checkForUpdate(currentVersion: any(named: 'currentVersion')))
-            .thenThrow(Exception('network error'));
+        when(
+          () => mockService.checkForUpdate(
+            currentVersion: any(named: 'currentVersion'),
+          ),
+        ).thenThrow(Exception('network error'));
       },
       act: (c) => c.checkForUpdate(),
       expect: () => [
         const UpdateState(currentVersion: '1.0.0'),
-        const UpdateState(currentVersion: '1.0.0', status: UpdateStatus.checking, errorMessage: null),
+        const UpdateState(
+          currentVersion: '1.0.0',
+          status: UpdateStatus.checking,
+        ),
         const UpdateState(
           currentVersion: '1.0.0',
           status: UpdateStatus.error,
@@ -122,15 +142,13 @@ void main() {
     blocTest<UpdateCubit, UpdateState>(
       'reset clears state keeping currentVersion',
       build: () => cubit,
-      seed: () => UpdateState(
+      seed: () => const UpdateState(
         currentVersion: '1.0.0',
         status: UpdateStatus.error,
         errorMessage: 'some error',
       ),
       act: (c) => c.reset(),
-      expect: () => [
-        const UpdateState(currentVersion: '1.0.0'),
-      ],
+      expect: () => [const UpdateState(currentVersion: '1.0.0')],
     );
   });
 }

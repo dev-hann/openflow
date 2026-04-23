@@ -50,10 +50,7 @@ void main() {
     });
 
     test('handles ip with port and no scheme', () {
-      expect(
-        normalizeUrl('10.0.0.1:3000'),
-        'http://10.0.0.1:3000',
-      );
+      expect(normalizeUrl('10.0.0.1:3000'), 'http://10.0.0.1:3000');
     });
 
     test('handles whitespace-only input', () {

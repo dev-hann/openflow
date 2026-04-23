@@ -214,7 +214,7 @@ void main() {
       });
       expect(provider.id, 'p1');
       expect(provider.name, 'OpenAI');
-      
+
       expect(provider.isActive, true);
     });
 
@@ -226,7 +226,7 @@ void main() {
         'createdAt': 1700000000,
       });
       expect(provider.model, '');
-      
+
       expect(provider.isActive, false);
     });
 

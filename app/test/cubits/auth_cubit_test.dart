@@ -70,10 +70,7 @@ void main() {
       act: (c) async {
         await c.loadAuth();
       },
-      expect: () => [
-        const AuthState(isLoading: true),
-        const AuthState(),
-      ],
+      expect: () => [const AuthState(isLoading: true), const AuthState()],
     );
 
     blocTest<AuthCubit, AuthState>(
@@ -82,9 +79,7 @@ void main() {
       act: (c) {
         c.setStoredAuth(_testAuth());
       },
-      expect: () => [
-        AuthState(storedAuth: _testAuth()),
-      ],
+      expect: () => [AuthState(storedAuth: _testAuth())],
     );
 
     blocTest<AuthCubit, AuthState>(
@@ -93,9 +88,7 @@ void main() {
       act: (c) {
         c.setConnected(true);
       },
-      expect: () => [
-        const AuthState(isConnected: true),
-      ],
+      expect: () => [const AuthState(isConnected: true)],
     );
 
     blocTest<AuthCubit, AuthState>(
@@ -107,9 +100,7 @@ void main() {
       act: (c) async {
         await c.saveAuth(_testAuth());
       },
-      expect: () => [
-        AuthState(storedAuth: _testAuth()),
-      ],
+      expect: () => [AuthState(storedAuth: _testAuth())],
       verify: (c) {
         verify(() => storage.saveAuth(_testAuth())).called(1);
       },

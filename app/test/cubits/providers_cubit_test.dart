@@ -37,12 +37,7 @@ void main() {
       'setProviders detects active provider',
       build: () => cubit,
       act: (c) {
-        c.setProviders(
-          [
-            _provider('p1'),
-            _provider('p2', isActive: true),
-          ],
-        );
+        c.setProviders([_provider('p1'), _provider('p2', isActive: true)]);
       },
       expect: () => [
         ProvidersState(
@@ -60,10 +55,7 @@ void main() {
         c.setProviders([_provider('p1')]);
       },
       expect: () => [
-        ProvidersState(
-          providers: [_provider('p1')],
-          activeProviderId: 'p0',
-        ),
+        ProvidersState(providers: [_provider('p1')], activeProviderId: 'p0'),
       ],
     );
 
@@ -73,9 +65,7 @@ void main() {
       act: (c) {
         c.setActiveProviderId('p1');
       },
-      expect: () => [
-        const ProvidersState(activeProviderId: 'p1'),
-      ],
+      expect: () => [const ProvidersState(activeProviderId: 'p1')],
     );
 
     blocTest<ProvidersCubit, ProvidersState>(
@@ -90,21 +80,13 @@ void main() {
     blocTest<ProvidersCubit, ProvidersState>(
       'updateProvider replaces matching provider',
       build: () => cubit,
-      seed: () => ProvidersState(
-        providers: [
-          _provider('p1'),
-          _provider('p2'),
-        ],
-      ),
+      seed: () => ProvidersState(providers: [_provider('p1'), _provider('p2')]),
       act: (c) {
         c.updateProvider(_provider('p1', isActive: true));
       },
       expect: () => [
         ProvidersState(
-          providers: [
-            _provider('p1', isActive: true),
-            _provider('p2'),
-          ],
+          providers: [_provider('p1', isActive: true), _provider('p2')],
         ),
       ],
     );
@@ -113,11 +95,7 @@ void main() {
       'removeProvider removes matching provider',
       build: () => cubit,
       seed: () => ProvidersState(
-        providers: [
-          _provider('p1'),
-          _provider('p2'),
-          _provider('p3'),
-        ],
+        providers: [_provider('p1'), _provider('p2'), _provider('p3')],
         activeProviderId: 'p1',
       ),
       act: (c) {
@@ -125,10 +103,7 @@ void main() {
       },
       expect: () => [
         ProvidersState(
-          providers: [
-            _provider('p1'),
-            _provider('p3'),
-          ],
+          providers: [_provider('p1'), _provider('p3')],
           activeProviderId: 'p1',
         ),
       ],
@@ -138,19 +113,14 @@ void main() {
       'removeProvider clears active when active removed',
       build: () => cubit,
       seed: () => ProvidersState(
-        providers: [
-          _provider('p1'),
-          _provider('p2'),
-        ],
+        providers: [_provider('p1'), _provider('p2')],
         activeProviderId: 'p1',
       ),
       act: (c) {
         c.removeProvider('p1');
       },
       expect: () => [
-        ProvidersState(
-          providers: [_provider('p2')],
-        ),
+        ProvidersState(providers: [_provider('p2')]),
       ],
     );
 
@@ -162,9 +132,7 @@ void main() {
         c.setAvailableModels(['gpt-4', 'gpt-3.5']);
       },
       expect: () => [
-        const ProvidersState(
-          availableModels: ['gpt-4', 'gpt-3.5'],
-        ),
+        const ProvidersState(availableModels: ['gpt-4', 'gpt-3.5']),
       ],
     );
 
