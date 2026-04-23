@@ -512,7 +512,7 @@ describe("session routes", () => {
       });
       expect(getStatusCode()).toBe(400);
       const body = JSON.parse(getBody()) as { error: string };
-      expect(body.error).toBe("token_required");
+      expect(body.error).toBe("validation_error");
     });
 
     it("should reject invalid platform", async () => {
@@ -529,7 +529,7 @@ describe("session routes", () => {
       });
       expect(getStatusCode()).toBe(400);
       const body = JSON.parse(getBody()) as { error: string };
-      expect(body.error).toContain("platform");
+      expect(body.error).toBe("validation_error");
     });
 
     it("should accept all valid platforms", async () => {
@@ -604,7 +604,7 @@ describe("session routes", () => {
       });
       expect(getStatusCode()).toBe(400);
       const body = JSON.parse(getBody()) as { error: string };
-      expect(body.error).toBe("token_required");
+      expect(body.error).toBe("validation_error");
     });
   });
 });

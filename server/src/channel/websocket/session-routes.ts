@@ -7,14 +7,17 @@ import {
   sendJson,
   readJsonObject,
   requireAuth,
-  getBodyString,
-  requireBodyString,
   sendApiError,
-  isValidPushPlatform,
+  validateBody,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
 import { route, routePattern, type Route } from "./routes.js";
+import {
+  SessionCreateSchema,
+  PushTokenRegisterSchema,
+  PushTokenUnregisterSchema,
+} from "./session-schemas.js";
 
 const log = createLogger("ws/session-routes");
 
@@ -69,8 +72,9 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const title = getBodyString(body, "title");
-    const session = memoryStore.createSession(title ?? "New Chat");
+    const parsed = validateBody(body, SessionCreateSchema, res);
+    if (!parsed) return;
+    const session = memoryStore.createSession(parsed.title ?? "New Chat");
     sendJson(res, 201, { id: session.id, title: session.title });
   }
 
@@ -114,16 +118,10 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = requireBodyString(body, "token", res, "token_required", "Push token is required");
-    if (!token) return;
-    const platform = getBodyString(body, "platform");
-    const label = getBodyString(body, "label");
-    if (!isValidPushPlatform(platform)) {
-      sendApiError(res, 400, "invalid_platform", "Platform must be ios, android, or web");
-      return;
-    }
-    pushTokenStore.register(token, platform, label ?? "Unknown device");
-    log.info({ platform, label }, "push token registered via API");
+    const parsed = validateBody(body, PushTokenRegisterSchema, res);
+    if (!parsed) return;
+    pushTokenStore.register(parsed.token, parsed.platform, parsed.label ?? "Unknown device");
+    log.info({ platform: parsed.platform, label: parsed.label }, "push token registered via API");
     sendJson(res, 200, { ok: true });
   }
 
@@ -135,9 +133,9 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = requireBodyString(body, "token", res, "token_required", "Push token is required");
-    if (!token) return;
-    const removed = pushTokenStore.unregister(token);
+    const parsed = validateBody(body, PushTokenUnregisterSchema, res);
+    if (!parsed) return;
+    const removed = pushTokenStore.unregister(parsed.token);
     sendJson(res, 200, { ok: removed });
   }
 
