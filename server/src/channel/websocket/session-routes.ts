@@ -5,7 +5,6 @@ import type { MemoryStore } from "../../memory/index.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
 import {
   sendJson,
-  readJsonBody,
   readJsonObject,
   requireAuth,
   getBodyString,
@@ -73,8 +72,9 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
   async function handleSessionCreate(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const auth = requireAuth(req, res, authService);
     if (!auth) return;
-    const body = await readJsonBody(req);
-    const { title } = (body ?? {}) as { title?: string };
+    const body = await readJsonObject(req, res);
+    if (!body) return;
+    const title = getBodyString(body, "title");
     const session = memoryStore.createSession(title ?? "New Chat");
     sendJson(res, 201, { id: session.id, title: session.title });
   }
