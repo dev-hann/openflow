@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError, isValidReportPlatform } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError, isValidReportPlatform, isValidObject } from "./middleware.js";
 import { route, type Route } from "./routes.js";
 import type { AuthService } from "./auth.js";
 import type { IssueReporter } from "../../reporting/issue-reporter.js";
@@ -47,8 +47,8 @@ export function createReportingRoutes(deps: ReportingRoutesDeps): Route[] {
       message,
       stackTrace: typeof stackTraceVal === "string" ? stackTraceVal : undefined,
       metadata:
-        metadataVal && typeof metadataVal === "object" && !Array.isArray(metadataVal) && metadataVal !== null
-          ? (metadataVal as Record<string, unknown>)
+        metadataVal && isValidObject(metadataVal)
+          ? metadataVal
           : undefined,
     });
 

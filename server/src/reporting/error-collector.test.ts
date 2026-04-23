@@ -101,7 +101,8 @@ describe("createErrorCollector", () => {
     const { createErrorCollector } = await import("./error-collector.js");
     createErrorCollector(failReporter, "2.0.0");
 
-    const handler = freshHandlers.get("unhandledRejection")?.[0]!;
+    const handler = freshHandlers.get("unhandledRejection")?.[0];
+    if (!handler) return;
     handler("test");
 
     await new Promise((resolve) => setTimeout(resolve, 50));

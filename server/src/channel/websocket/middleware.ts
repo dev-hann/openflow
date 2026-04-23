@@ -168,6 +168,10 @@ export function isValidReportPlatform(value: string | undefined): value is Repor
   return value !== undefined && (REPORT_PLATFORMS as readonly string[]).includes(value);
 }
 
+export function isValidObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function handleOptions(
   req: IncomingMessage,
   res: ServerResponse,
