@@ -35,6 +35,18 @@ export interface AuthService {
   issueTokensForDevice(label: string): TokenPair;
 }
 
+function displayPinToTerminal(pin: string, ttlMs: number): void {
+  const formatted = `${pin.slice(0, 3)} ${pin.slice(3)}`;
+  const ttlMin = Math.round(ttlMs / 60_000);
+  const line1 = `   🔑 페어링 PIN:  ${formatted}`;
+  const line2 = `   ${ttlMin}분 내 앱에서 입력하세요`;
+  const w = Math.max(line1.length, line2.length) + 4;
+  const border = "═".repeat(w);
+  process.stdout.write(
+    `\n  ╔${border}╗\n  ║${line1.padEnd(w)}║\n  ║${line2.padEnd(w)}║\n  ╚${border}╝\n\n`,
+  );
+}
+
 function generateToken(prefix: string, bytes: number): string {
   return `${prefix}_${randomBytes(bytes).toString("hex")}`;
 }
@@ -107,15 +119,7 @@ export function createAuthService(store?: AuthStore): AuthService {
 
     log.info({ pin: "***" }, "pairing pin created");
 
-    const formatted = `${pin.slice(0, 3)} ${pin.slice(3)}`;
-    const ttlMin = Math.round(PIN_TTL_MS / 60_000);
-    const line1 = `   🔑 페어링 PIN:  ${formatted}`;
-    const line2 = `   ${ttlMin}분 내 앱에서 입력하세요`;
-    const w = Math.max(line1.length, line2.length) + 4;
-    const border = "═".repeat(w);
-    process.stdout.write(
-      `\n  ╔${border}╗\n  ║${line1.padEnd(w)}║\n  ║${line2.padEnd(w)}║\n  ╚${border}╝\n\n`,
-    );
+    displayPinToTerminal(pin, PIN_TTL_MS);
 
     return pin;
   }
