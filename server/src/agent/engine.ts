@@ -124,11 +124,14 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
       content: null,
       tool_calls: toolCalls,
     });
-    contextResolver.persistMessage(sessionId, {
+    const saved = contextResolver.persistMessage(sessionId, {
       role: "assistant",
       content: "",
       toolCalls,
     });
+    if (!saved) {
+      log.warn({ sessionId, round }, "assistant tool_calls message was not persisted to database");
+    }
     const toolResults = await Promise.all(
       toolCalls.map((toolCall) =>
         toolProcessor.processToolCall(toolCall, sessionId, chatId, round),
@@ -145,10 +148,13 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     round: number,
     startedAt: number,
   ): AgentResponse {
-    contextResolver.persistMessage(sessionId, {
+    const saved = contextResolver.persistMessage(sessionId, {
       role: "assistant",
       content,
     });
+    if (!saved) {
+      log.warn({ sessionId }, "assistant response was not persisted to database");
+    }
     log.info(
       { sessionId, duration: Date.now() - startedAt, rounds: round, responseLength: content.length },
       "message handled",
@@ -161,7 +167,10 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
     startedAt: number,
   ): AgentResponse {
     const content = "Maximum tool call rounds reached. Please continue the conversation.";
-    contextResolver.persistMessage(sessionId, { role: "assistant", content });
+    const saved = contextResolver.persistMessage(sessionId, { role: "assistant", content });
+    if (!saved) {
+      log.warn({ sessionId }, "overflow response was not persisted to database");
+    }
     log.info(
       { sessionId, duration: Date.now() - startedAt, rounds: config.maxToolRounds },
       "message handled (max rounds reached)",
