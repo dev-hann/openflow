@@ -38,8 +38,8 @@ export function loadConfig(): OpenFlowConfig {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw) as unknown;
-  } catch {
-    throw new OpenFlowError(`Invalid JSON in configuration file: ${configPath}`, "CONFIG_INVALID");
+  } catch (err: unknown) {
+    throw new OpenFlowError(`Invalid JSON in configuration file: ${configPath}`, "CONFIG_INVALID", err);
   }
 
   const result = openFlowConfigSchema.safeParse(parsed);
