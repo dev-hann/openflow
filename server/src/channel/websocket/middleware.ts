@@ -128,6 +128,21 @@ export function getBodyString(
   return typeof val === "string" ? val : undefined;
 }
 
+export function requireBodyString(
+  body: Record<string, unknown>,
+  key: string,
+  res: ServerResponse,
+  code: string = "field_required",
+  message: string = `${key} is required`,
+): string | null {
+  const val = getBodyString(body, key);
+  if (!val) {
+    sendApiError(res, 400, code, message);
+    return null;
+  }
+  return val;
+}
+
 export function getBodyStrings(
   body: Record<string, unknown>,
   keys: string[],

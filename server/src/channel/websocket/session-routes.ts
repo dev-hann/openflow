@@ -8,6 +8,7 @@ import {
   readJsonObject,
   requireAuth,
   getBodyString,
+  requireBodyString,
   sendApiError,
   isValidPushPlatform,
 } from "./middleware.js";
@@ -113,13 +114,10 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = getBodyString(body, "token");
+    const token = requireBodyString(body, "token", res, "token_required", "Push token is required");
+    if (!token) return;
     const platform = getBodyString(body, "platform");
     const label = getBodyString(body, "label");
-    if (!token) {
-      sendApiError(res, 400, "token_required", "Push token is required");
-      return;
-    }
     if (!isValidPushPlatform(platform)) {
       sendApiError(res, 400, "invalid_platform", "Platform must be ios, android, or web");
       return;
@@ -137,11 +135,8 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const body = await readJsonObject(req, res);
     if (!body) return;
-    const token = getBodyString(body, "token");
-    if (!token) {
-      sendApiError(res, 400, "token_required", "Push token is required");
-      return;
-    }
+    const token = requireBodyString(body, "token", res, "token_required", "Push token is required");
+    if (!token) return;
     const removed = pushTokenStore.unregister(token);
     sendJson(res, 200, { ok: removed });
   }

@@ -10,6 +10,7 @@ import {
   readJsonObject,
   requireAuth,
   getBodyString,
+  requireBodyString,
   sendApiError,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
@@ -235,11 +236,8 @@ async function handleProviderSwitch(
   if (!auth) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
-  const providerId = getBodyString(body, "providerId");
-  if (!providerId) {
-    sendApiError(res, 400, "provider_id_required", "Provider ID is required");
-    return;
-  }
+  const providerId = requireBodyString(body, "providerId", res, "provider_id_required", "Provider ID is required");
+  if (!providerId) return;
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
     sendApiError(res, 404, "provider_not_found", "Provider not found");
