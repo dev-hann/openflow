@@ -26,6 +26,11 @@ export function optionalNumber(args: Record<string, unknown>, key: string): numb
   return typeof value === "number" && !Number.isNaN(value) ? value : undefined;
 }
 
+export function optionalBoolean(args: Record<string, unknown>, key: string): boolean | undefined {
+  const value = args[key];
+  return typeof value === "boolean" ? value : undefined;
+}
+
 export function truncate(str: string, maxLen: number): string {
   if (str.length <= maxLen) return str;
   return str.slice(0, maxLen) + `\n... (truncated, ${str.length} bytes total)`;

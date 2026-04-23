@@ -8,7 +8,7 @@ import { OpenFlowError } from "../utils/errors.js";
 import { ensureDirSync } from "../utils/fs.js";
 import type { InternalTool } from "./types.js";
 import { isExecError } from "./types.js";
-import { requireString, optionalString, optionalNumber } from "./utils.js";
+import { requireString, optionalString, optionalNumber, optionalBoolean } from "./utils.js";
 
 const log = createLogger("browser");
 
@@ -157,7 +157,7 @@ export function createBrowserTools(workspace: string, config: BrowserConfig): Br
       ensureInstalled();
 
       const url = requireString(args, "url");
-      const fullPage = (args.fullPage as boolean | undefined) ?? true;
+      const fullPage = optionalBoolean(args, "fullPage") ?? true;
       const width = optionalNumber(args, "width") ?? 1280;
       const height = optionalNumber(args, "height") ?? 720;
       const selector = optionalString(args, "selector");
