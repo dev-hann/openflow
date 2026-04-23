@@ -46,13 +46,36 @@ function providerToJson(
   };
 }
 
-function resolveProviderId(
+function requireProviderId(
+  deps: ProviderRoutesDeps,
+  req: IncomingMessage,
   res: ServerResponse,
   path: string,
 ): string | null {
+  const auth = requireAuth(req, res, deps.authService);
+  if (!auth) return null;
   const id = extractProviderId(path);
-  if (!id) sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
+  if (!id) {
+    sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
+    return null;
+  }
   return id;
+}
+
+function requireProvider(
+  deps: ProviderRoutesDeps,
+  req: IncomingMessage,
+  res: ServerResponse,
+  path: string,
+): Provider | null {
+  const providerId = requireProviderId(deps, req, res, path);
+  if (!providerId) return null;
+  const provider = deps.providerStore.getProvider(providerId);
+  if (!provider) {
+    sendApiError(res, 404, "provider_not_found", "Provider not found");
+    return null;
+  }
+  return provider;
 }
 
 async function fetchProviderModels(
@@ -169,9 +192,7 @@ async function handleProviderUpdate(
   res: ServerResponse,
   path: string,
 ): Promise<void> {
-  const auth = requireAuth(req, res, deps.authService);
-  if (!auth) return;
-  const providerId = resolveProviderId(res, path);
+  const providerId = requireProviderId(deps, req, res, path);
   if (!providerId) return;
   const body = await readJsonObject(req, res);
   if (!body) return;
@@ -197,9 +218,7 @@ async function handleProviderDelete(
   res: ServerResponse,
   path: string,
 ): Promise<void> {
-  const auth = requireAuth(req, res, deps.authService);
-  if (!auth) return;
-  const providerId = resolveProviderId(res, path);
+  const providerId = requireProviderId(deps, req, res, path);
   if (!providerId) return;
   deps.providerStore.deleteProvider(providerId);
   deps.providerPool.syncFromStore();
@@ -238,15 +257,8 @@ async function handleProviderVerify(
   res: ServerResponse,
   path: string,
 ): Promise<void> {
-  const auth = requireAuth(req, res, deps.authService);
-  if (!auth) return;
-  const providerId = resolveProviderId(res, path);
-  if (!providerId) return;
-  const provider = deps.providerStore.getProvider(providerId);
-  if (!provider) {
-    sendApiError(res, 404, "provider_not_found", "Provider not found");
-    return;
-  }
+  const provider = requireProvider(deps, req, res, path);
+  if (!provider) return;
   try {
     const resp = await fetchProviderModels(provider.baseUrl, provider.apiKey);
     if (!resp.ok) {
@@ -266,15 +278,8 @@ async function handleProviderModels(
   res: ServerResponse,
   path: string,
 ): Promise<void> {
-  const auth = requireAuth(req, res, deps.authService);
-  if (!auth) return;
-  const providerId = resolveProviderId(res, path);
-  if (!providerId) return;
-  const provider = deps.providerStore.getProvider(providerId);
-  if (!provider) {
-    sendApiError(res, 404, "provider_not_found", "Provider not found");
-    return;
-  }
+  const provider = requireProvider(deps, req, res, path);
+  if (!provider) return;
   try {
     const resp = await fetchProviderModels(provider.baseUrl, provider.apiKey);
     if (!resp.ok) {
