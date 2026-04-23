@@ -1,6 +1,6 @@
 name: openflow
 description: 초경량 개인 AI 비서
-version: 0.9.0+292
+version: 0.10.0+294
 
 environment:
   sdk: ^3.11.0
