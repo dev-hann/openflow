@@ -43,29 +43,40 @@ class SessionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ShadTheme.of(context);
-    return AppListTile(
-      backgroundColor: isActive
-          ? theme.colorScheme.primary.withValues(alpha: 0.1)
-          : null,
-      leading: Icon(
-        LucideIcons.messageSquare,
-        size: 20,
-        color: theme.colorScheme.mutedForeground,
+    return Semantics(
+      button: true,
+      label: '${session.title}${isActive ? ', 활성 세션' : ''}',
+      child: AppListTile(
+        backgroundColor: isActive
+            ? theme.colorScheme.primary.withValues(alpha: 0.1)
+            : null,
+        leading: Icon(
+          LucideIcons.messageSquare,
+          size: 20,
+          color: theme.colorScheme.mutedForeground,
+        ),
+        title: Text(
+          session.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(formatRelativeTime(session.createdAt)),
+        trailing: isActive
+            ? Semantics(
+                label: '활성',
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              )
+            : null,
+        onTap: onTap,
+        onLongPress: onLongPress,
       ),
-      title: Text(session.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(formatRelativeTime(session.createdAt)),
-      trailing: isActive
-          ? Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-            )
-          : null,
-      onTap: onTap,
-      onLongPress: onLongPress,
     );
   }
 }

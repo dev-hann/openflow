@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-enum EmptyStateVariant { disconnected, connecting, empty }
+enum EmptyStateVariant { disconnected, connecting, empty, error }
 
 class _SuggestionCard {
   const _SuggestionCard({
@@ -24,12 +24,14 @@ class ChatEmptyState extends StatelessWidget {
     required this.onSuggestion,
     required this.onReconnect,
     super.key,
+    this.errorMessage,
   });
 
   final EmptyStateVariant variant;
   final bool isSending;
   final ValueChanged<String> onSuggestion;
   final VoidCallback onReconnect;
+  final String? errorMessage;
 
   static const _suggestions = [
     _SuggestionCard(
@@ -95,6 +97,11 @@ class ChatEmptyState extends StatelessWidget {
                   variant == EmptyStateVariant.connecting ? '연결 중...' : '서버 연결',
                 ),
               ),
+            if (variant == EmptyStateVariant.error)
+              ShadButton.outline(
+                onPressed: onReconnect,
+                child: const Text('다시 시도'),
+              ),
             if (variant == EmptyStateVariant.empty)
               _SuggestionGrid(
                 suggestions: _suggestions,
@@ -111,18 +118,21 @@ class ChatEmptyState extends StatelessWidget {
     EmptyStateVariant.disconnected => LucideIcons.cloudOff,
     EmptyStateVariant.connecting => LucideIcons.cloudCog,
     EmptyStateVariant.empty => LucideIcons.sparkles,
+    EmptyStateVariant.error => LucideIcons.circleAlert,
   };
 
   String get _title => switch (variant) {
     EmptyStateVariant.disconnected => '서버에 연결되지 않았습니다',
     EmptyStateVariant.connecting => '연결 중...',
     EmptyStateVariant.empty => '무엇이든 물어보세요',
+    EmptyStateVariant.error => '메시지를 불러올 수 없습니다',
   };
 
   String get _subtitle => switch (variant) {
     EmptyStateVariant.disconnected => '서버 주소를 설정하고 페어링을 진행해주세요',
     EmptyStateVariant.connecting => '잠시만 기다려주세요',
     EmptyStateVariant.empty => 'AI 비서와 대화를 시작해보세요',
+    EmptyStateVariant.error => errorMessage ?? '잠시 후 다시 시도해주세요',
   };
 }
 

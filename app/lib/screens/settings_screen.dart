@@ -32,6 +32,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isProvidersLoaded = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -53,18 +54,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final providers = await api.listProviders();
       if (mounted) {
         context.read<ProvidersCubit>().setProviders(providers);
-        setState(() => _isProvidersLoaded = true);
+        setState(() {
+          _isProvidersLoaded = true;
+          _loadError = null;
+        });
       }
     } on Object catch (e) {
-      debugPrint('Failed to load providers: $e');
-      if (mounted) setState(() => _isProvidersLoaded = true);
+      if (mounted) {
+        setState(() {
+          _isProvidersLoaded = true;
+          _loadError = toUserMessage(e);
+        });
+      }
     }
 
     try {
       final sessions = await api.listSessions();
       if (mounted) context.read<SessionsCubit>().setSessions(sessions);
-    } on Object catch (e) {
-      debugPrint('Failed to load sessions: $e');
+    } on Object {
+      debugPrint('Failed to load sessions');
     }
 
     if (mounted) {
@@ -90,7 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () => Navigator.of(ctx).pop(false),
             child: const Text('취소'),
           ),
-          ShadButton(
+          ShadButton.destructive(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('변경'),
           ),
@@ -121,9 +129,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) providersCubit.setProviders(providers);
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(ShadToast(title: Text('Provider 전환 실패: ${toUserMessage(e)}')));
+        ShadToaster.of(context).show(
+          ShadToast.destructive(
+            title: Text('Provider 전환 실패: ${toUserMessage(e)}'),
+          ),
+        );
       }
     } finally {
       if (context.mounted) providersCubit.setSwitching(false);
@@ -165,9 +175,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       providersCubit.removeProvider(providerId);
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(ShadToast(title: Text('삭제 실패: ${toUserMessage(e)}')));
+        ShadToaster.of(context).show(
+          ShadToast.destructive(title: Text('삭제 실패: ${toUserMessage(e)}')),
+        );
       }
     }
   }
@@ -187,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ShadToaster.of(
           context,
-        ).show(const ShadToast(title: Text('모델 목록을 불러올 수 없습니다')));
+        ).show(const ShadToast.destructive(title: Text('모델 목록을 불러올 수 없습니다')));
       }
     }
 
@@ -215,9 +225,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(ShadToast(title: Text('모델 변경 실패: ${toUserMessage(e)}')));
+        ShadToaster.of(context).show(
+          ShadToast.destructive(title: Text('모델 변경 실패: ${toUserMessage(e)}')),
+        );
       }
     }
   }
@@ -275,6 +285,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: EdgeInsets.all(AppSpacing.xl),
             child: Center(child: AppSpinner()),
           )
+        else if (_loadError != null)
+          _LoadErrorBanner(
+            error: _loadError!,
+            onRetry: () {
+              setState(() {
+                _isProvidersLoaded = false;
+                _loadError = null;
+              });
+              unawaited(_loadData());
+            },
+          )
         else
           ProviderListSection(
             providersState: providersState,
@@ -287,6 +308,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const ShadSeparator.horizontal(),
         const UpdateSection(),
       ],
+    );
+  }
+}
+
+class _LoadErrorBanner extends StatelessWidget {
+  const _LoadErrorBanner({required this.error, required this.onRetry});
+
+  final String error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = ShadTheme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: colorScheme.destructive.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              LucideIcons.circleAlert,
+              size: 20,
+              color: colorScheme.destructive,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                error,
+                style: TextStyle(fontSize: 14, color: colorScheme.destructive),
+              ),
+            ),
+            ShadButton.outline(
+              size: ShadButtonSize.sm,
+              onPressed: onRetry,
+              child: const Text('재시도'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

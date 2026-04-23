@@ -89,12 +89,14 @@ class _MessageActionsState extends State<MessageActions> {
           icon: _copied ? LucideIcons.check : LucideIcons.copy,
           color: _copied ? colorScheme.primary : iconColor,
           onPressed: _handleCopy,
+          label: '복사',
         ),
         if (_isUser && widget.onEdit != null)
           _ActionButton(
             icon: LucideIcons.pencil,
             color: iconColor,
             onPressed: () => widget.onEdit!(widget.message.content),
+            label: '편집',
           ),
         if (_isAssistant &&
             widget.isLastAssistant &&
@@ -103,6 +105,7 @@ class _MessageActionsState extends State<MessageActions> {
                 icon: LucideIcons.refreshCw,
                 color: iconColor,
                 onPressed: _handleRegenerate,
+                label: '재생성',
               )
               .animate(target: _isRegenerating ? 1.0 : 0.0)
               .rotate(duration: 300.ms),
@@ -111,6 +114,7 @@ class _MessageActionsState extends State<MessageActions> {
                 icon: _liked ? LucideIcons.thumbsUp : LucideIcons.thumbsUp,
                 color: _liked ? colorScheme.primary : iconColor,
                 onPressed: _handleLike,
+                label: _liked ? '좋아요 취소' : '좋아요',
               )
               .animate(target: _likeAnimating ? 1.0 : 0.0)
               .scale(
@@ -125,6 +129,7 @@ class _MessageActionsState extends State<MessageActions> {
                     : LucideIcons.thumbsDown,
                 color: _disliked ? colorScheme.destructive : iconColor,
                 onPressed: _handleDislike,
+                label: _disliked ? '싫어요 취소' : '싫어요',
               )
               .animate(target: _dislikeAnimating ? 1.0 : 0.0)
               .scale(
@@ -142,21 +147,27 @@ class _ActionButton extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onPressed,
+    required this.label,
   });
 
   final IconData icon;
   final Color color;
   final VoidCallback onPressed;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 36,
-        height: 36,
-        child: Center(child: Icon(icon, size: 16, color: color)),
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onPressed,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(child: Icon(icon, size: 16, color: color)),
+        ),
       ),
     );
   }

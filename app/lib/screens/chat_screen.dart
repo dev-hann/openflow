@@ -35,6 +35,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _isLoadingHistory = false;
   bool _isLoadingMore = false;
   bool _isCreatingSession = false;
+  String? _loadError;
   int _msgCounter = 0;
 
   @override
@@ -115,11 +116,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       }
       _loadedSessionId = sessionId;
       _totalMessages = result.total;
-    } on Object {
-      if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(const ShadToast(title: Text('메시지를 불러올 수 없습니다.')));
+      _loadError = null;
+    } on Object catch (e) {
+      _loadError = e.toString();
+      if (offset == 0 && mounted) {
+        context.read<ChatCubit>().setMessages([]);
       }
     } finally {
       if (mounted) {
@@ -277,10 +278,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               ? const Center(child: AppSpinner())
               : chatState.messages.isEmpty
               ? ChatEmptyState(
-                  variant: EmptyStateVariant.empty,
+                  variant: _loadError != null
+                      ? EmptyStateVariant.error
+                      : EmptyStateVariant.empty,
+                  errorMessage: _loadError,
                   isSending: chatState.isSending,
                   onSuggestion: _sendMessage,
-                  onReconnect: _connectWebSocket,
+                  onReconnect: () => unawaited(
+                    _loadMessages(
+                      context.read<SessionsCubit>().state.activeSessionId!,
+                    ),
+                  ),
                 )
               : MessageList(
                   key: _listKey,

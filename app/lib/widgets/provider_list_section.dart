@@ -86,12 +86,15 @@ class ProviderListSection extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     final colorScheme = ShadTheme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Center(
-        child: Text(
-          '등록된 Provider가 없습니다',
-          style: TextStyle(fontSize: 14, color: colorScheme.mutedForeground),
+    return Semantics(
+      label: '등록된 Provider가 없습니다',
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Center(
+          child: Text(
+            '등록된 Provider가 없습니다',
+            style: TextStyle(fontSize: 14, color: colorScheme.mutedForeground),
+          ),
         ),
       ),
     );
@@ -119,21 +122,25 @@ class _ProviderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppListTile(
-      leading: _buildStatusIndicator(context),
-      title: Row(
-        children: [
-          Expanded(child: Text(provider.name)),
-          if (isActive) const ShadBadge(child: Text('활성')),
-        ],
+    return Semantics(
+      button: true,
+      label: '${provider.name}${isActive ? ', 활성 Provider' : ''}',
+      child: AppListTile(
+        leading: _buildStatusIndicator(context),
+        title: Row(
+          children: [
+            Expanded(child: Text(provider.name)),
+            if (isActive) const ShadBadge(child: Text('활성')),
+          ],
+        ),
+        subtitle: Text(
+          provider.model.isNotEmpty ? provider.model : provider.baseUrl,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: isSwitching ? const AppSpinner() : _buildActions(context),
+        onTap: onTap,
       ),
-      subtitle: Text(
-        provider.model.isNotEmpty ? provider.model : provider.baseUrl,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: isSwitching ? const AppSpinner() : _buildActions(context),
-      onTap: onTap,
     );
   }
 
@@ -175,23 +182,35 @@ class _ProviderTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (onModels != null)
-          ShadIconButton.ghost(
-            icon: const Icon(LucideIcons.slidersHorizontal, size: 20),
-            onPressed: onModels,
+          Semantics(
+            button: true,
+            label: '${provider.name} 모델 변경',
+            child: ShadIconButton.ghost(
+              icon: const Icon(LucideIcons.slidersHorizontal, size: 20),
+              onPressed: onModels,
+            ),
           ),
         if (onEdit != null)
-          ShadIconButton.ghost(
-            icon: const Icon(LucideIcons.pencil, size: 20),
-            onPressed: onEdit,
+          Semantics(
+            button: true,
+            label: '${provider.name} 편집',
+            child: ShadIconButton.ghost(
+              icon: const Icon(LucideIcons.pencil, size: 20),
+              onPressed: onEdit,
+            ),
           ),
         if (onDelete != null)
-          ShadIconButton.ghost(
-            icon: Icon(
-              LucideIcons.trash2,
-              size: 20,
-              color: colorScheme.destructive,
+          Semantics(
+            button: true,
+            label: '${provider.name} 삭제',
+            child: ShadIconButton.ghost(
+              icon: Icon(
+                LucideIcons.trash2,
+                size: 20,
+                color: colorScheme.destructive,
+              ),
+              onPressed: onDelete,
             ),
-            onPressed: onDelete,
           ),
       ],
     );
