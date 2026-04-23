@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError, ensureOpenFlowError } from "../utils/errors.js";
-import type { LlmClient, ChatMessage, LlmResponse, ToolDefinition } from "../llm/index.js";
+import type { LlmClient, ChatMessage, LlmResponse, ToolCall, ToolDefinition } from "../llm/index.js";
 import type { MemoryStore } from "../memory/index.js";
 import type { ToolExecutor, ChannelSender } from "../tools/index.js";
 import type { ConfirmationHandler } from "../tools/confirmation.js";
@@ -113,7 +113,7 @@ export function createAgentEngine(deps: AgentDeps): AgentEngine {
   }
 
   async function handleToolCalls(
-    toolCalls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>,
+    toolCalls: ToolCall[],
     sessionId: string,
     chatId: number | string | undefined,
     round: number,
