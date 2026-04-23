@@ -15,6 +15,7 @@ import 'package:openflow/screens/onboarding_screen.dart';
 import 'package:openflow/screens/settings_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/utils/user_friendly_error.dart';
 import 'package:openflow/widgets/adaptive_scaffold.dart';
 import 'package:openflow/widgets/session_sheet.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -202,9 +203,9 @@ class _MainScreenState extends State<MainScreen> {
       ShadToaster.of(context).show(const ShadToast(title: Text('세션이 삭제되었습니다')));
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(
-          context,
-        ).show(ShadToast.destructive(title: Text('세션 삭제 실패: $e')));
+        ShadToaster.of(context).show(
+          ShadToast.destructive(title: Text('세션 삭제 실패: ${toUserMessage(e)}')),
+        );
       }
     }
   }

@@ -8,6 +8,7 @@ import 'package:openflow/models/protocol.dart';
 import 'package:openflow/models/verify_result.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
+import 'package:openflow/utils/user_friendly_error.dart';
 import 'package:openflow/widgets/app_spinner.dart';
 import 'package:openflow/widgets/preset_selector.dart';
 import 'package:openflow/widgets/verify_section.dart';
@@ -173,7 +174,7 @@ class _ProviderFormState extends State<ProviderForm> {
       if (mounted) {
         ShadToaster.of(
           context,
-        ).show(ShadToast(title: Text('Provider 저장 실패: $e')));
+        ).show(ShadToast(title: Text('Provider 저장 실패: ${toUserMessage(e)}')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

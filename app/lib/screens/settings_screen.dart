@@ -12,6 +12,7 @@ import 'package:openflow/models/protocol.dart';
 import 'package:openflow/screens/provider_edit_screen.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/services/websocket_service.dart';
+import 'package:openflow/utils/user_friendly_error.dart';
 import 'package:openflow/widgets/active_provider_card.dart';
 import 'package:openflow/widgets/app_scaffold.dart';
 import 'package:openflow/widgets/app_spinner.dart';
@@ -124,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ShadToaster.of(
           context,
-        ).show(ShadToast(title: Text('Provider 전환 실패: $e')));
+        ).show(ShadToast(title: Text('Provider 전환 실패: ${toUserMessage(e)}')));
       }
     } finally {
       if (context.mounted) {
@@ -173,7 +174,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       providersCubit.removeProvider(providerId);
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(ShadToast(title: Text('삭제 실패: $e')));
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(title: Text('삭제 실패: ${toUserMessage(e)}')));
       }
     }
   }
@@ -230,7 +233,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } on Object catch (e) {
       if (mounted) {
-        ShadToaster.of(context).show(ShadToast(title: Text('모델 변경 실패: $e')));
+        ShadToaster.of(
+          context,
+        ).show(ShadToast(title: Text('모델 변경 실패: ${toUserMessage(e)}')));
       }
     }
   }
