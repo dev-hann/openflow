@@ -264,7 +264,7 @@ async function handleProviderModels(
     sendJson(res, 200, { models });
   } catch (err: unknown) {
     const msg = getErrorMessage(err);
-    sendApiError(res, 500, "provider_request_failed", msg);
+    sendApiError(res, 502, "provider_request_failed", msg);
   }
 }
 

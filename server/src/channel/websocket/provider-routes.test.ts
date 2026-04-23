@@ -567,7 +567,7 @@ describe("provider routes", () => {
       expect(body.message).toContain("403");
     });
 
-    it("should return 500 on network error", async () => {
+    it("should return 502 on network error", async () => {
       const route = modelsSetup.findRoute("/api/providers/prov_1/models", "GET");
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("timeout")));
       const { res, getStatusCode, getBody } = createMockResponse();
@@ -579,7 +579,7 @@ describe("provider routes", () => {
         path: "/api/providers/prov_1/models",
         clientIp: "127.0.0.1",
       });
-      expect(getStatusCode()).toBe(500);
+      expect(getStatusCode()).toBe(502);
       const body = JSON.parse(getBody()) as { error: string; message: string };
       expect(body.error).toBe("provider_request_failed");
       expect(body.message).toContain("timeout");
