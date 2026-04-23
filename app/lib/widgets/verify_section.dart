@@ -1,6 +1,6 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openflow/config/design_tokens.dart';
+import 'package:openflow/models/verify_result.dart';
 import 'package:openflow/widgets/app_spinner.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -51,16 +51,6 @@ class _VerifySectionState extends State<VerifySection> {
       ],
     );
   }
-}
-
-class VerifyResult extends Equatable {
-  const VerifyResult({required this.ok, this.models = const [], this.error});
-  final bool ok;
-  final List<String> models;
-  final String? error;
-
-  @override
-  List<Object?> get props => [ok, models, error];
 }
 
 class _VerifyButton extends StatelessWidget {

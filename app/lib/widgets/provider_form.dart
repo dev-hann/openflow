@@ -5,6 +5,7 @@ import 'package:openflow/constants/presets.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/cubits/providers_cubit.dart';
 import 'package:openflow/models/protocol.dart';
+import 'package:openflow/models/verify_result.dart';
 import 'package:openflow/services/api_client.dart';
 import 'package:openflow/utils/normalize_url.dart';
 import 'package:openflow/widgets/app_spinner.dart';
