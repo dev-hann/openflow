@@ -11,7 +11,7 @@ import { createNotificationService, createPushTokenStore } from "../notification
 import { watchConfig } from "../config/loader.js";
 import type { OpenFlowConfig } from "../config/schema.js";
 import { IssueReporter } from "../reporting/issue-reporter.js";
-import { setupErrorCollector } from "../reporting/error-collector.js";
+import { createErrorCollector } from "../reporting/error-collector.js";
 
 const log = createLogger("cli");
 
@@ -121,7 +121,7 @@ export async function runServer(config: OpenFlowConfig): Promise<void> {
   await wsChannel.start();
 
   if (issueReporter) {
-    setupErrorCollector(issueReporter, "0.1.0");
+    createErrorCollector(issueReporter, "0.1.0");
     log.info("error reporting enabled");
   }
 
