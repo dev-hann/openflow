@@ -1,4 +1,9 @@
-import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type Server,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 
 import { createLogger } from "../../utils/logger.js";
@@ -11,6 +16,7 @@ import type { MemoryStore, ProviderStore } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
 import type { IssueReporter } from "../../reporting/issue-reporter.js";
+import { sendApiError } from "./middleware.js";
 
 const log = createLogger("ws/server");
 
@@ -71,14 +77,20 @@ export function createWebSocketChannel(
 
     async start(): Promise<void> {
       server = createServer((req: IncomingMessage, res: ServerResponse) => {
-        routes(req, res).then(async (handled) => {
-          if (!handled) {
-            res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "not_found" }));
-          }
-        }).catch((err) => {
-          log.error({ err }, "unhandled request error");
-        });
+        routes(req, res)
+          .then(async (handled) => {
+            if (!handled) {
+              sendApiError(
+                res,
+                404,
+                "not_found",
+                "The requested resource does not exist",
+              );
+            }
+          })
+          .catch((err) => {
+            log.error({ err }, "unhandled request error");
+          });
       });
 
       wss = new WebSocketServer({ noServer: true, maxPayload: MAX_PAYLOAD });

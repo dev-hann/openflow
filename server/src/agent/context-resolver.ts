@@ -7,7 +7,7 @@ import type { WorkspaceLoader } from "./workspace.js";
 import type { SkillMeta } from "./skill-loader.js";
 import { buildSystemPrompt } from "./prompt-builder.js";
 
-const log = createLogger("agent");
+const log = createLogger("agent/context-resolver");
 
 export interface ContextResolverConfig {
   contextSize: number;
@@ -28,7 +28,11 @@ export function createContextResolver(deps: ContextResolverDeps) {
   function resolveSystemPrompt(): string {
     if (systemPrompt) return systemPrompt;
     const files = workspace.loadAll();
-    return buildSystemPrompt(files, { workspace: workspace.getWorkspaceDir() }, skills);
+    return buildSystemPrompt(
+      files,
+      { workspace: workspace.getWorkspaceDir() },
+      skills,
+    );
   }
 
   function persistMessage(
@@ -55,7 +59,10 @@ export function createContextResolver(deps: ContextResolverDeps) {
         cause instanceof OpenFlowError
           ? cause
           : new OpenFlowError("Failed to save user message", "DB_ERROR", cause);
-      log.error({ sessionId, err: error.message }, "failed to save user message");
+      log.error(
+        { sessionId, err: error.message },
+        "failed to save user message",
+      );
       return err(error);
     }
   }
@@ -67,7 +74,10 @@ export function createContextResolver(deps: ContextResolverDeps) {
     const resolved = systemPromptOverride || resolveSystemPrompt();
     try {
       const rawContext = memory.buildContext(sessionId, config.contextSize);
-      const contextMessages = await compaction.compactIfNeeded(sessionId, rawContext);
+      const contextMessages = await compaction.compactIfNeeded(
+        sessionId,
+        rawContext,
+      );
       return [{ role: "system", content: resolved }, ...contextMessages];
     } catch (err: unknown) {
       const error =

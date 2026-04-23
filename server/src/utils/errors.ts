@@ -9,6 +9,7 @@ export type ErrorCode =
   | "DB_MIGRATION_FAILED"
   | "NOTIFICATION_ERROR"
   | "PERMISSION_DENIED"
+  | "REQUEST_TOO_LARGE"
   | "REPORT_ERROR";
 
 export class OpenFlowError extends Error {
@@ -23,7 +24,9 @@ export class OpenFlowError extends Error {
   }
 }
 
-export type Result<T, E = OpenFlowError> = { ok: true; value: T } | { ok: false; error: E };
+export type Result<T, E = OpenFlowError> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
 
 export function ok<T>(value: T): Result<T, never> {
   return { ok: true, value };

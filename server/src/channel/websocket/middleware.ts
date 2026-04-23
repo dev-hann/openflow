@@ -42,7 +42,11 @@ export function requireAuth(
   return { sessionKey: payload.sessionKey };
 }
 
-export function sendJson(res: ServerResponse, status: number, body: unknown): void {
+export function sendJson(
+  res: ServerResponse,
+  status: number,
+  body: unknown,
+): void {
   const json = JSON.stringify(body);
   res.writeHead(status, {
     "Content-Type": "application/json",
@@ -69,7 +73,7 @@ export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
     const buf = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
     totalSize += buf.length;
     if (totalSize > MAX_BODY_SIZE) {
-      throw new OpenFlowError("request body too large", "PERMISSION_DENIED");
+      throw new OpenFlowError("request body too large", "REQUEST_TOO_LARGE");
     }
     chunks.push(buf);
   }
@@ -89,7 +93,12 @@ export async function readJsonObject(
 ): Promise<Record<string, unknown> | null> {
   const body = await readJsonBody(req);
   if (!body || typeof body !== "object") {
-    sendApiError(res, 400, "invalid_body", "Request body must be a JSON object");
+    sendApiError(
+      res,
+      400,
+      "invalid_body",
+      "Request body must be a JSON object",
+    );
     return null;
   }
   return body as Record<string, unknown>;
@@ -98,11 +107,17 @@ export async function readJsonObject(
 export function setCorsHeaders(res: ServerResponse, enabled: boolean): void {
   if (!enabled) return;
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-export function requireBodyString(body: Record<string, unknown>, key: string): string | undefined {
+export function requireBodyString(
+  body: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const val = body[key];
   return typeof val === "string" ? val : undefined;
 }
