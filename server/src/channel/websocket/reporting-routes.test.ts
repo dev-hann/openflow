@@ -125,7 +125,7 @@ describe("reporting-routes", () => {
     await found!.handler(req, res, { path: "/api/errors", clientIp: "127.0.0.1" });
     expect(getStatusCode()).toBe(400);
     const responseBody = JSON.parse(getBody()) as { error: string };
-    expect(responseBody.error).toBe("invalid_platform");
+    expect(responseBody.error).toBe("validation_error");
   });
 
   it("should reject missing required fields", async () => {

@@ -1,9 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, getBodyString, sendApiError, isValidReportPlatform, isValidObject } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, validateBody } from "./middleware.js";
 import { route, type Route } from "./routes.js";
 import type { AuthService } from "./auth.js";
 import type { IssueReporter } from "../../reporting/issue-reporter.js";
+import { ErrorReportSchema } from "./reporting-schemas.js";
 
 export interface ReportingRoutesDeps {
   authService: AuthService;
@@ -23,33 +24,16 @@ export function createReportingRoutes(deps: ReportingRoutesDeps): Route[] {
     const body = await readJsonObject(req, res);
     if (!body) return;
 
-    const platform = getBodyString(body, "platform");
-    const version = getBodyString(body, "version");
-    const errorCode = getBodyString(body, "errorCode");
-    const message = getBodyString(body, "message");
-
-    if (!isValidReportPlatform(platform)) {
-      sendApiError(res, 400, "invalid_platform", "Platform must be server, app, or web");
-      return;
-    }
-    if (!errorCode || !message) {
-      sendApiError(res, 400, "invalid_report", "errorCode and message are required");
-      return;
-    }
-
-    const stackTraceVal = body.stackTrace;
-    const metadataVal = body.metadata;
+    const parsed = validateBody(body, ErrorReportSchema, res);
+    if (!parsed) return;
 
     const result = await issueReporter.report({
-      platform,
-      version: version ?? "unknown",
-      errorCode,
-      message,
-      stackTrace: typeof stackTraceVal === "string" ? stackTraceVal : undefined,
-      metadata:
-        metadataVal && isValidObject(metadataVal)
-          ? metadataVal
-          : undefined,
+      platform: parsed.platform,
+      version: parsed.version ?? "unknown",
+      errorCode: parsed.errorCode,
+      message: parsed.message,
+      stackTrace: parsed.stackTrace,
+      metadata: parsed.metadata,
     });
 
     sendJson(res, 200, {
