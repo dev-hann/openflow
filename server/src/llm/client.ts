@@ -1,6 +1,7 @@
 import { createLogger } from "../utils/logger.js";
 import { OpenFlowError, getErrorMessage } from "../utils/errors.js";
 import { sleep } from "../utils/retry.js";
+import { z } from "zod";
 import type { ChatParams, CompleteParams, LlmResponse, ToolCall } from "./types.js";
 import { parseSseStream } from "./sse-parser.js";
 
@@ -38,35 +39,25 @@ function buildUrl(baseUrl: string, path: string): string {
   return `${base}${path}`;
 }
 
+const ToolCallSchema = z.object({
+  id: z.string(),
+  type: z.literal("function").default("function"),
+  function: z.object({
+    name: z.string(),
+    arguments: z.string(),
+  }),
+});
+
 function parseToolCalls(raw: unknown[]): ToolCall[] {
-  return raw.map((tc: unknown) => {
-    if (typeof tc !== "object" || tc === null) {
-      throw new OpenFlowError("Invalid tool_call format in LLM response", "LLM_STREAM_ERROR");
-    }
-    const t = tc as Record<string, unknown>;
-    const fn = t.function;
-    if (typeof fn !== "object" || fn === null) {
+  return raw.map((tc, index) => {
+    const result = ToolCallSchema.safeParse(tc);
+    if (!result.success) {
       throw new OpenFlowError(
-        "Invalid tool_call.function format in LLM response",
+        `Invalid tool_call at index ${index}: ${result.error.issues.map((i) => i.message).join(", ")}`,
         "LLM_STREAM_ERROR",
       );
     }
-    const fnObj = fn as Record<string, unknown>;
-    if (
-      typeof t.id !== "string" ||
-      typeof fnObj.name !== "string" ||
-      typeof fnObj.arguments !== "string"
-    ) {
-      throw new OpenFlowError("Missing required fields in tool_call", "LLM_STREAM_ERROR");
-    }
-    return {
-      id: t.id,
-      type: "function" as const,
-      function: {
-        name: fnObj.name,
-        arguments: fnObj.arguments,
-      },
-    };
+    return result.data;
   });
 }
 

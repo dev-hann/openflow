@@ -378,7 +378,7 @@ describe("createLlmClient", () => {
 
       const client = createLlmClient(baseConfig);
       await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
-        "Invalid tool_call format",
+        "Invalid tool_call at index 0",
       );
     });
 
@@ -404,7 +404,7 @@ describe("createLlmClient", () => {
 
       const client = createLlmClient(baseConfig);
       await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
-        "Invalid tool_call.function format",
+        "Invalid tool_call at index 0",
       );
     });
 
@@ -430,7 +430,7 @@ describe("createLlmClient", () => {
 
       const client = createLlmClient(baseConfig);
       await expect(client.chat({ messages: [{ role: "user", content: "Hi" }] })).rejects.toThrow(
-        "Missing required fields in tool_call",
+        "Invalid tool_call at index 0",
       );
     });
   });
