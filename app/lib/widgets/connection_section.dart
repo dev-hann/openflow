@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'package:openflow/config/design_tokens.dart';
 import 'package:openflow/cubits/auth_cubit.dart';
 import 'package:openflow/widgets/app_list_tile.dart';
 
@@ -23,7 +24,7 @@ class ConnectionSection extends StatelessWidget {
     return AppListTile(
       leading: Icon(
         connected ? LucideIcons.cloud : LucideIcons.cloudOff,
-        color: connected ? const Color(0xFF22C55E) : colorScheme.destructive,
+        color: connected ? AppColors.success : colorScheme.destructive,
       ),
       title: Text(connected ? '연결됨' : '연결 안됨'),
       subtitle: url != null

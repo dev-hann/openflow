@@ -286,7 +286,7 @@ class _ConnectionIndicator extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: authState.isConnected
-                ? const Color(0xFF22C55E)
+                ? AppColors.success
                 : shadTheme.colorScheme.destructive,
           ),
         );

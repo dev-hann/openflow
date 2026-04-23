@@ -69,7 +69,7 @@ class UpdateSection extends StatelessWidget {
       case UpdateStatus.upToDate:
         return Text(
           '최신 버전입니다',
-          style: TextStyle(fontSize: 12, color: const Color(0xFF22C55E)),
+          style: TextStyle(fontSize: 12, color: AppColors.success),
         );
 
       case UpdateStatus.available:
@@ -256,7 +256,7 @@ class UpdateSection extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           '다운로드 완료',
-          style: TextStyle(fontSize: 11, color: const Color(0xFF22C55E)),
+          style: TextStyle(fontSize: 11, color: AppColors.success),
         ),
       ],
     );

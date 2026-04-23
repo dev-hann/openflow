@@ -34,6 +34,12 @@ class AppRadius {
   static const double full = 999;
 }
 
+class AppColors {
+  AppColors._();
+  static const Color success = Color(0xFF22C55E);
+  static const Color error = Color(0xFFEF4444);
+}
+
 class AppShadows {
   AppShadows._();
 
