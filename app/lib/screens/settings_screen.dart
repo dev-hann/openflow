@@ -73,12 +73,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<ApiClient?> _createApi() async {
-    final token = await context.read<AuthCubit>().getValidToken();
-    if (token == null) return null;
-    return createApiClient(
-      context.read<AuthCubit>().state.storedAuth!.serverUrl,
-      token: token,
-    );
+    final authCubit = context.read<AuthCubit>();
+    final token = await authCubit.getValidToken();
+    if (token == null || !mounted) return null;
+    return createApiClient(authCubit.state.storedAuth!.serverUrl, token: token);
   }
 
   Future<void> _handleServerChanged() async {

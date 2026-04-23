@@ -81,7 +81,6 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final shadTheme = ShadTheme.of(context);
-
     return BlocBuilder<SessionsCubit, SessionsState>(
       builder: (context, sessionsState) {
         final activeSession = sessionsState.sessions
@@ -230,7 +229,6 @@ class _MainScreenState extends State<MainScreen> {
 
 class _AppBarTitle extends StatelessWidget {
   const _AppBarTitle({required this.title});
-
   final String title;
 
   @override
@@ -280,15 +278,20 @@ class _ConnectionIndicator extends StatelessWidget {
     final shadTheme = ShadTheme.of(context);
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
-        return Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: authState.isConnected
-                ? AppColors.success
-                : shadTheme.colorScheme.destructive,
+        final connected = authState.isConnected;
+        return Semantics(
+          label: connected ? '서버 연결됨' : '서버 연결 끊김',
+          liveRegion: true,
+          child: Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: connected
+                  ? AppColors.success
+                  : shadTheme.colorScheme.destructive,
+            ),
           ),
         );
       },
