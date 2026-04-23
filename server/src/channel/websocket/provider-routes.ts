@@ -183,11 +183,11 @@ async function handleProviderDelete(
   res: ServerResponse,
   path: string,
 ): Promise<void> {
-  const providerId = requireProviderId(deps, req, res, path);
-  if (!providerId) return;
-  deps.providerStore.deleteProvider(providerId);
+  const provider = requireProvider(deps, req, res, path);
+  if (!provider) return;
+  deps.providerStore.deleteProvider(provider.id);
   deps.providerPool.syncFromStore();
-  log.info({ providerId }, "provider deleted via API");
+  log.info({ providerId: provider.id }, "provider deleted via API");
   sendJson(res, 200, { ok: true });
 }
 
