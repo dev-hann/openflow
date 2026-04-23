@@ -5,7 +5,7 @@ import type { AuthService } from "./auth.js";
 import type { MemoryStore, ProviderStore } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { PushTokenStore } from "../../notification/token-store.js";
-import { sendJson, setCorsHeaders, handleOptions } from "./middleware.js";
+import { setCorsHeaders, handleOptions, sendApiError } from "./middleware.js";
 import { createAuthRoutes } from "./auth-routes.js";
 import { createProviderRoutes } from "./provider-routes.js";
 import { createSessionRoutes } from "./session-routes.js";
@@ -76,16 +76,16 @@ export function createRoutes(deps: RoutesDeps) {
         }
       }
       if (isApi) {
-        sendJson(res, 404, { error: "not_found" });
+        sendApiError(res, 404, "not_found", "The requested API endpoint does not exist");
       }
       return isApi;
     } catch (err: unknown) {
       if (err instanceof Error && err.message === "request body too large") {
-        sendJson(res, 413, { error: "payload_too_large" });
+        sendApiError(res, 413, "payload_too_large", "Request body exceeds the maximum allowed size");
         return true;
       }
       log.error({ err, path: url.pathname, method: req.method }, "route handler error");
-      sendJson(res, 500, { error: "internal_error" });
+      sendApiError(res, 500, "internal_error", "An unexpected error occurred");
       return true;
     }
   };

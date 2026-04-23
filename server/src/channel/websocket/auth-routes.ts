@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { sendJson, readJsonObject, requireAuth, requireBodyString } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, requireBodyString, sendApiError } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, type Route } from "./routes.js";
 
@@ -47,7 +47,7 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     clientIp: string,
   ): Promise<void> {
     if (!checkRateLimit(`pair_init:${clientIp}`)) {
-      sendJson(res, 429, { error: "rate_limited" });
+      sendApiError(res, 429, "rate_limited", "Too many pairing requests. Please try again later.");
       return;
     }
     authService.createPairingPin();
@@ -60,7 +60,7 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     clientIp: string,
   ): Promise<void> {
     if (!checkRateLimit(`pair_verify:${clientIp}`)) {
-      sendJson(res, 429, { error: "rate_limited" });
+      sendApiError(res, 429, "rate_limited", "Too many verification attempts. Please try again later.");
       return;
     }
     const body = await readJsonObject(req, res);
@@ -68,12 +68,12 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     const pin = requireBodyString(body, "pin");
     const label = requireBodyString(body, "label");
     if (!pin) {
-      sendJson(res, 400, { error: "pin_required" });
+      sendApiError(res, 400, "pin_required", "PIN code is required");
       return;
     }
     const tokens = authService.verifyPinAndIssueTokens(pin, label ?? "Unknown device");
     if (!tokens) {
-      sendJson(res, 401, { error: "invalid_or_expired_pin" });
+      sendApiError(res, 401, "invalid_or_expired_pin", "PIN is invalid or has expired");
       return;
     }
     sendJson(res, 200, tokens);
@@ -85,19 +85,19 @@ export function createAuthRoutes(deps: AuthRoutesDeps): Route[] {
     clientIp: string,
   ): Promise<void> {
     if (!checkRateLimit(`refresh:${clientIp}`)) {
-      sendJson(res, 429, { error: "rate_limited" });
+      sendApiError(res, 429, "rate_limited", "Too many refresh requests. Please try again later.");
       return;
     }
     const body = await readJsonObject(req, res);
     if (!body) return;
     const refreshToken = requireBodyString(body, "refreshToken");
     if (!refreshToken) {
-      sendJson(res, 400, { error: "refresh_token_required" });
+      sendApiError(res, 400, "refresh_token_required", "Refresh token is required");
       return;
     }
     const tokens = authService.refreshTokens(refreshToken);
     if (!tokens) {
-      sendJson(res, 401, { error: "invalid_refresh_token" });
+      sendApiError(res, 401, "invalid_refresh_token", "Refresh token is invalid or has been rotated");
       return;
     }
     sendJson(res, 200, tokens);

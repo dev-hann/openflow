@@ -51,6 +51,15 @@ export function sendJson(res: ServerResponse, status: number, body: unknown): vo
   res.end(json);
 }
 
+export function sendApiError(
+  res: ServerResponse,
+  status: number,
+  code: string,
+  message: string,
+): void {
+  sendJson(res, status, { error: code, message });
+}
+
 const MAX_BODY_SIZE = 1024 * 1024;
 
 export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -80,7 +89,7 @@ export async function readJsonObject(
 ): Promise<Record<string, unknown> | null> {
   const body = await readJsonBody(req);
   if (!body || typeof body !== "object") {
-    sendJson(res, 400, { error: "invalid_body" });
+    sendApiError(res, 400, "invalid_body", "Request body must be a JSON object");
     return null;
   }
   return body as Record<string, unknown>;

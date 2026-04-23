@@ -4,7 +4,7 @@ import { createLogger } from "../../utils/logger.js";
 import type { ProviderStore, Provider } from "../../memory/index.js";
 import type { ProviderPool } from "../../llm/pool.js";
 import type { components } from "../../generated/api.js";
-import { sendJson, readJsonObject, requireAuth, requireBodyString } from "./middleware.js";
+import { sendJson, readJsonObject, requireAuth, requireBodyString, sendApiError } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import { route, routePattern, type Route } from "./routes.js";
 
@@ -88,9 +88,7 @@ async function handleProviderCreate(
   const model = requireBodyString(body, "model");
   const isDefault = body.isDefault as boolean | undefined;
   if (!name || !baseUrl || !apiKey || !model) {
-    sendJson(res, 400, {
-      error: "name, baseUrl, apiKey, model are required",
-    });
+    sendApiError(res, 400, "fields_required", "name, baseUrl, apiKey, model are required");
     return;
   }
   const provider = deps.providerStore.addProvider({
@@ -134,7 +132,7 @@ async function handleProviderUpdate(
   if (!auth) return;
   const providerId = extractProviderId(path);
   if (!providerId) {
-    sendJson(res, 400, { error: "provider_id_required" });
+    sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
     return;
   }
   const body = await readJsonObject(req, res);
@@ -146,7 +144,7 @@ async function handleProviderUpdate(
     model: requireBodyString(body, "model"),
   });
   if (!updated) {
-    sendJson(res, 404, { error: "provider_not_found" });
+    sendApiError(res, 404, "provider_not_found", "Provider not found");
     return;
   }
   deps.providerPool.syncFromStore();
@@ -168,7 +166,7 @@ async function handleProviderDelete(
   if (!auth) return;
   const providerId = extractProviderId(path);
   if (!providerId) {
-    sendJson(res, 400, { error: "provider_id_required" });
+    sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
     return;
   }
   deps.providerStore.deleteProvider(providerId);
@@ -188,12 +186,12 @@ async function handleProviderSwitch(
   if (!body) return;
   const providerId = requireBodyString(body, "providerId");
   if (!providerId) {
-    sendJson(res, 400, { error: "providerId_required" });
+    sendApiError(res, 400, "provider_id_required", "Provider ID is required");
     return;
   }
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
-    sendJson(res, 404, { error: "provider_not_found" });
+    sendApiError(res, 404, "provider_not_found", "Provider not found");
     return;
   }
   deps.providerPool.switchProvider(providerId);
@@ -212,12 +210,12 @@ async function handleProviderVerify(
   if (!auth) return;
   const providerId = extractProviderId(path);
   if (!providerId) {
-    sendJson(res, 400, { error: "provider_id_required" });
+    sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
     return;
   }
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
-    sendJson(res, 404, { error: "provider_not_found" });
+    sendApiError(res, 404, "provider_not_found", "Provider not found");
     return;
   }
   try {
@@ -243,20 +241,18 @@ async function handleProviderModels(
   if (!auth) return;
   const providerId = extractProviderId(path);
   if (!providerId) {
-    sendJson(res, 400, { error: "provider_id_required" });
+    sendApiError(res, 400, "provider_id_required", "Provider ID is required in the URL path");
     return;
   }
   const provider = deps.providerStore.getProvider(providerId);
   if (!provider) {
-    sendJson(res, 404, { error: "provider_not_found" });
+    sendApiError(res, 404, "provider_not_found", "Provider not found");
     return;
   }
   try {
     const resp = await fetchProviderModels(provider.baseUrl, provider.apiKey);
     if (!resp.ok) {
-      sendJson(res, resp.status, {
-        error: `Failed to fetch models: HTTP ${resp.status}`,
-      });
+      sendApiError(res, resp.status, "provider_request_failed", `Failed to fetch models: HTTP ${resp.status}`);
       return;
     }
     const json = (await resp.json()) as { data?: Array<{ id: string }> };
@@ -264,7 +260,7 @@ async function handleProviderModels(
     sendJson(res, 200, { models });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    sendJson(res, 500, { error: msg });
+    sendApiError(res, 500, "provider_request_failed", msg);
   }
 }
 

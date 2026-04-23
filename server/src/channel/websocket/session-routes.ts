@@ -9,6 +9,7 @@ import {
   readJsonObject,
   requireAuth,
   requireBodyString,
+  sendApiError,
 } from "./middleware.js";
 import type { AuthService } from "./auth.js";
 import type { SessionInfo } from "./protocol.js";
@@ -65,7 +66,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const sessionId = extractSessionId(path, "/api/sessions/");
     if (!sessionId) {
-      sendJson(res, 400, { error: "session_id_required" });
+      sendApiError(res, 400, "session_id_required", "Session ID is required in the URL path");
       return;
     }
     memoryStore.deleteSession(sessionId);
@@ -77,7 +78,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!auth) return;
     const match = path.match(/^\/api\/sessions\/([^/]+)\/messages$/);
     if (!match) {
-      sendJson(res, 400, { error: "session_id_required" });
+      sendApiError(res, 400, "session_id_required", "Invalid session messages URL format");
       return;
     }
     const sessionId = match[1]!;
@@ -112,11 +113,11 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     const platform = requireBodyString(body, "platform");
     const label = requireBodyString(body, "label");
     if (!token) {
-      sendJson(res, 400, { error: "token_required" });
+      sendApiError(res, 400, "token_required", "Push token is required");
       return;
     }
     if (!isValidPlatform(platform)) {
-      sendJson(res, 400, { error: "platform must be ios, android, or web" });
+      sendApiError(res, 400, "invalid_platform", "Platform must be ios, android, or web");
       return;
     }
     pushTokenStore.register(token, platform, label ?? "Unknown device");
@@ -134,7 +135,7 @@ export function createSessionRoutes(deps: SessionRoutesDeps): Route[] {
     if (!body) return;
     const token = requireBodyString(body, "token");
     if (!token) {
-      sendJson(res, 400, { error: "token_required" });
+      sendApiError(res, 400, "token_required", "Push token is required");
       return;
     }
     const removed = pushTokenStore.unregister(token);
